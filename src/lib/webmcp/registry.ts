@@ -18,6 +18,11 @@ import {
   resolveDocRef,
 } from "@/mcp/handlers";
 import { loadDesignSystem } from "@/lib/clients/registry";
+import {
+  nearestToken,
+  type NearestToken,
+  type TokenColor,
+} from "@/lib/governance/color-lint";
 
 /** Chrome's published limits. Exported so tests can assert against them. */
 export const WEBMCP_LIMITS = {
@@ -156,11 +161,11 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         "",
       ];
       for (const v of r.violations) {
-        const near = nearestToken(v.hex, rules.palette);
+        const near = nearestTokenMatch(v.hex, rules.palette);
         const fix = !near
           ? ""
           : near.close
-            ? ` Use \`${near.name}\` (${near.value}) instead.`
+            ? ` Use \`${near.name}\` (${tokenFix(near)}) instead.`
             : ` No token is close to this color — it doesn't belong to ${rules.systemName}.` +
               ` Call get_governance_rules and pick a token, or ask the user to add one.`;
         lines.push(`- Line ${v.line}: \`${v.hex}\` is not a design token.${fix}`);
@@ -195,18 +200,18 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         return `\`${hex}\` is a valid token — it is **${exact.name}** in ${rules.systemName}.`;
       }
 
-      const near = nearestToken(hex, rules.palette);
+      const near = nearestTokenMatch(hex, rules.palette);
       const lines = [
         `\`${hex}\` is not defined in ${rules.systemName}.`,
         "",
         "Hard-coded colors drift from the system: they don't respond to theme changes and they can't be updated centrally.",
       ];
       if (near?.close) {
-        lines.push("", `Closest token: **${near.name}** (${near.value}). Use that instead.`);
+        lines.push("", `Closest token: **${near.name}** — use \`${tokenFix(near)}\`.`);
       } else if (near) {
         lines.push(
           "",
-          `Nothing in ${rules.systemName} is close to this color — the nearest is **${near.name}** (${near.value}), which is a different hue. Adding a new color is a design decision for the user, not a substitution to make silently.`,
+          `Nothing in ${rules.systemName} is close to this color — the nearest is **${near.name}** (${near.hex}), which is a different hue. Adding a new color is a design decision for the user, not a substitution to make silently.`,
         );
       }
       if (rules.donts.length) {
@@ -264,58 +269,29 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
 export const WEBMCP_TOOLS_BY_NAME = new Map(WEBMCP_TOOLS.map((t) => [t.name, t]));
 
 /**
- * Nearest token by weighted RGB distance, with a confidence flag.
+ * Nearest token, plus a judgement about whether it's actually a substitute.
  *
- * The flag matters: suggesting a grey as the "fix" for a blue is worse than
- * saying no close token exists. When nothing is near, the honest answer is
- * that the value doesn't belong to this system at all — that's a design
- * decision for the human, not a substitution the agent should make.
+ * `nearestToken` from the governance engine returns a raw squared distance and
+ * leaves the verdict to the caller. For an agent the verdict is the whole
+ * point: suggesting a grey as the "fix" for a blue is worse than saying no
+ * close token exists, because an agent told to use the grey will use it. When
+ * nothing is near, adding a color is a design decision for the human.
  */
-export type TokenMatch = {
-  name: string;
-  value: string;
-  /** Distance is small enough that this is a genuine substitute. */
-  close: boolean;
-};
+export type TokenMatch = NearestToken & { close: boolean };
 
-// Ceiling for "this is the same color, slightly off" — roughly 24 levels of
-// drift per channel against the weights below. A near-neighbour grey scores
-// in the single digits; an off-system blue scores ~49k and is correctly
-// reported as having no match rather than being snapped to the nearest grey.
-const CLOSE_ENOUGH = 9 * 24 ** 2;
+/**
+ * Ceiling for "same color, slightly off" — about 24 levels of drift per
+ * channel. A near-neighbour grey scores in the single digits; an off-system
+ * blue scores in the tens of thousands and is correctly reported as unmatched.
+ */
+const CLOSE_ENOUGH = 3 * 24 ** 2;
 
-function nearestToken(
-  hex: string,
-  palette: { name: string; value: string }[],
-): TokenMatch | null {
-  const target = toRgb(hex);
-  if (!target || !palette.length) return null;
-
-  let best: { name: string; value: string } | null = null;
-  let bestDist = Infinity;
-  for (const token of palette) {
-    const rgb = toRgb(token.value);
-    if (!rgb) continue;
-    // Green carries the most perceived luminance, blue the least.
-    const d =
-      2 * (rgb[0] - target[0]) ** 2 +
-      4 * (rgb[1] - target[1]) ** 2 +
-      3 * (rgb[2] - target[2]) ** 2;
-    if (d < bestDist) {
-      bestDist = d;
-      best = token;
-    }
-  }
-  return best ? { ...best, close: bestDist <= CLOSE_ENOUGH } : null;
+function nearestTokenMatch(hex: string, colors: TokenColor[]): TokenMatch | null {
+  const best = nearestToken(hex, colors);
+  return best ? { ...best, close: best.distance <= CLOSE_ENOUGH } : null;
 }
 
-function toRgb(hex: string): [number, number, number] | null {
-  let h = hex.trim().replace(/^#/, "");
-  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-  if (!/^[0-9a-f]{6}$/i.test(h)) return null;
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ];
+/** How to write the fix: a CSS variable beats a raw hex wherever one exists. */
+function tokenFix(match: NearestToken): string {
+  return match.cssVar ? `var(${match.cssVar})` : match.hex;
 }
