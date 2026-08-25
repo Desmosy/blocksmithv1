@@ -1,0 +1,29 @@
+#!/bin/sh
+# BlockSmith software gate — scan/wiki consistency + governance.
+# Enable once: git config core.hooksPath .githooks
+npm run --silent scan:verify
+status=$?
+if [ $status -ne 0 ]; then exit $status; fi
+npm run --silent verify:scan-wiki
+status=$?
+if [ $status -ne 0 ]; then exit $status; fi
+npm run --silent verify:vendor-e2e
+status=$?
+if [ $status -ne 0 ]; then exit $status; fi
+npm run --silent verify:handshake-writeback
+status=$?
+if [ $status -ne 0 ]; then exit $status; fi
+npm run --silent verify:handshake-acceptance
+status=$?
+if [ $status -ne 0 ]; then exit $status; fi
+npm run --silent verify:sync-conflict
+status=$?
+if [ $status -ne 0 ]; then exit $status; fi
+npm run --silent governance:check
+status=$?
+if [ $status -ne 0 ]; then
+  echo ""
+  echo "Commit blocked by BlockSmith governance gate."
+  echo "Bypass (not recommended): git commit --no-verify"
+fi
+exit $status

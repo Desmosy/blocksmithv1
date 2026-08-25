@@ -1,0 +1,68 @@
+{
+  "schema": "blocksmith.blocks.v1",
+  "docRef": "upload:scan-acme-mobile-app.md",
+  "systemId": "acme-mobile-app",
+  "contentHash": "sha256:afffd0184ad0a9a1d184f247916216c1",
+  "blocks": [
+    {
+      "id": "token:color:accent",
+      "type": "token",
+      "title": "Accent",
+      "version": 1,
+      "status": "finalized",
+      "source": {
+        "file": "src/styles/tokens.css",
+        "line": 14,
+        "ingest": "scan"
+      },
+      "content": {
+        "value": "#d97757",
+        "cssVar": "--color-accent",
+        "summary": "Primary CTA color"
+      },
+      "updatedAt": "2026-06-04T12:00:00.000Z",
+      "finalizedAt": "2026-06-04T12:00:00.000Z",
+      "editedBy": "ingest",
+      "contentHash": "sha256:a40ae6c94ffbaeff0ee94d459043a971"
+    },
+    {
+      "id": "component:button-primary",
+      "type": "component",
+      "title": "Primary Button",
+      "version": 4,
+      "status": "finalized",
+      "source": {
+        "file": "src/components/Button.tsx",
+        "ingest": "scan"
+      },
+      "content": {
+        "role": "Primary call to action",
+        "radius": "12px",
+        "accentVar": "--color-accent",
+        "governance": "Primary CTA only; max one per viewport"
+      },
+      "updatedAt": "2026-06-04T12:00:00.000Z",
+      "finalizedAt": "2026-06-05T09:30:00.000Z",
+      "editedBy": "web",
+      "contentHash": "sha256:d9d425a1454f527affc7906305f0b32e"
+    },
+    {
+      "id": "agent-rule:cta-density",
+      "type": "agent-rule",
+      "title": "CTA density",
+      "version": 2,
+      "status": "draft",
+      "source": {
+        "file": "DESIGN.md",
+        "ingest": "governance"
+      },
+      "content": {
+        "text": "Max one primary CTA per view. Secondary actions use the ghost button."
+      },
+      "updatedAt": "2026-06-05T09:30:00.000Z",
+      "finalizedAt": "2026-06-05T09:31:00.000Z",
+      "editedBy": "web",
+      "contentHash": "sha256:f230b745e69825d991b3eccceb716a53"
+    }
+  ]
+}

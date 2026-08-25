@@ -1,0 +1,37 @@
+{
+  "v": 5,
+  "entries": {
+    "components-button--primary": {
+      "id": "components-button--primary",
+      "title": "Components/Button",
+      "name": "Primary",
+      "importPath": "./src/components/Button.stories.tsx",
+      "type": "story",
+      "tags": ["story"]
+    },
+    "components-button--ghost": {
+      "id": "components-button--ghost",
+      "title": "Components/Button",
+      "name": "Ghost",
+      "importPath": "./src/components/Button.stories.tsx",
+      "type": "story",
+      "tags": ["story"]
+    },
+    "components-navbar--default": {
+      "id": "components-navbar--default",
+      "title": "Components/NavBar",
+      "name": "Default",
+      "importPath": "./src/components/NavBar.stories.tsx",
+      "type": "story",
+      "tags": ["story"]
+    },
+    "components-button--docs": {
+      "id": "components-button--docs",
+      "title": "Components/Button",
+      "name": "Docs",
+      "importPath": "./src/components/Button.stories.tsx",
+      "type": "docs",
+      "tags": ["docs"]
+    }
+  }
+}

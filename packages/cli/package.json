@@ -1,0 +1,51 @@
+{
+  "name": "@block-smith/cli",
+  "version": "0.1.0",
+  "description": "BlockSmith CLI — log in, scan a repo, pull promoted design rules, and wire up Cursor MCP.",
+  "type": "module",
+  "bin": {
+    "blocksmith": "dist/cli.js"
+  },
+  "main": "dist/cli.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@blocksmith/sdk": "file:../sdk",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Desmosy/blocksmith.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/Desmosy/blocksmith/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/Desmosy/blocksmith/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "blocksmith",
+    "design-system",
+    "design-tokens",
+    "cli",
+    "mcp",
+    "design-ops"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "13.1.0"
+  }
+}

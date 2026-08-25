@@ -1,0 +1,10 @@
+:root {
+  --acme-accent: #e85d4a;
+  --acme-accent-muted: #f4a99a;
+  --acme-surface-1: #faf8f6;
+  --acme-surface-2: #efeae4;
+  --acme-text: #1a1a1a;
+  --acme-text-muted: #6b6b6b;
+  --acme-radius-md: 8px;
+  --acme-space-4: 16px;
+}

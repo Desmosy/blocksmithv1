@@ -1,0 +1,54 @@
+{
+  "description": "Canonical hash vectors — any conforming implementation MUST reproduce these exactly.",
+  "blockContentHash": [
+    {
+      "id": "token:color:accent",
+      "type": "token",
+      "content": {
+        "value": "#d97757",
+        "cssVar": "--color-accent",
+        "summary": "Primary CTA color"
+      },
+      "expected": "sha256:a40ae6c94ffbaeff0ee94d459043a971"
+    },
+    {
+      "id": "x",
+      "type": "token",
+      "content": {},
+      "expected": "sha256:e78b259197509d5cc945fc79863adfcc"
+    },
+    {
+      "id": "x",
+      "type": "token",
+      "content": {
+        "b": 2,
+        "a": 1
+      },
+      "note": "key order must not matter",
+      "expected": "sha256:56860293536b5c1f6ad2bd8e0803b58a"
+    }
+  ],
+  "graphHash": [
+    {
+      "entries": [
+        {
+          "id": "token:color:accent",
+          "version": 1,
+          "contentHash": "sha256:a40ae6c94ffbaeff0ee94d459043a971"
+        },
+        {
+          "id": "component:button-primary",
+          "version": 4,
+          "contentHash": "sha256:d9d425a1454f527affc7906305f0b32e"
+        },
+        {
+          "id": "agent-rule:cta-density",
+          "version": 2,
+          "contentHash": "sha256:f230b745e69825d991b3eccceb716a53"
+        }
+      ],
+      "note": "order-independent",
+      "expected": "sha256:afffd0184ad0a9a1d184f247916216c1"
+    }
+  ]
+}

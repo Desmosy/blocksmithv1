@@ -1,0 +1,6 @@
+{
+  "workspaceId": "external-mini",
+  "scanPaths": ["src"],
+  "catalogPaths": ["src/components/ui"],
+  "exportSnapshot": true
+}

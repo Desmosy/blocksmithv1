@@ -1,0 +1,41 @@
+{
+  "name": "@blocksmith/protocol",
+  "version": "0.1.0",
+  "description": "blocksmith.blocks.v1 — Design IR interchange format. Types, validators, canonical hashing, JSON Schemas, and conformance fixtures. Speak the protocol without cloning BlockSmith.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/*": "./schemas/*"
+  },
+  "files": ["dist", "schemas", "fixtures", "compile-targets.v1.json", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "conformance": "tsx conformance/run.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "design-systems",
+    "design-tokens",
+    "intermediate-representation",
+    "design-cicd",
+    "ai-agents",
+    "lockfile"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blocksmith/blocksmith.git",
+    "directory": "packages/protocol"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

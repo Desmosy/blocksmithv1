@@ -1,0 +1,4 @@
+#!/bin/sh
+# Append real commit activity to the BlockSmith ledger (per BLOCKSMITH_DOC).
+# Enable with: git config core.hooksPath .githooks
+npm run --silent activity:from-commit

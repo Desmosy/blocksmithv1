@@ -1,0 +1,114 @@
+@layer base {
+  .dashboard-shell {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.153 0.006 107.1);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.153 0.006 107.1);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.153 0.006 107.1);
+    --primary: oklch(0.841 0.238 128.85);
+    --primary-foreground: oklch(0.405 0.101 131.063);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.153 0.006 107.1);
+    --muted: oklch(0.966 0.005 106.5);
+    --muted-foreground: oklch(0.58 0.031 107.3);
+    --accent: oklch(0.966 0.005 106.5);
+    --accent-foreground: oklch(0.153 0.006 107.1);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.93 0.007 106.5);
+    --input: oklch(0.93 0.007 106.5);
+    --ring: oklch(0.737 0.021 106.9);
+    --chart-1: oklch(0.871 0.15 154.449);
+    --chart-2: oklch(0.723 0.219 149.579);
+    --chart-3: oklch(0.627 0.194 149.214);
+    --chart-4: oklch(0.527 0.154 150.069);
+    --chart-5: oklch(0.448 0.119 151.328);
+    --radius: 0.875rem;
+    --sidebar: oklch(0.988 0.003 106.5);
+    --sidebar-foreground: oklch(0.153 0.006 107.1);
+    --sidebar-primary: oklch(0.648 0.2 131.684);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.966 0.005 106.5);
+    --sidebar-accent-foreground: oklch(0.153 0.006 107.1);
+    --sidebar-border: oklch(0.93 0.007 106.5);
+    --sidebar-ring: oklch(0.737 0.021 106.9);
+
+    /* Legacy mapping for custom components */
+    --dash-background: var(--background);
+    --dash-surface: var(--card);
+    --dash-foreground: var(--foreground);
+    --dash-muted-fg: var(--muted-foreground);
+    --dash-subtle-fg: color-mix(in srgb, var(--dash-muted-fg) 70%, var(--dash-background));
+    --dash-border: var(--border);
+    --dash-border-strong: color-mix(in srgb, var(--dash-border), var(--dash-foreground) 18%);
+    --dash-muted: var(--muted);
+    --dash-primary: var(--primary);
+    --dash-primary-foreground: var(--primary-foreground);
+    --dash-primary-hover: color-mix(in srgb, var(--dash-primary), black 12%);
+    --dash-primary-soft: color-mix(in srgb, var(--dash-primary) 16%, var(--dash-surface));
+    --dash-primary-soft-fg: var(--dash-primary-foreground);
+    --dash-ring: var(--ring);
+    --dash-radius: var(--radius);
+    
+    min-height: 100vh;
+    background: var(--dash-background);
+    color: var(--dash-foreground);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  html[data-dash-theme="dark"] .dashboard-shell {
+    --background: oklch(0.153 0.006 107.1);
+    --foreground: oklch(0.988 0.003 106.5);
+    --card: oklch(0.228 0.013 107.4);
+    --card-foreground: oklch(0.988 0.003 106.5);
+    --popover: oklch(0.228 0.013 107.4);
+    --popover-foreground: oklch(0.988 0.003 106.5);
+    --primary: oklch(0.768 0.233 130.85);
+    --primary-foreground: oklch(0.405 0.101 131.063);
+    --secondary: oklch(0.274 0.006 286.033);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.286 0.016 107.4);
+    --muted-foreground: oklch(0.737 0.021 106.9);
+    --accent: oklch(0.286 0.016 107.4);
+    --accent-foreground: oklch(0.988 0.003 106.5);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 10%);
+    --ring: oklch(0.58 0.031 107.3);
+    --chart-1: oklch(0.871 0.15 154.449);
+    --chart-2: oklch(0.723 0.219 149.579);
+    --chart-3: oklch(0.627 0.194 149.214);
+    --chart-4: oklch(0.527 0.154 150.069);
+    --chart-5: oklch(0.448 0.119 151.328);
+    --sidebar: oklch(0.228 0.013 107.4);
+    --sidebar-foreground: oklch(0.988 0.003 106.5);
+    --sidebar-primary: oklch(0.768 0.233 130.85);
+    --sidebar-primary-foreground: oklch(0.405 0.101 131.063);
+    --sidebar-accent: oklch(0.286 0.016 107.4);
+    --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.58 0.031 107.3);
+    
+    --dash-primary-hover: color-mix(in srgb, var(--dash-primary), white 12%);
+    --dash-primary-soft: color-mix(in srgb, var(--dash-primary) 20%, var(--dash-surface));
+    --dash-primary-soft-fg: color-mix(in srgb, var(--dash-primary), white 25%);
+  }
+
+  .dashboard-shell * { border-color: var(--border); }
+  .dashboard-shell ::selection { background: color-mix(in srgb, var(--primary) 35%, transparent); }
+  .dashboard-shell .dashboard-grid-pattern {
+    background-image: radial-gradient(color-mix(in srgb, var(--primary) 28%, transparent) 0.7px, transparent 0.7px);
+    background-size: 14px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell *, .dashboard-shell *::before, .dashboard-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "documents": [
+    {
+      "fileName": "scan-org-rbac-test.md",
+      "docRef": "upload:scan-org-rbac-test.md",
+      "ownerUserId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "orgId": "55c422da-c00a-4cab-ba39-898d7c451c69",
+      "scanMode": "test",
+      "published": false,
+      "createdAt": "2026-07-11T01:13:36.689Z",
+      "updatedAt": "2026-07-11T01:13:36.689Z"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "schema": "blocksmith.compile-targets.v1",
+  "targets": [
+    {
+      "id": "wiki",
+      "input": "blocksmith.blocks.v1",
+      "officialOnly": false,
+      "output": "html-react-wiki",
+      "reference": "src/components/wiki",
+      "status": "reference",
+      "description": "Human console — the only target allowed to preview drafts (staging)."
+    },
+    {
+      "id": "pulse-react",
+      "input": "blocksmith.blocks.v1",
+      "officialOnly": true,
+      "output": "npm-package",
+      "reference": "src/lib/codegen",
+      "status": "reference",
+      "description": "@blocksmith/<product> — importable tokens.css + governed components."
+    },
+    {
+      "id": "mcp",
+      "input": "blocksmith.blocks.v1",
+      "officialOnly": true,
+      "output": "tool-payloads",
+      "reference": "src/lib/ir/enforce.ts",
+      "status": "reference",
+      "description": "Agent tools — every response pinned vN (contentHash); drafts never served."
+    },
+    {
+      "id": "device-sim",
+      "input": "blocksmith.blocks.v1",
+      "officialOnly": true,
+      "output": "json-profile",
+      "reference": "src/lib/ir/targets/device-sim.ts",
+      "status": "reference",
+      "description": "Watch/HMI browser frames — tokens as literals, touch-target math, governance as constraints."
+    },
+    {
+      "id": "c-header",
+      "input": "blocksmith.blocks.v1",
+      "officialOnly": true,
+      "output": "tokens.h",
+      "reference": "src/lib/ir/targets/c-header.ts",
+      "status": "reference",
+      "description": "Embedded export — every #define traceable to block@version (hash)."
+    },
+    {
+      "id": "lvgl",
+      "input": "blocksmith.blocks.v1",
+      "officialOnly": true,
+      "output": "lvgl-style-pack",
+      "status": "stub",
+      "description": "Planned: LVGL style structs + widget descriptors from the same graph. Build-a-target-in-a-weekend candidate."
+    }
+  ]
+}

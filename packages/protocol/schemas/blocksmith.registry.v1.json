@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blocksmith-mocha.vercel.app/schema/blocksmith.registry.v1.json",
+  "title": "blocksmith.registry.v1 — version registry (manifest + entry)",
+  "description": "The artifact store of Design CI/CD. Per-block entries hold APPEND-ONLY version records plus the `official` release pointer (production). The per-doc manifest summarizes graph state. Constitutional semantics: versions are never deleted; `official` is what blocksmith.lock pins; token/component scan facts auto-promote on ingest; governance stages as draft until a human promotes; vanished blocks become `stale` (last official stays lock-eligible); cross-source disagreement is `conflict` and cannot be promoted until resolved.",
+  "oneOf": [
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/entry" }
+  ],
+  "$defs": {
+    "manifest": {
+      "type": "object",
+      "title": "RegistryManifest",
+      "required": [
+        "schema",
+        "docRef",
+        "systemId",
+        "lastIngestAt",
+        "officialGraphHash",
+        "blockCount",
+        "promotedCount",
+        "draftCount",
+        "staleCount"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema": { "const": "blocksmith.registry.v1" },
+        "docRef": { "type": "string", "minLength": 1 },
+        "systemId": { "type": "string" },
+        "lastIngestAt": { "type": "string", "format": "date-time" },
+        "officialGraphHash": {
+          "type": "string",
+          "description": "Order-independent hash over (id, version, contentHash) of all official blocks. Compared against blocksmith.lock contentHash for staleness.",
+          "pattern": "^(sha256:[0-9a-f]+)?$"
+        },
+        "blockCount": { "type": "integer", "minimum": 0 },
+        "promotedCount": { "type": "integer", "minimum": 0 },
+        "draftCount": { "type": "integer", "minimum": 0 },
+        "staleCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "title": "BlockRegistryEntry",
+      "required": ["id", "versions"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9:_-]*$"
+        },
+        "official": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Production pointer — the lock-eligible version. Absent = never promoted; agents must not consume this block."
+        },
+        "versions": {
+          "type": "array",
+          "description": "Append-only. New content = new version. Rollback moves `official`, never edits or removes records.",
+          "items": { "$ref": "#/$defs/versionRecord" }
+        }
+      }
+    },
+    "versionRecord": {
+      "type": "object",
+      "title": "BlockVersionRecord",
+      "required": [
+        "version",
+        "status",
+        "title",
+        "type",
+        "content",
+        "contentHash",
+        "source",
+        "updatedAt",
+        "createdAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "status": { "enum": ["draft", "finalized", "stale", "conflict"] },
+        "title": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": ["component", "token", "guideline", "agent-rule", "page"]
+        },
+        "content": { "type": "object" },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]+$"
+        },
+        "source": {
+          "type": "object",
+          "required": ["file"],
+          "additionalProperties": false,
+          "properties": {
+            "file": { "type": "string" },
+            "line": { "type": "integer", "minimum": 1 },
+            "ingest": {
+              "enum": [
+                "scan",
+                "markdown",
+                "governance",
+                "figma",
+                "paste",
+                "storybook",
+                "agent-template"
+              ]
+            }
+          }
+        },
+        "updatedAt": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "finalizedAt": { "type": "string", "format": "date-time" },
+        "editedBy": { "enum": ["web", "ide", "mcp", "ingest"] }
+      }
+    }
+  }
+}

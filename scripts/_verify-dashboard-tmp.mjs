@@ -1,0 +1,41 @@
+import { chromium } from "/Users/koshish/.npm/_npx/e41f203b7505f1fb/node_modules/playwright/index.mjs";
+
+const shots = "/private/tmp/claude-501/-Users-koshish-BlockSmith/a1903753-9b44-451c-985c-26be587f4736/scratchpad";
+
+const browser = await chromium.launch({ args: ["--no-sandbox"] });
+const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+page.on("console", (msg) => { if (msg.type() === "error") errors.push(msg.text()); });
+
+await page.goto("http://localhost:3000/dashboard", { waitUntil: "networkidle" });
+await page.waitForSelector("text=Design system workspace, text=workspace", { timeout: 15000 }).catch(() => {});
+await page.screenshot({ path: `${shots}/dashboard-light.png`, fullPage: true });
+
+// toggle dark mode via sidebar theme toggle
+const toggle = page.locator('button[aria-label="Switch to dark mode"]').first();
+await toggle.click();
+await page.waitForTimeout(300);
+await page.screenshot({ path: `${shots}/dashboard-dark.png`, fullPage: true });
+
+// reload to confirm persistence
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(300);
+const htmlAttr = await page.evaluate(() => document.documentElement.getAttribute("data-dash-theme"));
+await page.screenshot({ path: `${shots}/dashboard-dark-reload.png`, fullPage: true });
+
+await page.goto("http://localhost:3000/dashboard/connectors", { waitUntil: "networkidle" });
+await page.screenshot({ path: `${shots}/connectors-dark.png`, fullPage: true });
+
+await page.goto("http://localhost:3000/dashboard/settings", { waitUntil: "networkidle" });
+await page.screenshot({ path: `${shots}/settings-dark.png`, fullPage: true });
+
+// landing page — must be untouched
+await page.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+await page.screenshot({ path: `${shots}/landing.png`, fullPage: false });
+
+console.log("PERSISTED_THEME:", htmlAttr);
+console.log("CONSOLE_ERRORS:", JSON.stringify(errors.slice(0, 20)));
+
+await browser.close();

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "BlockSmith Capture",
+  "version": "0.1.0",
+  "description": "Capture any design — Canva, Figma, Adobe, live sites — and turn it into a governed design.md in your BlockSmith wiki.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "BlockSmith Capture"
+  },
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "https://blocksmith-mocha.vercel.app/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

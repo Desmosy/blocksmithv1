@@ -1,0 +1,18 @@
+node_modules
+.next
+out
+.env
+.env*.local
+env.txt
+*.env
+data/public-share/*.json
+data/uploads/*.md
+data/cloud/api-keys.json
+.blocksmith/
+packages/generated/
+.DS_Store
+*.pem
+npm-debug.log*
+
+# reference clone, not part of the app
+ui/

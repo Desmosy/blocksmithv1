@@ -1,0 +1,136 @@
+/**
+ * BlockSmith product chrome — Privy editorial reference.
+ * Ink on marble: white canvas, obsidian ink, iris pulse accent (sparingly).
+ * No gradients, no emoji affordances, no drop shadows on cards/buttons.
+ */
+
+:root {
+  /* Privy palette */
+  --color-canvas: #ffffff;
+  --color-obsidian-ink: #010110;
+  --color-carbon: #111117;
+  --color-graphite: #22222a;
+  --color-fog: #73737c;
+  --color-ash: #d9d9d9;
+  --color-iris-pulse: #635bff;
+
+  /* Wiki shell */
+  --wiki-bg: var(--color-canvas);
+  --wiki-sidebar: var(--color-canvas);
+  --wiki-border: color-mix(in srgb, var(--color-obsidian-ink) 12%, transparent);
+  --wiki-text: var(--color-obsidian-ink);
+  --wiki-muted: var(--color-fog);
+  --wiki-active: color-mix(in srgb, var(--color-ash) 35%, var(--color-canvas));
+  --wiki-accent: var(--color-obsidian-ink);
+  --wiki-nav-bg: var(--color-canvas);
+  --wiki-nav-text: var(--color-obsidian-ink);
+  --wiki-nav-muted: var(--color-fog);
+  --wiki-font: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --wiki-display-font: var(--font-display), "Source Serif 4", Georgia,
+    "Times New Roman", serif;
+  --wiki-mono-font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  --wiki-content-max: 75rem;
+  --wiki-sidebar-width: 15rem;
+  --wiki-radius: 8px;
+  --wiki-radius-card: 8px;
+  --wiki-radius-pill: 100px;
+  --wiki-radius-input: 8px;
+  --wiki-cta-fill: var(--color-obsidian-ink);
+  --wiki-cta-on-accent: #ffffff;
+  --wiki-card-border: 1px solid
+    color-mix(in srgb, var(--color-obsidian-ink) 12%, transparent);
+  --wiki-card-shadow: none;
+  --wiki-control-ring: none;
+  --wiki-inset-surface: none;
+  --wiki-heading-tracking: -0.03em;
+  --wiki-body-tracking: -0.02em;
+
+  /*
+   * Frozen top-nav chrome — intentionally NOT part of the --wiki-* theme graph.
+   * Visualize / AI layout never writes these, so the global header (logo, tabs,
+   * search, theme toggle, Sign in / Get started) stays identical whether or not
+   * "Visualize style" is on. Literal values (not var(--color-*)) so nothing can
+   * re-theme them. See TopNav.tsx and .auth-chrome--wiki.
+   */
+  --chrome-nav-bg: #ffffff;
+  --chrome-nav-text: #010110;
+  --chrome-nav-muted: #73737c;
+  --chrome-nav-border: color-mix(in srgb, #010110 12%, transparent);
+  --chrome-nav-input-bg: #ffffff;
+
+  /* Announcement / accent band */
+  --bs-announcement-bg: var(--color-iris-pulse);
+  --bs-announcement-text: #ffffff;
+
+  /* Pipeline — achromatic state */
+  --pipeline-success: var(--color-ash);
+  --pipeline-failure: color-mix(in srgb, var(--color-fog) 40%, var(--color-ash));
+  --pipeline-skipped: color-mix(in srgb, var(--color-ash) 60%, var(--color-canvas));
+  --pipeline-active: var(--color-obsidian-ink);
+  --pipeline-waiting: var(--color-ash);
+}
+
+/**
+ * Wiki shell stays Privy editorial until Visualize applies design-wiki-applied.
+ * Design-doc tokens are scoped to .design-preview / .apollo-preview only.
+ */
+html:not(.design-wiki-applied) .apollo-tokens-root {
+  --wiki-bg: var(--color-canvas);
+  --wiki-sidebar: var(--color-canvas);
+  --wiki-border: color-mix(in srgb, var(--color-obsidian-ink) 12%, transparent);
+  --wiki-text: var(--color-obsidian-ink);
+  --wiki-muted: var(--color-fog);
+  --wiki-active: color-mix(in srgb, var(--color-ash) 35%, var(--color-canvas));
+  --wiki-accent: var(--color-obsidian-ink);
+  --wiki-nav-bg: var(--color-canvas);
+  --wiki-nav-text: var(--color-obsidian-ink);
+  --wiki-nav-muted: var(--color-fog);
+  --wiki-font: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --wiki-display-font: var(--font-display), "Source Serif 4", Georgia,
+    "Times New Roman", serif;
+  --wiki-cta-fill: var(--color-obsidian-ink);
+  --wiki-cta-on-accent: #ffffff;
+  --wiki-radius: 8px;
+  --wiki-radius-card: 8px;
+  --wiki-card-shadow: none;
+  font-family: var(--wiki-font);
+  color: var(--wiki-text);
+}
+
+html:not(.design-wiki-applied) .apollo-tokens-root h1,
+html:not(.design-wiki-applied) .apollo-tokens-root h2,
+html:not(.design-wiki-applied) .apollo-tokens-root h3,
+html:not(.design-wiki-applied) .apollo-tokens-root h4 {
+  font-family: var(--wiki-display-font);
+  font-weight: 400;
+  letter-spacing: var(--wiki-heading-tracking);
+  color: var(--wiki-text);
+}
+
+html:not(.design-wiki-applied) .apollo-tokens-root p,
+html:not(.design-wiki-applied) .apollo-tokens-root li,
+html:not(.design-wiki-applied) .apollo-tokens-root span,
+html:not(.design-wiki-applied) .apollo-tokens-root label,
+html:not(.design-wiki-applied) .apollo-tokens-root td,
+html:not(.design-wiki-applied) .apollo-tokens-root th,
+html:not(.design-wiki-applied) .apollo-tokens-root input,
+html:not(.design-wiki-applied) .apollo-tokens-root select,
+html:not(.design-wiki-applied) .apollo-tokens-root textarea,
+html:not(.design-wiki-applied) .apollo-tokens-root button {
+  font-family: var(--wiki-font);
+  letter-spacing: var(--wiki-body-tracking);
+}
+
+[data-theme="dark"] {
+  --wiki-bg: var(--color-carbon);
+  --wiki-sidebar: var(--color-carbon);
+  --wiki-border: color-mix(in srgb, var(--color-ash) 25%, transparent);
+  --wiki-text: #f5f5f5;
+  --wiki-muted: var(--color-fog);
+  --wiki-active: var(--color-graphite);
+  --wiki-accent: #f5f5f5;
+  --wiki-nav-bg: var(--color-carbon);
+  --wiki-cta-fill: #f5f5f5;
+  --wiki-cta-on-accent: var(--color-carbon);
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blocksmith-mocha.vercel.app/schema/blocksmith.compile-targets.v1.json",
+  "title": "blocksmith.compile-targets.v1 — compile target registry",
+  "description": "Registry of compilers OUT of Design IR. Every target consumes blocksmith.blocks.v1 and must preserve block id, version, and contentHash traceability. Targets with officialOnly=true (the default and the rule) must never read draft or conflict blocks.",
+  "type": "object",
+  "required": ["schema", "targets"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "blocksmith.compile-targets.v1" },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "input", "officialOnly", "output"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "input": { "const": "blocksmith.blocks.v1" },
+          "officialOnly": {
+            "type": "boolean",
+            "description": "Must be true for any target agents or devices consume."
+          },
+          "output": { "type": "string", "minLength": 1 },
+          "reference": {
+            "type": "string",
+            "description": "Path or URL of the reference implementation."
+          },
+          "status": { "enum": ["reference", "stable", "experimental", "stub"] },
+          "description": { "type": "string" }
+        }
+      }
+    }
+  }
+}

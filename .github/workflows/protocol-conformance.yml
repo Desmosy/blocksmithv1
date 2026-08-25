@@ -1,0 +1,37 @@
+# blocks.v1 conformance — fails CI when the protocol drifts.
+#
+# Runs the public conformance suite (fixtures + golden hash vectors) AND the
+# repo drift gate (app hash impl vs package, schema copies identical, app
+# registry output validates against registry.v1). Hash semantics are
+# constitutional: changes require professor sign-off + a spec bump.
+name: protocol-conformance
+
+on:
+  pull_request:
+    paths:
+      - "packages/protocol/**"
+      - "src/lib/ir/**"
+      - "public/schema/**"
+  push:
+    branches: [main]
+    paths:
+      - "packages/protocol/**"
+      - "src/lib/ir/**"
+      - "public/schema/**"
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: blocks.v1 conformance + drift gate
+        run: npm run protocol:conformance

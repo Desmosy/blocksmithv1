@@ -1,0 +1,287 @@
+/* Global sign-in chrome (S3) — shared by homepage header and wiki TopNav. */
+.auth-chrome {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-chrome--home .auth-chrome__btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--wiki-radius-pill, 100px);
+}
+
+.auth-chrome--home .auth-chrome__btn--ghost {
+  background: transparent;
+  color: var(--color-obsidian-ink, #010110);
+  border-color: var(--color-obsidian-ink, #010110);
+}
+
+.auth-chrome--home .auth-chrome__btn--ghost:hover {
+  background: color-mix(in srgb, var(--color-obsidian-ink, #010110) 4%, transparent);
+  opacity: 1;
+}
+
+.auth-chrome--home .auth-chrome__btn--primary {
+  background: var(--color-obsidian-ink, #010110);
+  color: #fff;
+  border-color: var(--color-obsidian-ink, #010110);
+}
+
+.auth-chrome--home .auth-chrome__btn--primary:hover {
+  opacity: 0.88;
+}
+
+.auth-chrome--loading {
+  width: 96px;
+  height: 32px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  opacity: 0.4;
+}
+
+.auth-chrome__identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  max-width: 180px;
+}
+
+.auth-chrome__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-chrome__avatar--fallback {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-chrome__login {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-chrome__btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.auth-chrome__btn:hover {
+  opacity: 0.8;
+}
+
+.auth-chrome__btn--ghost {
+  background: transparent;
+}
+
+.auth-chrome--wiki .auth-chrome__btn--ghost {
+  border-color: color-mix(in srgb, var(--chrome-nav-text, #010110) 22%, transparent);
+  color: var(--chrome-nav-text, #010110);
+}
+
+.auth-chrome__btn--primary {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.auth-chrome--wiki .auth-chrome__btn--primary {
+  background: var(--chrome-nav-text, #010110);
+  color: var(--chrome-nav-bg, #fff);
+  border-color: var(--chrome-nav-text, #010110);
+}
+
+/* Sign in / create account dialog */
+.auth-dialog__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 18, 24, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.auth-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  color: #111;
+  border-radius: 16px;
+  padding: 28px 26px 22px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
+.auth-dialog__close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.auth-dialog__title {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.auth-dialog__subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 18px;
+}
+
+.auth-dialog__github {
+  width: 100%;
+  padding: 10px;
+  border-radius: 9999px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.auth-dialog__github:hover {
+  opacity: 0.9;
+}
+
+.auth-dialog__divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+.auth-dialog__divider::before,
+.auth-dialog__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-dialog__label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.auth-dialog__input {
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  outline: none;
+}
+.auth-dialog__input:focus {
+  border-color: #111;
+}
+
+.auth-dialog__submit {
+  margin-top: 4px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 9999px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.auth-dialog__submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-dialog__magic {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-dialog__error {
+  font-size: 13px;
+  color: #dc2626;
+  margin: 0;
+}
+.auth-dialog__notice {
+  font-size: 13px;
+  color: #047857;
+  margin: 0;
+}
+
+.auth-dialog__switch {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+.auth-dialog__switch button {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Homepage upload gate (S2) */
+.home-auth-gate {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--home-muted, #6b7280);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

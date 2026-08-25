@@ -1,0 +1,6 @@
+{
+  "workspaceId": "acme-ui-kit",
+  "scanPaths": ["src"],
+  "catalogPaths": ["src/components/ui"],
+  "exportSnapshot": true
+}

@@ -1,0 +1,57 @@
+# BlockSmith governance — CI summary on pull requests.
+#
+# Copy to .github/workflows/blocksmith-governance.yml in your repo.
+# Requires repo secret BLOCKSMITH_API_KEY (create one in the wiki → Sync → API keys)
+# and a committed .blocksmith/blocksmith.json (run `blocksmith setup hooks --doc …`).
+name: BlockSmith governance
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so we can diff against the base branch
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install BlockSmith CLI
+        run: npm install -g @block-smith/cli
+
+      - name: Log in
+        run: blocksmith login --key "$BLOCKSMITH_API_KEY" --url "$BLOCKSMITH_URL"
+        env:
+          BLOCKSMITH_API_KEY: ${{ secrets.BLOCKSMITH_API_KEY }}
+          BLOCKSMITH_URL: ${{ vars.BLOCKSMITH_URL || 'https://blocksmith-mocha.vercel.app' }}
+
+      # Tier 1 (block) fails the check; Tier 2 (warn) is captured and reported.
+      # `|| true` keeps the comment step running so warnings still post.
+      - name: Run governance check
+        id: check
+        run: |
+          blocksmith check \
+            --base "origin/${{ github.base_ref }}...HEAD" \
+            --ci --format github > governance.md || echo "failed=1" >> "$GITHUB_OUTPUT"
+          cat governance.md
+
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: blocksmith-governance
+          path: governance.md
+
+      - name: Fail on blocking violations
+        if: steps.check.outputs.failed == '1'
+        run: |
+          echo "Blocking governance violations — see the PR comment."
+          exit 1

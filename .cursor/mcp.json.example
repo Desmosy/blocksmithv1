@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "blocksmith-remote": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer bs_live_YOUR_KEY"
+      }
+    },
+    "blocksmith-local": {
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "cwd": "/absolute/path/to/BlockSmith",
+      "env": {
+        "BLOCKSMITH_WORKSPACE": "${workspaceFolder}",
+        "BLOCKSMITH_DOC": "upload:design-xxxx.md",
+        "BLOCKSMITH_AUTHOR": "your-name"
+      }
+    }
+  }
+}

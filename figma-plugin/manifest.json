@@ -1,0 +1,13 @@
+{
+  "name": "BlockSmith Annotate",
+  "id": "blocksmith-annotate-development",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["https://blocksmith-mocha.vercel.app", "http://localhost:3000"],
+    "devAllowedDomains": ["http://localhost:3000"]
+  }
+}

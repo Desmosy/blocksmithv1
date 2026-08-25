@@ -1,0 +1,39 @@
+# Design CI/CD GATE — validate_ui (research doc §6.1)
+#
+# Fails PRs that (a) introduce off-token colors or (b) build against a stale
+# blocksmith.lock. This is the moment the design wiki stops being
+# documentation and becomes enforcement.
+name: validate_ui
+
+on:
+  pull_request:
+    paths:
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.jsx"
+      - "**/*.css"
+      - "**/*.scss"
+      - "blocksmith.lock"
+
+jobs:
+  validate-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: validate_ui (lock freshness + off-token diff gate)
+        env:
+          BLOCKSMITH_DOC: ${{ vars.BLOCKSMITH_DOC || 'apollo.md' }}
+        run: |
+          npm run validate:ui -- --range "origin/${{ github.base_ref }}...HEAD"

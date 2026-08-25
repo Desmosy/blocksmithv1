@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "organizations": [
+    {
+      "id": "55c422da-c00a-4cab-ba39-898d7c451c69",
+      "name": "owner-user's workspace",
+      "slug": "owner-user-workspace",
+      "createdBy": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "createdAt": "2026-07-11T01:13:36.687Z",
+      "updatedAt": "2026-07-11T01:13:36.687Z"
+    }
+  ],
+  "members": [
+    {
+      "id": "33318e81-8f00-4759-8afc-9f54f4423053",
+      "orgId": "55c422da-c00a-4cab-ba39-898d7c451c69",
+      "userId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "invitedEmail": null,
+      "role": "owner",
+      "createdAt": "2026-07-11T01:13:36.687Z"
+    },
+    {
+      "id": "a5d26ba2-601c-4d43-947b-d03d7be14355",
+      "orgId": "55c422da-c00a-4cab-ba39-898d7c451c69",
+      "userId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "invitedEmail": null,
+      "role": "member",
+      "createdAt": "2026-07-11T01:13:36.689Z"
+    },
+    {
+      "id": "1410450b-66a9-4505-9b79-bf2f8c55f384",
+      "orgId": "55c422da-c00a-4cab-ba39-898d7c451c69",
+      "userId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "invitedEmail": null,
+      "role": "viewer",
+      "createdAt": "2026-07-11T01:13:36.689Z"
+    }
+  ]
+}

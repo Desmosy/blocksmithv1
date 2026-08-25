@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blocksmith-mocha.vercel.app/schema/blocksmith.blocks.v1.json",
+  "title": "blocksmith.blocks.v1 — Design IR graph",
+  "description": "Canonical intermediate representation for UI design truth. Ingest adapters (repo scan, markdown, Figma, Storybook) compile INTO this graph; compile targets (wiki, pulse-react, mcp, device-sim, c-header) compile OUT of it. One IR, many targets, no competing truths.",
+  "type": "object",
+  "required": ["schema", "docRef", "systemId", "contentHash", "blocks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "blocksmith.blocks.v1" },
+    "docRef": {
+      "type": "string",
+      "description": "Source document reference, e.g. 'upload:scan-acme-app.md' or 'apollo.md'.",
+      "minLength": 1
+    },
+    "systemId": {
+      "type": "string",
+      "description": "Stable identifier of the design system this graph describes."
+    },
+    "contentHash": {
+      "type": "string",
+      "description": "Order-independent digest over (id, version, contentHash) of every block. Compared against blocksmith.lock for staleness detection.",
+      "pattern": "^sha256:[0-9a-f]+$"
+    },
+    "blocks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/block" }
+    }
+  },
+  "$defs": {
+    "block": {
+      "type": "object",
+      "title": "BlocksmithBlockV1",
+      "description": "Atomic, addressable unit of design truth.",
+      "required": [
+        "id",
+        "type",
+        "title",
+        "version",
+        "status",
+        "source",
+        "content",
+        "updatedAt",
+        "contentHash"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable id, e.g. 'component:button-primary' or 'token:color:accent'.",
+          "pattern": "^[a-z0-9][a-z0-9:_-]*$"
+        },
+        "type": {
+          "enum": ["component", "token", "guideline", "agent-rule", "page"]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Monotonic per id. New content = new version. Promoted (made official) by a human Finalize in the wiki — the CI/CD promote gate."
+        },
+        "status": {
+          "enum": ["draft", "finalized", "stale", "conflict"],
+          "description": "draft: staged, never served to agents. finalized: promoted official truth. stale: source vanished or repo changed under it. conflict: two ingest sources disagree — a human must resolve."
+        },
+        "source": {
+          "type": "object",
+          "required": ["file"],
+          "additionalProperties": false,
+          "properties": {
+            "file": { "type": "string" },
+            "line": { "type": "integer", "minimum": 1 },
+            "ingest": {
+              "enum": [
+                "scan",
+                "markdown",
+                "governance",
+                "figma",
+                "paste",
+                "storybook",
+                "agent-template"
+              ]
+            }
+          }
+        },
+        "content": {
+          "type": "object",
+          "description": "Type-specific payload. Tokens carry value/cssVar; components carry role/description/radius; guidelines carry items[]; agent-rules carry text."
+        },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "contentHash": {
+          "type": "string",
+          "description": "sha256 over canonical (id, type, content). Two blocks meaning the same thing hash the same regardless of key order.",
+          "pattern": "^sha256:[0-9a-f]+$"
+        },
+        "finalizedAt": { "type": "string", "format": "date-time" },
+        "editedBy": { "enum": ["web", "ide", "mcp", "ingest"] }
+      }
+    }
+  }
+}

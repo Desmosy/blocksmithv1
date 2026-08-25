@@ -1,0 +1,279 @@
+/* Jenkins-class pipeline stage grid — Apollo-aligned pastels */
+
+.pipeline-stage-view {
+  --pipe-success-bg: #d4edda;
+  --pipe-success-fg: #1b5e20;
+  --pipe-failure-bg: #f8d7da;
+  --pipe-failure-fg: #b71c1c;
+  --pipe-skipped-bg: #f5c6cb;
+  --pipe-active-bg: #fff3cd;
+  --pipe-active-fg: #856404;
+  --pipe-neutral-bg: var(--wiki-bg);
+  --pipe-header-bg: var(--wiki-sidebar);
+  --pipe-cell-min-h: 3.25rem;
+  --pipe-build-col: 11.5rem;
+}
+
+[data-theme="dark"] .pipeline-stage-view,
+[data-theme="design"][data-wiki-dark="1"] .pipeline-stage-view {
+  --pipe-success-bg: rgba(76, 175, 80, 0.22);
+  --pipe-success-fg: #a5d6a7;
+  --pipe-failure-bg: rgba(244, 67, 54, 0.18);
+  --pipe-failure-fg: #ef9a9a;
+  --pipe-skipped-bg: rgba(244, 67, 54, 0.12);
+  --pipe-active-bg: rgba(255, 193, 7, 0.15);
+  --pipe-active-fg: #ffe082;
+}
+
+.pipeline-stage-grid {
+  display: grid;
+  border: 1px solid var(--wiki-border);
+  border-radius: var(--wiki-radius, 8px);
+  overflow: hidden;
+  background: var(--wiki-bg);
+  font-size: 12px;
+}
+
+.pipeline-stage-header {
+  display: contents;
+}
+
+.pipeline-stage-header > .pipe-corner {
+  grid-column: 1;
+  background: var(--pipe-header-bg);
+  border-bottom: 1px solid var(--wiki-border);
+  border-right: 1px solid var(--wiki-border);
+  padding: 10px 12px;
+  color: var(--wiki-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.pipeline-stage-col-head {
+  background: var(--pipe-header-bg);
+  border-bottom: 1px solid var(--wiki-border);
+  border-right: 1px solid var(--wiki-border);
+  padding: 8px 10px;
+  text-align: center;
+  min-width: 0;
+}
+
+.pipeline-stage-col-head:last-child {
+  border-right: none;
+}
+
+.pipeline-stage-col-head .stage-name {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: lowercase;
+  color: var(--wiki-text);
+  letter-spacing: 0.02em;
+}
+
+.pipeline-stage-col-head .stage-avg {
+  margin-top: 2px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  color: var(--wiki-muted);
+}
+
+.pipeline-stage-col-head .stage-bar {
+  margin-top: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--wiki-border);
+  overflow: hidden;
+}
+
+.pipeline-stage-col-head .stage-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--wiki-text);
+  opacity: 0.35;
+  border-radius: 2px;
+}
+
+.pipeline-run-row {
+  display: contents;
+}
+
+.pipe-build-meta {
+  border-bottom: 1px solid var(--wiki-border);
+  border-right: 1px solid var(--wiki-border);
+  padding: 10px 12px;
+  background: var(--wiki-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  min-height: var(--pipe-cell-min-h);
+}
+
+.pipe-build-meta .build-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  width: fit-content;
+}
+
+.pipe-build-meta .build-pill--current {
+  background: #4a90d9;
+  color: #fff;
+}
+
+.pipe-build-meta .build-pill--ok {
+  background: #4a90d9;
+  color: #fff;
+}
+
+.pipe-build-meta .build-pill--warn {
+  background: #d9534f;
+  color: #fff;
+}
+
+.pipe-build-meta .build-time {
+  font-size: 11px;
+  color: var(--wiki-muted);
+}
+
+.pipe-build-meta .build-changes {
+  font-size: 10px;
+  color: var(--wiki-muted);
+}
+
+.pipe-build-meta .build-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.pipe-build-meta .build-actions button {
+  font-size: 10px;
+  color: var(--wiki-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pipe-build-meta .build-actions button:hover {
+  color: var(--wiki-text);
+}
+
+.pipe-build-meta .build-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pipeline-stage-cell {
+  border-bottom: 1px solid var(--wiki-border);
+  border-right: 1px solid var(--wiki-border);
+  min-height: var(--pipe-cell-min-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 8px 6px;
+  text-align: center;
+  cursor: default;
+  transition: filter 0.15s ease;
+}
+
+.pipeline-stage-cell:last-child {
+  border-right: none;
+}
+
+.pipeline-stage-cell--clickable {
+  cursor: pointer;
+}
+
+.pipeline-stage-cell--clickable:hover {
+  filter: brightness(0.97);
+}
+
+.pipeline-stage-cell--success {
+  background: var(--pipe-success-bg);
+  color: var(--pipe-success-fg);
+}
+
+.pipeline-stage-cell--failure {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--pipe-failure-bg),
+    var(--pipe-failure-bg) 6px,
+    var(--pipe-skipped-bg) 6px,
+    var(--pipe-skipped-bg) 12px
+  );
+  color: var(--pipe-failure-fg);
+}
+
+.pipeline-stage-cell--skipped {
+  background: var(--pipe-skipped-bg);
+  color: var(--pipe-failure-fg);
+}
+
+.pipeline-stage-cell--active {
+  background: var(--pipe-active-bg);
+  color: var(--pipe-active-fg);
+}
+
+.pipeline-stage-cell--neutral {
+  background: var(--pipe-neutral-bg);
+  color: var(--wiki-muted);
+}
+
+.pipeline-stage-cell .cell-duration {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.pipeline-stage-cell .cell-sub {
+  margin-top: 2px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+.pipeline-stage-cell .cell-branch {
+  position: absolute;
+  left: 6px;
+  bottom: 4px;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(74, 144, 217, 0.15);
+  color: #4a90d9;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.pipeline-stage-cell .cell-status {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 9px;
+  opacity: 0.75;
+}
+
+.pipeline-lanes-section {
+  margin-top: var(--spacing-24, 24px);
+}
+
+.pipeline-lanes-section h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wiki-muted);
+  margin-bottom: 8px;
+}

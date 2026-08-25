@@ -1,0 +1,6 @@
+{
+  "name": "acme-ui-kit",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Minimal vendor-shaped fixture for BlockSmith scan verification"
+}

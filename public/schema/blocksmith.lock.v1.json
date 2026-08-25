@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blocksmith-mocha.vercel.app/schema/blocksmith.lock.v1.json",
+  "title": "blocksmith.lock.v1 — design dependency lock",
+  "description": "Pins block id → promoted version + contentHash, the way package-lock.json pins npm dependencies. Lives in the customer repository next to DESIGN.md. Agents and CI resolve against this file only — never 'latest markdown'. A lock whose contentHash differs from the live official graph is stale and must be re-pulled.",
+  "type": "object",
+  "required": ["schema", "docRef", "contentHash", "generatedAt", "blocks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "blocksmith.lock.v1" },
+    "docRef": { "type": "string", "minLength": 1 },
+    "systemId": { "type": "string" },
+    "contentHash": {
+      "type": "string",
+      "description": "Official graph hash at lock time — staleness sentinel.",
+      "pattern": "^sha256:[0-9a-f]+$"
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "blocks": {
+      "type": "object",
+      "description": "blockId → pinned { version, contentHash }. Keys sorted for deterministic serialization.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["version", "contentHash"],
+        "additionalProperties": false,
+        "properties": {
+          "version": { "type": "integer", "minimum": 1 },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]+$"
+          }
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "description": "Links the Pulse npm package build to the promoted graph state.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "pulseBuild": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}
