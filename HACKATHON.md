@@ -11,8 +11,8 @@ Judges see: a live URL, a <3-min video, and this repo. Everything below serves o
 - [ ] **Rotate the Supabase service role key.** ⚠️ *Yours to do — Supabase dashboard.* The old `BlockSmith` repo's history contains it (`ccda3df`, `d25b1bc`). Service role bypasses RLS entirely.
 - [x] Fresh repo with clean history — no leaked key
 - [x] `LICENSE` = MIT, all workspace packages MIT
-- [ ] Strip internal strategy docs (`docs/constitution/`, pitch scripts, competitive landscape)
-- [ ] `npm install` + `npm run build` green in the new folder
+- [x] Strip internal strategy docs (`docs/constitution/`, pitch scripts, competitive landscape)
+- [x] `npm install` + `npm run build` green in the new folder
 - [ ] Push to a **public** GitHub repo; confirm GitHub's About sidebar badges it **MIT**
 - [ ] Claim Vercel credits — code `OAIWEBMH-9E2F-MUT4` (first 1000)
 
@@ -37,18 +37,18 @@ Every submission gives agents *more power*. This one gives them **boundaries**. 
 | Tool descriptions | 500 chars |
 | **Tool output** | **1,500 chars** |
 
-- [ ] Every tool return value verified under 1.5K
+- [x] Every tool return value verified under 1.5K
 - [ ] `skills.md` / `design.md` delivered via **summary + link**, never in a tool result
-- [ ] API is `document.modelContext` — **not** `navigator.modelContext`
+- [x] API is `document.modelContext` — **not** `navigator.modelContext`
 
 ---
 
 ## 3 · Architecture
 
-- [ ] `src/lib/webmcp/registry.ts` — single source of truth for tool defs (name, description, schema, annotations, server handler). Both transports import it so they cannot drift.
-- [ ] `src/app/api/webmcp/invoke/route.ts` — server dispatch into `src/mcp/handlers.ts`
-- [ ] `src/hooks/useWebMcp.ts` — registers on mount, `AbortController` unregisters on unmount
-- [ ] `src/components/webmcp/WebMcpTools.tsx` — mounts tools, exposes support state
+- [x] `src/lib/webmcp/registry.ts` — single source of truth for tool defs (name, description, schema, annotations, server handler). Both transports import it so they cannot drift.
+- [x] `src/app/api/webmcp/invoke/route.ts` — server dispatch into `src/mcp/handlers.ts`
+- [x] `src/hooks/useWebMcp.ts` — registers on mount, `AbortController` unregisters on unmount
+- [x] `src/components/webmcp/WebMcpTools.tsx` — mounts tools, exposes support state
 - [ ] Remote MCP server (`src/lib/mcp/blocksmith-server.ts`) refactored to read the same registry
 
 ---
