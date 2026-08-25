@@ -1,34 +1,98 @@
-# WebMCP Challenge — build checklist
+# WebMCP Challenge — 10-day plan
 
 **Repo:** `blockSmithv1` · **Live URL:** _TBD_ · **Deadline:** _confirm on Devpost_
 
-Judges see: a live URL, a <3-min video, and this repo. Everything below serves one of those three.
+Judges see three things: a live URL, a <3-minute video, and this repo. Every item below serves one of them.
 
 ---
 
-## 0 · Pre-flight (blocking, do first)
+## The thesis
 
-- [ ] **Rotate the Supabase service role key.** ⚠️ *Yours to do — Supabase dashboard.* The old `BlockSmith` repo's history contains it (`ccda3df`, `d25b1bc`). Service role bypasses RLS entirely.
-- [x] Fresh repo with clean history — no leaked key
-- [x] `LICENSE` = MIT, all workspace packages MIT
-- [x] Strip internal strategy docs (`docs/constitution/`, pitch scripts, competitive landscape)
-- [x] `npm install` + `npm run build` green in the new folder
-- [ ] Push to a **public** GitHub repo; confirm GitHub's About sidebar badges it **MIT**
-- [ ] Claim Vercel credits — code `OAIWEBMH-9E2F-MUT4` (first 1000)
+> Agents generate UI that is plausible and wrong. Not wrong in ways a compiler catches — wrong in ways only a design system knows. BlockSmith makes the website itself the referee: it hands the agent the rules as executable tools, rejects what breaks them, and names the rule that was broken so the agent fixes it in the same turn.
+
+Two claims underneath, both defensible:
+
+1. **The rules aren't in the DOM.** Locked tokens, spacing scales, deviation budgets — none of it can be scraped or inferred from the rendered page. A tool is the *only* path to it. Most WebMCP entries expose a faster route to visible data; this exposes the only route to invisible data.
+2. **The rules change, so the tools must too.** See below.
+
+## The self-updating edge
+
+WebMCP's known weak spot, in Chrome's own words: *"tool discoverability requires direct site visits."* Tools are registered statically by a page and go stale the moment the app changes underneath them.
+
+BlockSmith is the rare case where that's already solved, because the design system is a living artifact:
+
+- A repo scan or Figma sync changes the tokens → every tool's answers change with it
+- Drift detection ("Figma says X, code says Y") means the system notices its own staleness
+- Promotion/lock semantics in `blocksmith.registry.v1` version the truth the tools speak for
+- The spec's `toolchange` event plus `AbortController` unregistration means the *tool surface itself* can change — components appear and disappear as the system evolves
+
+Nobody else in this field will demo a tool surface that updates itself because the underlying truth moved. Build it explicitly and say it out loud.
 
 ---
 
-## 1 · The thesis
+## Day-by-day
 
-> **BlockSmith turns any website's design into a skill your coding agent can use** — and gives the agent governance tools that reject the components that violate it.
+### Days 1–2 · Governance depth
+The engine has to catch what actually goes wrong, not just what's easy to catch.
 
-Every submission gives agents *more power*. This one gives them **boundaries**. Chrome's own security docs say consent and trust patterns are unsolved; we have a working answer.
+- [x] Scale linting — spacing, font-size, radius off-scale detection
+- [x] First preset (`portfolio.md`) authored and parsing
+- [ ] Tailwind class linting — `p-4`, `text-2xl`, `rounded-xl`, `bg-blue-500` *(agent)*
+- [ ] Prose-rule enforcement — gradients, shadows, pure #000/#fff, undeclared fonts *(agent)*
+- [ ] Second preset (`saas.md`) *(agent)*
+- [ ] Wire all three linters into `check_governance`
+- [ ] Consolidate: one `runGovernance(code, system)` returning all violation classes
+- [ ] Regression fixtures — compliant + non-compliant snippet per preset, asserted in CI
 
-**Never say on camera:** "Design IR", "blocks.v1", "ingest", "official graph".
+### Days 3–4 · The preset system
+This is the product for anyone who doesn't already have a design system.
+
+- [ ] Third preset (`docs.md` or `landing.md`)
+- [ ] Preset picker UI — choose a system, see it rendered, adopt it
+- [ ] `use_preset` tool so an agent can adopt one mid-conversation
+- [ ] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
+- [ ] Render a full example page per preset so the taste is visible, not just described
+- [ ] Version the presets (`portfolio.v1`) through the existing registry semantics
+
+### Days 5–6 · The live loop
+The thing judges actually watch.
+
+- [ ] `apply_token_change` — agent mutates, page visibly updates, human confirms
+- [ ] `get_current_context` — which page/component the human is looking at
+- [ ] Dynamic registration — tools appear/disappear via `toolchange` as system state changes
+- [ ] Governed vs ungoverned split view, same prompt, both results on screen
+- [ ] Optimistic UI so the change lands instantly while the agent talks
+
+### Day 7 · Capture
+- [ ] `capture_site_design({url})` with **`untrustedContentHint`**
+- [ ] Extraction validated against the presets as ground truth
+- [ ] Captured systems enter as drafts, never straight into a lock
+
+### Day 8 · Hardening
+- [ ] Public route reachable with no auth wall, seeded
+- [ ] Every tool output verified under 1,500 chars
+- [ ] Errors are descriptive enough for an agent to self-correct
+- [ ] Mid-chain failure doesn't dead-end the agent
+- [ ] Evals written (`messages` + `expectedCall`) and passing
+- [ ] Tested in DevTools → Application → WebMCP: registration, schemas, manual invoke
+- [ ] Tested in ChatGPT's in-app browser end to end
+
+### Day 9 · Ship
+- [ ] Deploy to Vercel; live URL in README
+- [ ] Register for the origin trial (Chrome 149) so plain Chrome works flagless
+- [ ] Public GitHub repo, MIT badged in the About sidebar
+- [ ] README carries a literal `document.modelContext.registerTool({...})` block
+- [ ] Rotate the Supabase service role key ⚠️ *still outstanding*
+
+### Day 10 · Submit
+- [ ] Video — <3 min, public YouTube, audio, opens on governed vs ungoverned
+- [ ] Text description covering all four required points
+- [ ] Credentials on the form if anything is gated
+- [ ] Submit with a day of buffer, not an hour
 
 ---
 
-## 2 · Hard constraints (from Chrome's security guide)
+## Standing constraints
 
 | Budget | Limit |
 |---|---|
@@ -37,85 +101,30 @@ Every submission gives agents *more power*. This one gives them **boundaries**. 
 | Tool descriptions | 500 chars |
 | **Tool output** | **1,500 chars** |
 
-- [x] Every tool return value verified under 1.5K
-- [ ] `skills.md` / `design.md` delivered via **summary + link**, never in a tool result
-- [x] API is `document.modelContext` — **not** `navigator.modelContext`
+API is `document.modelContext` — never `navigator.modelContext`.
 
----
+Annotations are not decoration: `readOnlyHint` on every read tool, **`untrustedContentHint` on `capture_site_design`** (it returns third-party content — a textbook injection vector).
 
-## 3 · Architecture
+## Language rule
 
-- [x] `src/lib/webmcp/registry.ts` — single source of truth for tool defs (name, description, schema, annotations, server handler). Both transports import it so they cannot drift.
-- [x] `src/app/api/webmcp/invoke/route.ts` — server dispatch into `src/mcp/handlers.ts`
-- [x] `src/hooks/useWebMcp.ts` — registers on mount, `AbortController` unregisters on unmount
-- [x] `src/components/webmcp/WebMcpTools.tsx` — mounts tools, exposes support state
-- [ ] Remote MCP server (`src/lib/mcp/blocksmith-server.ts`) refactored to read the same registry
+✅ design system · tokens · rules · rejected · staging · production
+❌ Design IR · blocks.v1 · ingest · official graph · draft vN
 
----
+## Risk register
 
-## 4 · The six tools
+| Risk | Mitigation |
+|---|---|
+| Reads as a dev tool; judges aren't designers | Governed vs ungoverned split screen. Visual, instant, no jargon |
+| Governance looks thorough but isn't | Days 1–2 exist entirely for this. Tailwind is the biggest hole |
+| Preset taste is mediocre → everything downstream is | One preset excellent before three exist |
+| Nothing deployed until late | Deploy on day 5 even if rough, then iterate |
+| Scope creep from a 10-day product plan | Features can be removed after the hackathon; shipping cannot |
 
-Chrome's guidance: one function per tool, each costs context and latency. Six, not fifteen.
+## Submission requirements (verbatim)
 
-| Tool | Annotation | Does |
-|---|---|---|
-| `get_current_context` | `readOnlyHint` | What page/component the human is looking at |
-| `list_components` | `readOnlyHint` | Components in the active design system |
-| `check_governance` | `readOnlyHint` | Validate code → violations + the compliant fix |
-| `explain_violation` | `readOnlyHint` | Rule behind a violation, registered only when violations exist |
-| `capture_site_design` | **`untrustedContentHint`** | Any URL → design summary. Third-party content — flag is mandatory |
-| `export_skill` | `readOnlyHint` | Emit `skills.md` (summary + link; mind the 1.5K cap) |
-| `apply_token_change` | *write* | Mutates the visible page, behind the existing confirm gate |
-
-- [ ] Verbs distinguish doing from starting (`apply_*` mutates, `start_*` opens a flow)
-- [ ] Natural-language params (`component="Button"`, not `component_id=42`)
-- [ ] Errors are descriptive enough for the model to self-correct
-- [ ] UI visibly updates after every write — this *is* the demo
-
----
-
-## 5 · Judge access
-
-- [ ] **Public demo route, no auth wall**, seeded project — one click to a working tool
-- [ ] Landing copy explains it in 10 seconds
-- [ ] If auth is used anywhere, credentials go on the submission form
-- [ ] Works in ChatGPT's in-app browser (native WebMCP)
-- [ ] Works in Chrome via `chrome://flags/#enable-webmcp-testing`
-- [ ] Register for the **origin trial** (Chrome 149) so plain Chrome works without the flag
-
----
-
-## 6 · Testing
-
-- [ ] DevTools → **Application → WebMCP**: all tools registered, schemas valid, manual `Run tool` passes for each
-- [ ] Evals written (`messages` + `expectedCall`) — catches "agent picked the wrong tool", invisible to manual testing
-- [ ] Full journey rehearsed end-to-end in ChatGPT's browser
-- [ ] Mid-chain failure handled gracefully (tool errors don't dead-end the agent)
-- [ ] *Stretch:* Cloudflare Browser Run `navigator.modelContextTesting` for CI regression
-
----
-
-## 7 · Submission artifacts
-
-- [ ] **Live URL** reachable by judges
-- [ ] **Video** — public YouTube, **under 3 minutes**, with audio
-  - [ ] Opens on governed vs ungoverned, side by side
-  - [ ] States what was built + how WebMCP was implemented
-  - [ ] Shows the agent getting *rejected* and self-correcting
-- [ ] **Public repo** with source, assets, and run instructions
-- [ ] MIT license visible in the GitHub About section
-- [ ] README shows a literal `document.modelContext.registerTool({...})` block
-- [ ] **Text description** covering all four required points:
-  - [ ] Why this use case fits WebMCP
-  - [ ] How it makes for a better UX
-  - [ ] What people + agents can do together that was hard/impossible before
-  - [ ] How WebMCP was implemented
-
----
-
-## 8 · Scoring edges
-
-- [ ] Security story told explicitly — `untrustedContentHint` on third-party capture, `readOnlyHint` split, human-in-the-loop on writes
-- [ ] Tool list is tight and readable
-- [ ] One 60-second surface over deep machinery — judges spend minutes, not hours
-- [ ] Something visibly changes on screen while the agent works
+- [ ] Working live URL judges can open in ChatGPT's browser or Chrome with WebMCP enabled
+- [ ] Text description: why the use case fits WebMCP · how it improves UX · what people+agents can now do that was hard before · how WebMCP was implemented
+- [ ] <3-min public YouTube demo with audio
+- [ ] Public repo with all source, assets, and run instructions
+- [ ] Open source license, detectable in the About section
+- [ ] Repo contains a visible `document.modelContext.registerTool({...})`
