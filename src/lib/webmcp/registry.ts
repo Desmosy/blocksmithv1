@@ -27,6 +27,20 @@ import {
   describeScaleViolation,
   findScaleViolations,
 } from "@/lib/governance/scale-lint";
+import {
+  describeRuleViolation,
+  findRuleViolations,
+} from "@/lib/governance/rule-lint";
+import {
+  describeTailwindViolation,
+  findTailwindViolations,
+} from "@/lib/governance/tailwind-lint";
+
+/**
+ * How many violations one result lists. Chosen so a full response stays inside
+ * the 1500-char output budget with the longest rule text we emit.
+ */
+const MAX_VIOLATIONS_SHOWN = 8;
 
 /** Chrome's published limits. Exported so tests can assert against them. */
 export const WEBMCP_LIMITS = {
@@ -138,7 +152,7 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
   {
     name: "check_governance",
     description:
-      "Check UI code against the active design system: off-token colors, plus spacing, font sizes, and radii that are not on the system's scales. Returns each violation with its line number and the value to use instead. Call before showing generated UI to the user, and again after fixing.",
+      "Check UI code against the active design system: off-token colors, off-scale spacing, font sizes and radii, banned patterns like gradients or shadows, and Tailwind classes that resolve to non-token values. Returns each violation with its line and the value to use instead. Call before showing generated UI to the user, and again after fixing.",
     inputSchema: {
       type: "object",
       properties: {
@@ -157,17 +171,36 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       const r = handleValidateUiCode({ doc: ctx.doc, code });
       const system = loadDesignSystem(resolveDocRef(ctx.doc));
       const scaleViolations = findScaleViolations(code, system);
-      const total = r.violations.length + scaleViolations.length;
+      const ruleViolations = findRuleViolations(code, system);
+      const twViolations = findTailwindViolations(code, system);
+      const total =
+        r.violations.length +
+        scaleViolations.length +
+        ruleViolations.length +
+        twViolations.length;
 
       if (total === 0) {
         return (
           `PASS — no design system violations. Checked colors against ` +
-          `${r.tokenCount} tokens, plus spacing, type size, and radius scales.`
+          `${r.tokenCount} tokens, plus spacing, type size, radius, and ` +
+          `${system.name}'s stated rules.`
         );
       }
 
       const rules = handleGetGovernanceRules({ doc: ctx.doc });
-      const lines = [`REJECTED — ${total} violation(s) in ${system.name}.`, ""];
+
+      // Several linters can legitimately flag the same token on the same line
+      // — `to-black` is both a banned pure color and an off-palette Tailwind
+      // class. Report each (line, subject) once: duplicates burn the output
+      // budget and push genuine violations into the "and N more" remainder.
+      const seen = new Set<string>();
+      const detail: string[] = [];
+      const add = (line: number, subject: string, text: string) => {
+        const key = `${line}|${subject.toLowerCase()}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        detail.push(`- Line ${line}: ${text}`);
+      };
 
       for (const v of r.violations) {
         const near = nearestTokenMatch(v.hex, rules.palette);
@@ -177,15 +210,39 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
             ? ` Use \`${near.name}\` (${tokenFix(near)}) instead.`
             : ` No token is close to this color — it doesn't belong to ${rules.systemName}.` +
               ` Call get_governance_rules and pick a token, or ask the user to add one.`;
-        lines.push(`- Line ${v.line}: \`${v.hex}\` is not a design token.${fix}`);
+        add(v.line, v.hex, `\`${v.hex}\` is not a design token.${fix}`);
       }
 
       for (const v of scaleViolations) {
-        lines.push(`- Line ${v.line}: ${describeScaleViolation(v)}`);
+        add(v.line, `${v.property}:${v.value}`, describeScaleViolation(v));
       }
 
-      lines.push("", "Fix these and call check_governance again.");
-      return lines.join("\n");
+      // Rule violations quote the design system's own words back, so the
+      // rejection teaches the rule rather than just reporting a failure.
+      for (const v of ruleViolations) {
+        add(v.line, v.matched, describeRuleViolation(v));
+      }
+
+      // Tailwind utilities resolve to px before being judged, so a class and
+      // an inline style that mean the same thing get the same verdict.
+      for (const v of twViolations) {
+        add(v.line, v.utility, describeTailwindViolation(v));
+      }
+
+      // Cap deliberately rather than letting clampOutput cut a line in half.
+      // A truncated fix instruction is worse than a stated remainder: the
+      // agent fixes this batch, re-checks, and gets the rest.
+      const shown = detail.slice(0, MAX_VIOLATIONS_SHOWN);
+      const hidden = detail.length - shown.length;
+
+      return [
+        `REJECTED — ${detail.length} violation(s) in ${system.name}.`,
+        "",
+        ...shown,
+        ...(hidden > 0
+          ? ["", `…and ${hidden} more. Fix these first, then re-check.`]
+          : ["", "Fix these and call check_governance again."]),
+      ].join("\n");
     },
   },
 
