@@ -16,5 +16,6 @@
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.7"
-  }
+  },
+  "license": "MIT"
 }

@@ -11,7 +11,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
@@ -23,5 +25,5 @@
     "@types/react": "^19.0.0",
     "typescript": "^5.7.0"
   },
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
