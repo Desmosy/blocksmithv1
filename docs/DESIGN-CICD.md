@@ -6,7 +6,7 @@
 
 **Full research brief (professors):** [RESEARCH-INFRA-DESIGN-IR-AND-CICD.md](./RESEARCH-INFRA-DESIGN-IR-AND-CICD.md)
 
-**Related:** [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md) (interchange format) Â· [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md)
+**Related:** [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md) (interchange format) Â
 
 ---
 

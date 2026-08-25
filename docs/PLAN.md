@@ -1,6 +1,5 @@
 # BlockSmith / UI AI Lab — Master Plan
 
-**North star:** [00-thesis.md](./00-thesis.md)  
 **Handshake:** [08-web-ide-handshake.md](./08-web-ide-handshake.md)
 
 ---

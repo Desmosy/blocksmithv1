@@ -2,7 +2,6 @@
 
 **Default:** wiki chrome applies **instantly** from scan/design IR (semantic compiler). A **background** LLM pass may refine chrome; failures keep the semantic preview.
 
-See [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md) for how this fits the product story.
 
 ---
 

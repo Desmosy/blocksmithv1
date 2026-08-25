@@ -1,6 +1,5 @@
 # Web ↔ IDE Handshake
 
-**Product model:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md) · **Finalize = promote** in design CI/CD: [DESIGN-CICD.md](./DESIGN-CICD.md)
 
 **Product shape:** BlockSmith is an **auto-updating knowledge base** humans use to understand design truth—not a one-time render. The wiki (web) and the workspace (IDE) stay linked: **any change finalized on either side appears on both.**
 
@@ -222,6 +221,5 @@ Stale/conflict UX: `npm run verify:sync-conflict` + wiki **Refresh scan** banner
 
 ## Related docs
 
-- [00-thesis.md](./00-thesis.md) — why humans need auto-updating KB
 - [04-architecture.md](./04-architecture.md) — pipelines and packages
 - [03-product-spec-mvp.md](./03-product-spec-mvp.md) — features per phase

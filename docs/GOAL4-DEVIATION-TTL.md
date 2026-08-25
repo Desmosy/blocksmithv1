@@ -1,6 +1,5 @@
 # Goal 4 — Deviation TTL & Pre-Push Governance
 
-**Product model:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md) · **Governance tiers:** [GOVERNANCE-TIERS.md](./GOVERNANCE-TIERS.md) · **Design CI/CD:** [DESIGN-CICD.md](./DESIGN-CICD.md)
 
 **Depends on:** [GOAL1-VENDOR-SCAN.md](./GOAL1-VENDOR-SCAN.md) (scan), [GOAL2-GOVERNANCE-COPILOT.md](./GOAL2-GOVERNANCE-COPILOT.md) (finalize), [GOAL3-TEAM-RBAC.md](./GOAL3-TEAM-RBAC.md) (roles), [08-web-ide-handshake.md](./08-web-ide-handshake.md) (sync)
 

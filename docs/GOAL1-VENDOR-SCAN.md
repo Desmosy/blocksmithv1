@@ -1,6 +1,5 @@
 # Goal 1 — Vendor scan E2E
 
-**Product model:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md) — scan produces **wiki +** (via Pulse) `@blocksmith/<product>` for the team.
 
 BlockSmith Goal 1 is the **finished-product path for Customer X**: connect a vendor codebase, scan it for design facts, publish a markdown snapshot, and open it in the wiki. No Swagger, no MCP required for this step — npm/scripts or the web UI entry point is enough.
 

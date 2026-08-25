@@ -2,7 +2,6 @@
 
 **Status:** ✅ Shipped — `/wiki/pipeline` live, investor demo at `/demo/investor`, verified by `/tmp` smoke + `verify:ir-cicd` (see checklist below)  
 **Owner:** Product / frontend + platform  
-**Read with:** [CEO-DIRECTIVE.md](./CEO-DIRECTIVE.md) · [TEAM-NORTH-STAR.md](./TEAM-NORTH-STAR.md) · [PROJECT-PROTOCOL.md](./PROJECT-PROTOCOL.md)
 
 **North star:** Jenkins-class **visual release console** for design truth — the screenshot on the pitch deck and the 90-second investor demo.
 

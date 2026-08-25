@@ -1,7 +1,7 @@
 # Security & identity release gate
 
 **Status:** 🔴 **RELEASE BLOCKER** — do not ship to design partners or Fortune 100 pilots until this doc is green  
-**Read with:** [GOAL3-TEAM-RBAC.md](./GOAL3-TEAM-RBAC.md) · [SUPABASE.md](./SUPABASE.md) · [PUBLIC-RELEASE-SPRINT.md](./PUBLIC-RELEASE-SPRINT.md)  
+**Read with:** [GOAL3-TEAM-RBAC.md](./GOAL3-TEAM-RBAC.md) · [SUPABASE.md](./SUPABASE.md) �  
 **Production:** https://blocksmith-mocha.vercel.app
 
 ---
@@ -291,7 +291,6 @@ Before marking this doc green:
 
 | Doc | Change |
 |-----|--------|
-| [PUBLIC-RELEASE-SPRINT.md](./PUBLIC-RELEASE-SPRINT.md) | **Amend:** P0 now includes this security gate; stranger test includes security section |
 | [GOAL-SAAS-STATUS.md](./GOAL-SAAS-STATUS.md) | Track `%` for identity + ACL separately from Pipeline UX |
 | [CUSTOMER-PITCH-SCRIPTS.md](./CUSTOMER-PITCH-SCRIPTS.md) | Do not claim "enterprise RBAC" in live demos until stranger test passes |
 

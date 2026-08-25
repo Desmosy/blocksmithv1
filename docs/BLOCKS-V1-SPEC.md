@@ -8,7 +8,7 @@
 
 **Full research brief (professors):** [RESEARCH-INFRA-DESIGN-IR-AND-CICD.md](./RESEARCH-INFRA-DESIGN-IR-AND-CICD.md)
 
-**Related:** [DESIGN-CICD.md](./DESIGN-CICD.md) · [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md)
+**Related:** [DESIGN-CICD.md](./DESIGN-CICD.md) �
 
 ---
 
@@ -184,5 +184,4 @@ BlockSmith remains the **reference stack** that dogfoods the spec first.
 ## Related
 
 - [04-architecture.md](./04-architecture.md) — block store in monorepo
-- [00-thesis.md](./00-thesis.md) — north star
 - [PHASE2-PULSE.md](./PHASE2-PULSE.md) — `pulse-react` target

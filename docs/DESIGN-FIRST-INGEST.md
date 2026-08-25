@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 shipped · Phase 2 fusion shipped in the Figma connector · Phase 3 annotation loop started
 **Owner:** CTO / platform
-**Read with:** [FIGMA-IMPORT.md](./FIGMA-IMPORT.md) · [PUBLIC-RELEASE-SPRINT.md](./PUBLIC-RELEASE-SPRINT.md) · [CEO-DIRECTIVE.md](./CEO-DIRECTIVE.md)
+**Read with:** [FIGMA-IMPORT.md](./FIGMA-IMPORT.md) � �
 
 ---
 

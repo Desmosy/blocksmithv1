@@ -3,7 +3,7 @@
 **Audience:** Software engineer implementing wiki-as-authoring-surface.  
 **Product goal:** Designers edit in the wiki → changes land in **staging** → humans **promote** on Pipeline → developers **pull** lock/repo. The wiki must not feel like a read-only markdown viewer.
 
-**Read first:** [08-web-ide-handshake.md](./08-web-ide-handshake.md) · [DESIGN-CICD.md](./DESIGN-CICD.md) · [TEAM-NORTH-STAR.md](./TEAM-NORTH-STAR.md)
+**Read first:** [08-web-ide-handshake.md](./08-web-ide-handshake.md) · [DESIGN-CICD.md](./DESIGN-CICD.md) �
 
 ---
 

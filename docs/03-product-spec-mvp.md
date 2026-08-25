@@ -1,6 +1,5 @@
 # Product Spec — BlockSmith MVP
 
-**Thesis:** [00-thesis.md](./00-thesis.md)  
 **Handshake:** [08-web-ide-handshake.md](./08-web-ide-handshake.md)
 
 ## Product promise (phased)

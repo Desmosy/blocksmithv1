@@ -1,6 +1,5 @@
 # Phase 2 — `@blocksmith/pulse` (design-as-import)
 
-**Product model:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md) · **IR:** [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md) · **CI/CD:** [DESIGN-CICD.md](./DESIGN-CICD.md)
 
 Pulse is the **`pulse-react` compile target** from Design IR — one scan doc → `@blocksmith/<slug>` per team/product.
 
@@ -117,7 +116,5 @@ Demo: `http://localhost:3000/demo/pulse` imports `@blocksmith/acme-ui-kit`.
 
 ## Related
 
-- [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md)
-- [00-thesis.md](./00-thesis.md)
 - [GOAL1-VENDOR-SCAN.md](./GOAL1-VENDOR-SCAN.md)
 - [DEPLOY.md](./DEPLOY.md)

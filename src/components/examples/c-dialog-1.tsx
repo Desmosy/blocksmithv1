@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -8,17 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 export function Pattern() {
   return (
     <div className="flex items-center justify-center">
       <Dialog>
         <form>
-          <DialogTrigger render={<Button variant="outline" />}>
-            Basic Dialog
+          <DialogTrigger asChild>
+            <Button variant="outline">Basic Dialog</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -43,8 +43,8 @@ export function Pattern() {
               </Field>
             </FieldGroup>
             <DialogFooter>
-              <DialogClose render={<Button variant="outline" />}>
-                Cancel
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
               </DialogClose>
               <Button type="submit">Save changes</Button>
             </DialogFooter>
@@ -52,5 +52,5 @@ export function Pattern() {
         </form>
       </Dialog>
     </div>
-  )
+  );
 }

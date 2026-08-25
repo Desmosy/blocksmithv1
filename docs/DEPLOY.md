@@ -1,7 +1,6 @@
 # Deploy — BlockSmith public SaaS
 
 **Production:** https://blocksmith-mocha.vercel.app  
-**Pitch / product model:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md)  
 **Readiness tracker:** [GOAL-SAAS-STATUS.md](./GOAL-SAAS-STATUS.md) (Goal 1 & 2 → **≥80%** target)  
 **Friends guide:** [FRIENDS-ONBOARDING.md](./FRIENDS-ONBOARDING.md) (no BlockSmith repo needed)
 

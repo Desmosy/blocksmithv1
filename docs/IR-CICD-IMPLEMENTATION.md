@@ -4,7 +4,6 @@
 [RESEARCH-INFRA-DESIGN-IR-AND-CICD.md](./RESEARCH-INFRA-DESIGN-IR-AND-CICD.md) — what exists in code,
 where it lives, and how to exercise the full closed loop.
 
-**Product alignment:** Pipeline **UI** lives in the wiki ([TEAM-NORTH-STAR.md](./TEAM-NORTH-STAR.md)). This doc is the **engine** under that UI.
 
 ---
 

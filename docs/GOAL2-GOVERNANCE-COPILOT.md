@@ -1,6 +1,5 @@
 # Goal 2.5 — Governance copilot (Web → IDE steering)
 
-**Product model:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md)
 
 **Depends on:** [GOAL1-VENDOR-SCAN.md](./GOAL1-VENDOR-SCAN.md) (scan wiki), Goal 2 finalize + `blocksmith pull` ([08-web-ide-handshake.md](./08-web-ide-handshake.md)).
 

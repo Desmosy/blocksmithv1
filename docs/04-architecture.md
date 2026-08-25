@@ -1,7 +1,5 @@
 # Architecture
 
-**Pitch:** [PITCH-AND-PRODUCT-MODEL.md](./PITCH-AND-PRODUCT-MODEL.md) — wiki + compile targets in plain language.  
-**Thesis:** [00-thesis.md](./00-thesis.md) — auto-updating human knowledge base.  
 **Handshake:** [08-web-ide-handshake.md](./08-web-ide-handshake.md) — web ↔ IDE, finalized changes on both sides.
 
 ---
