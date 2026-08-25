@@ -23,6 +23,10 @@ import {
   type NearestToken,
   type TokenColor,
 } from "@/lib/governance/color-lint";
+import {
+  describeScaleViolation,
+  findScaleViolations,
+} from "@/lib/governance/scale-lint";
 
 /** Chrome's published limits. Exported so tests can assert against them. */
 export const WEBMCP_LIMITS = {
@@ -134,7 +138,7 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
   {
     name: "check_governance",
     description:
-      "Check UI code against the active design system. Returns every off-token color with its line number and the token that should replace it. Call this before showing generated UI code to the user, and again after fixing, to confirm the code is compliant.",
+      "Check UI code against the active design system: off-token colors, plus spacing, font sizes, and radii that are not on the system's scales. Returns each violation with its line number and the value to use instead. Call before showing generated UI to the user, and again after fixing.",
     inputSchema: {
       type: "object",
       properties: {
@@ -151,15 +155,20 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       if (!code) return "No code supplied. Pass the component source as `code`.";
 
       const r = handleValidateUiCode({ doc: ctx.doc, code });
-      if (r.governed) {
-        return `PASS — no design system violations. Checked against ${r.tokenCount} tokens.`;
+      const system = loadDesignSystem(resolveDocRef(ctx.doc));
+      const scaleViolations = findScaleViolations(code, system);
+      const total = r.violations.length + scaleViolations.length;
+
+      if (total === 0) {
+        return (
+          `PASS — no design system violations. Checked colors against ` +
+          `${r.tokenCount} tokens, plus spacing, type size, and radius scales.`
+        );
       }
 
       const rules = handleGetGovernanceRules({ doc: ctx.doc });
-      const lines = [
-        `REJECTED — ${r.violations.length} violation(s) against ${r.tokenCount} tokens.`,
-        "",
-      ];
+      const lines = [`REJECTED — ${total} violation(s) in ${system.name}.`, ""];
+
       for (const v of r.violations) {
         const near = nearestTokenMatch(v.hex, rules.palette);
         const fix = !near
@@ -170,6 +179,11 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
               ` Call get_governance_rules and pick a token, or ask the user to add one.`;
         lines.push(`- Line ${v.line}: \`${v.hex}\` is not a design token.${fix}`);
       }
+
+      for (const v of scaleViolations) {
+        lines.push(`- Line ${v.line}: ${describeScaleViolation(v)}`);
+      }
+
       lines.push("", "Fix these and call check_governance again.");
       return lines.join("\n");
     },
