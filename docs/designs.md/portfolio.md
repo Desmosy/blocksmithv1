@@ -145,6 +145,21 @@ Public Sans 20px weight 400, Ink (#14161c), line height 32px, constrained to 68c
 
 Paper (#fcfcfd) background, 1px Rule (#e2e4ea) border, 6px border-radius, 12px vertical and 16px horizontal padding. Public Sans 17px Ink. Border becomes Oxblood (#8e2436) on focus with a 3px Oxblood Wash ring.
 
+## Capabilities
+
+What this system will and won't build. Anything not listed here and not in Components is undecided — ask before adding it.
+
+| Pattern | Status | Use instead | Note |
+|---------|--------|-------------|------|
+| Project Card | preferred | — | The canonical way to present a piece of work |
+| Tooltip | unavailable | Meta Label | Hover-only text is unreachable on touch and invisible when scanning |
+| Carousel | unavailable | — | Work should be scannable at a glance, not paged through |
+| Modal | unavailable | — | A personal site has nothing that warrants interrupting the reader |
+| Accordion | unavailable | Section Heading | If it's worth reading it's worth showing; if it isn't, cut it |
+| Hero Banner | unavailable | Bio Block | A name and a sentence outperform a full-bleed banner |
+| Testimonial Card | unavailable | Callout | Keep third-party praise in the same visual language as the work |
+| Breadcrumb | unavailable | Nav Link | The site is not deep enough to need a trail |
+
 ## Do's and Don'ts
 
 ### Do

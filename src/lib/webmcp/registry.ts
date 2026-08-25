@@ -17,7 +17,17 @@ import {
   handleValidateUiCode,
   resolveDocRef,
 } from "@/mcp/handlers";
-import { loadDesignSystem } from "@/lib/clients/registry";
+import {
+  listDocSources,
+  loadDesignSystem,
+  readDocMarkdown,
+} from "@/lib/clients/registry";
+import {
+  capabilitySurface,
+  describeCapability,
+  resolveCapability,
+  summarizeCapability,
+} from "@/lib/governance/capability";
 import {
   nearestToken,
   type NearestToken,
@@ -128,24 +138,113 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
   {
     name: "list_components",
     description:
-      "List the components in the active design system, with a one-line role for each. Use this to find the right existing component before proposing a new one.",
+      "List what this design system offers, what is deprecated, and what it has deliberately ruled out. Call this before proposing any component so you build with what exists instead of inventing something the system does not have.",
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
     run: (_args, ctx) => {
       // Read the design system directly rather than the governed-block
       // registry: blocks only exist once a doc has been promoted, and the
       // agent surface must work on a freshly-opened doc too.
-      const system = loadDesignSystem(resolveDocRef(ctx.doc));
+      const docRef = resolveDocRef(ctx.doc);
+      const system = loadDesignSystem(docRef);
       if (!system.components.length) {
         return "No components in this design system yet.";
       }
-      return [
-        `${system.components.length} components in ${system.name}:`,
-        "",
-        ...system.components.map((c) =>
-          c.role ? `- **${c.title}** — ${c.role}` : `- **${c.title}**`,
-        ),
-      ].join("\n");
+
+      const { offered, ruledOut } = capabilitySurface(
+        system,
+        readDocMarkdown(docRef),
+      );
+      const live = offered.filter((c) => c.status !== "deprecated");
+      const gone = offered.filter((c) => c.status === "deprecated");
+
+      // Terse on purpose: the full sentence form repeated for every component
+      // would spend most of the 1500-char budget on boilerplate. Roles are
+      // trimmed for the same reason — get_component_docs carries the detail.
+      const lines = [`${live.length} components in ${system.name}:`, ""];
+      lines.push(
+        ...live.map((c) => {
+          const role = c.note ? ` — ${c.note.split(/(?<=\.)\s|—/)[0].trim()}` : "";
+          return `- ${summarizeCapability(c)}${role}`;
+        }),
+      );
+
+      if (gone.length) {
+        lines.push("", "Deprecated:", ...gone.map((c) => `- ${summarizeCapability(c)}`));
+      }
+      // The half an agent cannot infer from the page: what was ruled out.
+      if (ruledOut.length) {
+        lines.push(
+          "",
+          "Ruled out — do not build these:",
+          ...ruledOut.map((c) => `- ${summarizeCapability(c)}`),
+        );
+      }
+      return lines.join("\n");
+    },
+  },
+
+  {
+    name: "check_capability",
+    description:
+      "Ask whether this design system allows a given UI pattern before you build it. Answers available, preferred, deprecated, or ruled out — with what to use instead. Call this whenever you are about to reach for a pattern you have not confirmed exists, rather than inventing one.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        pattern: {
+          type: "string",
+          description: 'The pattern you want to use, e.g. "Tooltip" or "Modal".',
+        },
+      },
+      required: ["pattern"],
+    },
+    annotations: { readOnlyHint: true },
+    run: (args, ctx) => {
+      const pattern = str(args.pattern);
+      if (!pattern) return "Pass the pattern you want to use as `pattern`.";
+
+      const docRef = resolveDocRef(ctx.doc);
+      const system = loadDesignSystem(docRef);
+      const cap = resolveCapability(pattern, system, readDocMarkdown(docRef));
+
+      const lines = [describeCapability(cap)];
+      if (cap.status === "unknown") {
+        lines.push(
+          "",
+          `Call list_components to see what ${system.name} does offer.`,
+        );
+      }
+      return lines.join("\n");
+    },
+  },
+
+  {
+    name: "list_presets",
+    description:
+      "List the design systems available to build against. Use this when the user has no system of their own, or wants to switch which one governs their work.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true },
+    run: (_args, ctx) => {
+      const sources = listDocSources();
+      if (!sources.length) return "No design systems are installed.";
+
+      const active = resolveDocRef(ctx.doc);
+      const lines = ["Design systems available:", ""];
+      for (const s of sources) {
+        let summary = "";
+        try {
+          const sys = loadDesignSystem(s.fileName);
+          const tagline = (sys.tagline || sys.name).replace(/[.\s]+$/, "");
+          summary = ` — ${tagline}. ${sys.components.length} components, ${sys.colors.length} tokens`;
+        } catch {
+          // A doc that fails to parse still belongs in the list; the user
+          // needs to see it exists rather than wonder where it went.
+          summary = " — could not be read";
+        }
+        const mark = s.fileName === active ? " **(active)**" : "";
+        lines.push(`- \`${s.fileName}\`${mark}${summary}`);
+      }
+      return lines.join("\n");
     },
   },
 

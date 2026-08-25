@@ -189,6 +189,18 @@ export function getDefaultDocFileName(): string {
   return apollo?.fileName ?? sources[0]?.fileName ?? "apollo.md";
 }
 
+/**
+ * Raw markdown for a doc, for readers that need sections the parser doesn't
+ * lift into `DesignSystem` (capability tables, for one).
+ */
+export function readDocMarkdown(docRef?: string | null): string {
+  const doc = docRef?.trim() || getDefaultDocFileName();
+  if (isUploadDocRef(doc)) {
+    return readUploadMarkdownSync(uploadFileNameFromRef(doc));
+  }
+  return readFileSync(resolveDocFile(doc).fullPath, "utf-8");
+}
+
 /** Resolve doc path + run parser assist when needed (call before loadDesignSystem). */
 export async function prepareDesignSystemDoc(docRef: string): Promise<void> {
   let md: string;
