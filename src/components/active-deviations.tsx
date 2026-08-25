@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { DashboardCard } from "@/components/dashboard-card";
 import { ArrowRightIcon } from "lucide-react";
+import Link from "next/link";
 
 const deviations = [
 	{
@@ -92,10 +93,10 @@ export function ActiveDeviations() {
 			</CardContent>
 			<div className="mask-t-from-30% absolute inset-x-0 bottom-0 flex h-1/5 items-center justify-center bg-background">
 				<Button asChild className="relative" variant="ghost">
-					<a href="/#">
+					<Link href="/#">
 						View All
 						<ArrowRightIcon aria-hidden="true" />
-					</a>
+					</Link>
 				</Button>
 			</div>
 		</DashboardCard>

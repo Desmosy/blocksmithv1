@@ -19,6 +19,9 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  // This repo sits inside the upstream BlockSmith checkout, so Next sees two
+  // lockfiles and guesses the parent as the workspace root. Pin it here.
+  outputFileTracingRoot: __dirname,
   reactStrictMode: true,
   // Don't advertise the framework/version.
   poweredByHeader: false,

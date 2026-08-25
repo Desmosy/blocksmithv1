@@ -14,9 +14,10 @@
 import {
   handleCheckGovernance,
   handleGetGovernanceRules,
-  handleListComponents,
   handleValidateUiCode,
+  resolveDocRef,
 } from "@/mcp/handlers";
+import { loadDesignSystem } from "@/lib/clients/registry";
 
 /** Chrome's published limits. Exported so tests can assert against them. */
 export const WEBMCP_LIMITS = {
@@ -108,13 +109,18 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
     run: (_args, ctx) => {
-      const r = handleListComponents({ doc: ctx.doc });
-      if (!r.components.length) return "No components in this design system yet.";
+      // Read the design system directly rather than the governed-block
+      // registry: blocks only exist once a doc has been promoted, and the
+      // agent surface must work on a freshly-opened doc too.
+      const system = loadDesignSystem(resolveDocRef(ctx.doc));
+      if (!system.components.length) {
+        return "No components in this design system yet.";
+      }
       return [
-        `${r.components.length} components:`,
+        `${system.components.length} components in ${system.name}:`,
         "",
-        ...r.components.map((c) =>
-          c.summary ? `- **${c.title}** — ${c.summary}` : `- **${c.title}**`,
+        ...system.components.map((c) =>
+          c.role ? `- **${c.title}** — ${c.role}` : `- **${c.title}**`,
         ),
       ].join("\n");
     },
@@ -151,10 +157,13 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       ];
       for (const v of r.violations) {
         const near = nearestToken(v.hex, rules.palette);
-        lines.push(
-          `- Line ${v.line}: \`${v.hex}\` is not a design token.` +
-            (near ? ` Use \`${near.name}\` (${near.value}) instead.` : ""),
-        );
+        const fix = !near
+          ? ""
+          : near.close
+            ? ` Use \`${near.name}\` (${near.value}) instead.`
+            : ` No token is close to this color — it doesn't belong to ${rules.systemName}.` +
+              ` Call get_governance_rules and pick a token, or ask the user to add one.`;
+        lines.push(`- Line ${v.line}: \`${v.hex}\` is not a design token.${fix}`);
       }
       lines.push("", "Fix these and call check_governance again.");
       return lines.join("\n");
@@ -192,8 +201,13 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         "",
         "Hard-coded colors drift from the system: they don't respond to theme changes and they can't be updated centrally.",
       ];
-      if (near) {
+      if (near?.close) {
         lines.push("", `Closest token: **${near.name}** (${near.value}). Use that instead.`);
+      } else if (near) {
+        lines.push(
+          "",
+          `Nothing in ${rules.systemName} is close to this color — the nearest is **${near.name}** (${near.value}), which is a different hue. Adding a new color is a design decision for the user, not a substitution to make silently.`,
+        );
       }
       if (rules.donts.length) {
         lines.push("", "Relevant rules:", ...rules.donts.slice(0, 3).map((d) => `- ${d}`));
@@ -249,11 +263,31 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
 
 export const WEBMCP_TOOLS_BY_NAME = new Map(WEBMCP_TOOLS.map((t) => [t.name, t]));
 
-/** Perceptual-ish nearest token, so the suggested fix is actually close. */
+/**
+ * Nearest token by weighted RGB distance, with a confidence flag.
+ *
+ * The flag matters: suggesting a grey as the "fix" for a blue is worse than
+ * saying no close token exists. When nothing is near, the honest answer is
+ * that the value doesn't belong to this system at all — that's a design
+ * decision for the human, not a substitution the agent should make.
+ */
+export type TokenMatch = {
+  name: string;
+  value: string;
+  /** Distance is small enough that this is a genuine substitute. */
+  close: boolean;
+};
+
+// Ceiling for "this is the same color, slightly off" — roughly 24 levels of
+// drift per channel against the weights below. A near-neighbour grey scores
+// in the single digits; an off-system blue scores ~49k and is correctly
+// reported as having no match rather than being snapped to the nearest grey.
+const CLOSE_ENOUGH = 9 * 24 ** 2;
+
 function nearestToken(
   hex: string,
   palette: { name: string; value: string }[],
-): { name: string; value: string } | null {
+): TokenMatch | null {
   const target = toRgb(hex);
   if (!target || !palette.length) return null;
 
@@ -262,7 +296,7 @@ function nearestToken(
   for (const token of palette) {
     const rgb = toRgb(token.value);
     if (!rgb) continue;
-    // Weighted euclidean — green carries the most perceived luminance.
+    // Green carries the most perceived luminance, blue the least.
     const d =
       2 * (rgb[0] - target[0]) ** 2 +
       4 * (rgb[1] - target[1]) ** 2 +
@@ -272,7 +306,7 @@ function nearestToken(
       best = token;
     }
   }
-  return best;
+  return best ? { ...best, close: bestDist <= CLOSE_ENOUGH } : null;
 }
 
 function toRgb(hex: string): [number, number, number] | null {
