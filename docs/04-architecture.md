@@ -144,8 +144,6 @@ MCP responses must match wiki pages **byte-for-byte in meaning** (same block IDs
 
 ## Block store (Design IR)
 
-Canonical spec: [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md). Pipeline: [DESIGN-CICD.md](./DESIGN-CICD.md).
-
 ```ts
 interface Block {
   id: string;

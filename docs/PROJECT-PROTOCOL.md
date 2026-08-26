@@ -2,7 +2,7 @@
 
 **Status:** ✅ v1 beta shipped — `@blocksmith/protocol` package, four public schemas, conformance suite + CI drift gate, `/protocol` spec site, Storybook adapter, targets manifest, governance doc ([PROTOCOL-GOVERNANCE.md](./PROTOCOL-GOVERNANCE.md)). Remaining: `npm publish` + professor sign-off review.  
 **Owner:** Research / platform (professor sign-off on semantics)  
-**Read with:** [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md) · [RESEARCH-INFRA-DESIGN-IR-AND-CICD.md](./RESEARCH-INFRA-DESIGN-IR-AND-CICD.md) · [PROJECT-PIPELINE.md](./PROJECT-PIPELINE.md)
+**Read with:** [RESEARCH-INFRA-DESIGN-IR-AND-CICD.md](./RESEARCH-INFRA-DESIGN-IR-AND-CICD.md) · [PROJECT-PIPELINE.md](./PROJECT-PIPELINE.md)
 
 **North star:** **`blocksmith.blocks.v1`** is the TCP/IP of design — a neutral interchange format third parties implement without cloning BlockSmith.
 

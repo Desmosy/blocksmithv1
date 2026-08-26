@@ -3,7 +3,7 @@
 **Audience:** Academic mentors, research collaborators, thesis reviewers.  
 **Scope:** The **research layer** of BlockSmith / UI AI Lab — not the wiki product alone.
 
-**Companion docs:** [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md) (technical sketch) · [DESIGN-CICD.md](./DESIGN-CICD.md) (pipeline summary) � (full product context)
+**Companion docs:** [04-architecture.md](./04-architecture.md) (block store in the codebase) � (full product context)
 
 **Student:** Koshish · **Project:** BlockSmith (UI AI Lab) · **Production demo:** https://blocksmith-mocha.vercel.app
 
@@ -589,8 +589,6 @@ Product (wiki SaaS) and research (IR + CI/CD) **ship together**:
 
 | Document | Content |
 |----------|---------|
-| [BLOCKS-V1-SPEC.md](./BLOCKS-V1-SPEC.md) | Protocol sketch |
-| [DESIGN-CICD.md](./DESIGN-CICD.md) | Pipeline summary |
 | [04-architecture.md](./04-architecture.md) | Block store in codebase |
 | [08-web-ide-handshake.md](./08-web-ide-handshake.md) | Web ↔ IDE sync |
 | [PHASE2-PULSE.md](./PHASE2-PULSE.md) | `pulse-react` target |

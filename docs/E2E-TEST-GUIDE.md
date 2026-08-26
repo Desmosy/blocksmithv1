@@ -12,7 +12,7 @@ capture / scan → wiki → stage        CLI pull → DESIGN.md + blocksmith.loc
 Budget **2.5–3 hours** for the full pass. Do it in order — later parts depend on
 earlier state (you can't test pull before something is promoted and pinned).
 
-**Companions:** [RELEASE-TEST-PLAN.md](./RELEASE-TEST-PLAN.md) (reliability-fix detail) · [FRIENDS-ONBOARDING.md](./FRIENDS-ONBOARDING.md) · [MCP.md](./MCP.md) · [DISTRIBUTION.md](./DISTRIBUTION.md)
+**Companions:** [RELEASE-TEST-PLAN.md](./RELEASE-TEST-PLAN.md) (reliability-fix detail) · [FRIENDS-ONBOARDING.md](./FRIENDS-ONBOARDING.md) · [DISTRIBUTION.md](./DISTRIBUTION.md)
 
 ---
 

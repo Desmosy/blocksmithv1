@@ -290,7 +290,7 @@ This is the **other half** of the system. Developers using AI coding agents (Cur
 
 ### How agents are governed today
 
-From [MCP.md](./MCP.md) — governance travels **with the connector**, not in repo rule files:
+Governance travels **with the connector**, not in repo rule files:
 
 1. `get_governance_rules` → loads palette + do/don't before writing UI
 2. `check_component_governance` → pre-flight a specific component change
@@ -547,7 +547,5 @@ Result: agent NEVER produces a deviation ✅
 ## Related
 
 - [GOVERNANCE-TIERS.md](./GOVERNANCE-TIERS.md) — Block / Warn / Advisory tiers (this system extends Tier 2)
-- [DESIGN-CICD.md](./DESIGN-CICD.md) — `blocksmith.lock`, block versions, pipeline
 - [08-web-ide-handshake.md](./08-web-ide-handshake.md) — finalize writeback, sync engine
 - [GOAL3-TEAM-RBAC.md](./GOAL3-TEAM-RBAC.md) — roles controlling who can Pass/Rollback
-- [MCP.md](./MCP.md) — governed agent workflow, server instructions
