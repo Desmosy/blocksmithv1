@@ -1,6 +1,6 @@
 # WebMCP Challenge — 10-day plan
 
-**Repo:** `blockSmithv1` · **Live URL:** _TBD_ · **Deadline:** _confirm on Devpost_
+**Repo:** `blockSmithv1` · **Live URL:** _TBD — deploy from this repo_ · **Deadline:** _confirm on Devpost_
 
 Judges see three things: a live URL, a <3-minute video, and this repo. Every item below serves one of them.
 
@@ -51,7 +51,7 @@ This is the product for anyone who doesn't already have a design system.
 - [x] Preset picker UI — choose a system, see it rendered, adopt it
 - [x] `use_preset` tool so an agent can adopt one mid-conversation
 - [ ] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
-- [ ] Render a full example page per preset so the taste is visible, not just described
+- [x] Render a full example page per preset so the taste is visible, not just described
 - [ ] Version the presets (`portfolio.v1`) through the existing registry semantics
 
 ### Days 5–6 · The live loop
@@ -81,12 +81,12 @@ The thing judges actually watch.
 - [ ] Deploy to Vercel; live URL in README
 - [ ] Register for the origin trial (Chrome 149) so plain Chrome works flagless
 - [ ] Public GitHub repo, MIT badged in the About sidebar
-- [ ] README carries a literal `document.modelContext.registerTool({...})` block
+- [x] README carries a literal `document.modelContext.registerTool({...})` block
 - [ ] Rotate the Supabase service role key ⚠️ *still outstanding*
 
 ### Day 10 · Submit
 - [ ] Video — <3 min, public YouTube, audio, opens on governed vs ungoverned
-- [ ] Text description covering all four required points
+- [x] Text description covering all four required points
 - [ ] Credentials on the form if anything is gated
 - [ ] Submit with a day of buffer, not an hour
 
