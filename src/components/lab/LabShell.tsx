@@ -66,12 +66,32 @@ export function LabShell({
   /** Session-local token edits. Never written to the shipped presets. */
   const [overrides, setOverrides] = useState<Record<string, string>>({});
 
+  // Agent tools need the current code and preset without re-registering on
+  // every keystroke, which would churn the tool surface constantly.
+  const stateRef = useRef({ doc, code, overrides });
+  stateRef.current = { doc, code, overrides };
+
+  /**
+   * Set a token override and make it readable immediately.
+   *
+   * The ref is refreshed on render, but an agent that changes a token and
+   * checks in the same turn runs before React re-renders — and would be judged
+   * against the value it just replaced. Writing the ref here as well as the
+   * state closes that window.
+   */
+  const applyOverride = useCallback((token: string, value: string) => {
+    const next = { ...stateRef.current.overrides, [token]: value };
+    stateRef.current = { ...stateRef.current, overrides: next };
+    setOverrides(next);
+  }, []);
+
   const logCall = useCallback((call: ToolCall) => {
     setCalls((prev) => [call, ...prev].slice(0, 40));
   }, []);
 
   /** Run the code through governance. Shared by the editor and the agent. */
   const selectPreset = useCallback((fileName: string) => {
+    stateRef.current = { ...stateRef.current, doc: fileName, overrides: {} };
     setDoc(fileName);
     // Overrides name tokens in the system that was active, so they cannot
     // carry across to a different one.
@@ -156,11 +176,6 @@ export function LabShell({
       controller.abort();
     };
   }, [code, doc, check]);
-
-  // Agent tools need the current code and preset without re-registering on
-  // every keystroke, which would churn the tool surface constantly.
-  const stateRef = useRef({ doc, code, overrides });
-  stateRef.current = { doc, code, overrides };
 
   /**
    * Client tools: these act on what the human is looking at, so they cannot be
@@ -277,7 +292,7 @@ export function LabShell({
             );
           }
 
-          setOverrides((prev) => ({ ...prev, [match.name]: value }));
+          applyOverride(match.name, value);
           const result =
             `**${match.name}** is now \`${value}\` for this session ` +
             `(was \`${match.value}\`). The page has re-rendered and later checks ` +
@@ -330,7 +345,7 @@ export function LabShell({
         },
       },
     ],
-    [presets, check, logCall],
+    [presets, check, logCall, applyOverride],
   );
 
   const activeComponents = useMemo(
@@ -339,8 +354,11 @@ export function LabShell({
   );
 
   const serverSpecs = useMemo(
-    () => serverToolSpecs(tools, doc, logCall, activeComponents, overrides),
-    [tools, doc, logCall, activeComponents, overrides],
+    () =>
+      serverToolSpecs(tools, doc, logCall, activeComponents, () =>
+        stateRef.current.overrides,
+      ),
+    [tools, doc, logCall, activeComponents],
   );
 
   const allTools = useMemo(

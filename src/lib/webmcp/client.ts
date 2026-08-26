@@ -71,8 +71,15 @@ export function serverToolSpecs(
   onCall: (call: ToolCall) => void,
   /** Component names in the active system, bound into schemas that take one. */
   components: string[] = [],
-  /** Session-local token edits, sent with every call so checks stay current. */
-  tokenOverrides: Record<string, string> = {},
+  /**
+   * Reads the session's token edits at call time.
+   *
+   * Deliberately a getter rather than a value: re-registration is async, so a
+   * captured object leaves a window where the agent changes a token and the
+   * very next check still judges against the old one. Reading late also stops
+   * every token edit from churning the whole tool surface.
+   */
+  getTokenOverrides: () => Record<string, string> = () => ({}),
 ): WebMcpToolSpec[] {
   return tools.map((t) => ({
     name: t.name,
@@ -85,7 +92,12 @@ export function serverToolSpecs(
         const res = await fetch("/api/webmcp/invoke", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ tool: t.name, args, doc, tokenOverrides }),
+          body: JSON.stringify({
+            tool: t.name,
+            args,
+            doc,
+            tokenOverrides: getTokenOverrides(),
+          }),
         });
         const data = (await res.json()) as { text?: string; error?: string };
         result = data.text ?? data.error ?? "Tool returned nothing.";
