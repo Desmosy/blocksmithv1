@@ -167,7 +167,11 @@ export function synthesizeDesignSystem(found: Extracted): {
     );
   }
 
-  if (found.fonts.length) {
+  // The Type Scale is a subsection of Typography, so this header has to be
+  // emitted whenever there are sizes — even with no families. A site whose
+  // font-family is set through a variable parses as zero fonts, and skipping
+  // the section took its whole type scale with it.
+  if (found.fonts.length || sizes.length) {
     lines.push("## Tokens — Typography", "");
     found.fonts.slice(0, 3).forEach((font, i) => {
       const role =
