@@ -7,7 +7,6 @@ import { isApolloStructuredMarkdown } from "@/lib/parser/generic";
 import { WikiGeneratingOverlay } from "@/components/wiki/WikiGeneratingOverlay";
 import { markWikiBuilding } from "@/components/wiki/WikiBuildGate";
 import { IconArrowRight } from "@/components/icons/streamline";
-import { HomeTestimonials } from "./HomeTestimonials";
 import { AuthChrome } from "@/components/auth/AuthChrome";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AnimatedLightBoard } from "@/components/ui/AnimatedLightBoard";
@@ -94,21 +93,6 @@ const FEATURES = [
     `
   },
 ];
-
-const TRUSTED_LOGOS = [
-  { name: "Figma", src: "/logos/trusted/figma.svg", quote: "Our designers moved fast. BlockSmith made sure our code moved just as fast without breaking anything." },
-  { name: "Linear", src: "/logos/trusted/linear.svg", quote: "A flawless bridge between Figma and our React codebase. Pure governed truth." },
-  { name: "Vercel", src: "/logos/trusted/vercel.svg", quote: "BlockSmith Pipelines caught token drift before it ever reached production." },
-  { name: "Notion", src: "/logos/trusted/notion.svg", quote: "Finally, a way to scale our design system across teams without human bottlenecks." },
-  { name: "Stripe", src: "/logos/trusted/stripe.svg", quote: "The interchange format that allows our agents and our firmware to share the same design language." },
-  { name: "GitHub", src: "/logos/trusted/github.svg", quote: "Governance for design feels just like governance for code. It's brilliant." },
-  { name: "Anthropic", src: "/logos/trusted/anthropic.svg", quote: "Our AI workflows now have absolute context on UI tokens and components." },
-  { name: "Shopify", src: "/logos/trusted/shopify.svg", quote: "We completely eliminated manual handoffs. The truth lives in the protocol." },
-  { name: "Cursor", src: "/logos/trusted/cursor.svg", quote: "The standard MCP server integration gives our developers instant access to design rules." },
-  { name: "Hugging Face", src: "/logos/trusted/huggingface.svg", quote: "Seamless developer workflows powered by actual verifiable design truth." },
-] as const;
-
-const MARQUEE_LOGOS = [...TRUSTED_LOGOS, ...TRUSTED_LOGOS, ...TRUSTED_LOGOS];
 
 const CLI_SNIPPET = `# Install & watch your workspace
 npm install -g @block-smith/cli
@@ -225,7 +209,6 @@ export function HomeStudio() {
   const [recent, setRecent] = useState<RecentUpload[]>([]);
   const [batchResults, setBatchResults] = useState<ImportResult[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [activeLogoIndex, setActiveLogoIndex] = useState<number | null>(null);
   const [showRecent, setShowRecent] = useState(false);
   const [heroTab, setHeroTab] = useState<HeroTabId>("wiki");
 
@@ -535,44 +518,6 @@ export function HomeStudio() {
         </div>
       </section>
 
-      {/* Logo Marquee */}
-      <section className="bg-paper-white w-full border-b border-dashed border-black relative" aria-label="Trusted by">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 relative border-l border-dashed border-black">
-          {TRUSTED_LOGOS.slice(0, 10).map((logo, i) => (
-            <div 
-              key={`${logo.name}-${i}`} 
-              onMouseEnter={() => setActiveLogoIndex(i)}
-              onMouseLeave={() => setActiveLogoIndex(null)}
-              className={`relative cursor-pointer border-r border-b border-dashed border-black h-[120px] px-8 flex items-center justify-center transition-colors group ${activeLogoIndex === i ? "bg-signal-orange" : "bg-transparent hover:bg-black/5"}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={logo.src} 
-                alt={logo.name} 
-                className={`h-10 transition-all ${activeLogoIndex === i ? "brightness-0 invert opacity-100" : "opacity-80 group-hover:opacity-100"}`} 
-              />
-              
-              {activeLogoIndex === i && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-[100%] left-[-1px] w-[320px] z-50 bg-signal-orange text-paper-white p-6 shadow-2xl"
-                  style={{ border: "1px solid black" }}
-                >
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="mb-4 opacity-100">
-                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
-                  </svg>
-                  <p className="font-plain text-[18px] leading-[1.5] font-medium tracking-tight">
-                    {logo.quote}
-                  </p>
-                </motion.div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Use Cases Section */}
       <HomeUseCases />
 
@@ -673,8 +618,6 @@ export function HomeStudio() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <HomeTestimonials />
 
       {/* Animated Light Board Divider */}
       <AnimatedLightBoard />

@@ -57,6 +57,349 @@ Treat deviations from the design system as bugs. When unsure which token to use,
 
 export const BLOCKSMITH_MCP_INSTRUCTIONS = SERVER_INSTRUCTIONS;
 
+/**
+ * The tools this server advertises. Hoisted out of the ListTools handler so
+ * the app can report how many there really are instead of quoting a number
+ * someone typed into a marketing page and forgot to update.
+ */
+export const BLOCKSMITH_MCP_TOOLS = [
+  {
+    name: "scan_workspace",
+    description:
+      "Scan a vendor repo into canonical .md + wiki. Modes: github URL (server clone), fixture:vendor (demo), or workspace path (server-local fixtures/dev only). For a repo on the developer laptop, use CLI `blocksmith scan /path` instead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        github: {
+          type: "string",
+          description: "GitHub repo URL or org/repo — server shallow-clones and scans.",
+        },
+        fixture: {
+          type: "string",
+          description: 'Demo fixture name, e.g. "vendor".',
+        },
+        workspace: {
+          type: "string",
+          description:
+            "Server-local path (fixtures/ or dev only). Defaults to BLOCKSMITH_WORKSPACE.",
+        },
+      },
+    },
+  },
+  {
+    name: "import_figma_variables",
+    description:
+      "Import a Figma library (variables from get_variable_defs + published components) into a governed design.md. Figma stays the design source of truth; this seeds the BlockSmith IR so the wiki, tokens, and Component Library render the library. If the file has NO variables (get_variable_defs returns {}), pass the get_design_context code as `designContextCode` and tokens are recovered from the design automatically. Returns the doc ref to govern with.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        variables: {
+          type: "object",
+          description:
+            "Figma variable defs: a { name: value } map (e.g. \"Color/Text/Primary\": \"#1A1A1A\") or an array of { name, value, type }. Omit/empty for files without variables and pass designContextCode instead.",
+        },
+        designContextCode: {
+          type: "string",
+          description:
+            "Raw get_design_context output (React+Tailwind code). Used to recover de-facto tokens (colors/radii/type sizes) when the file has no Figma variables. Real variables win on collision.",
+        },
+        components: {
+          type: "array",
+          description:
+            "Published components: array of { name, description?, key?, componentPropertyDefinitions } (Figma's raw property defs) or pre-normalized { name, variants, booleanProps, textProps, instanceProps }.",
+          items: { type: "object" },
+        },
+        fileKey: {
+          type: "string",
+          description: "Figma file key (from the file URL) — used as the token source label.",
+        },
+        fileName: {
+          type: "string",
+          description: "Human library/file name — becomes the design system name.",
+        },
+        projectName: {
+          type: "string",
+          description: "Optional explicit project name override.",
+        },
+      },
+    },
+  },
+  {
+    name: "figma_token_drift",
+    description:
+      "Reconcile a Figma library against an existing code scan — the wedge payoff: tokens where 'Figma says X, shipped code says Y', plus (when `components` is passed) component drift like 'this Figma component has a size=lg variant your code doesn't'. `doc` must be a workspace-scan upload (run blocksmith scan / scan_workspace first).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        variables: {
+          type: "object",
+          description:
+            "Figma variable defs ({ name: value } map or array of { name, value, type }).",
+        },
+        designContextCode: {
+          type: "string",
+          description:
+            "Raw get_design_context code — recover tokens from the design when the file has no variables.",
+        },
+        components: {
+          type: "array",
+          description:
+            "Optional published components to also drift at the variant/prop level.",
+          items: { type: "object" },
+        },
+        doc: {
+          type: "string",
+          description:
+            "Code-side scan doc ref (upload:scan-*.md). Defaults to BLOCKSMITH_DOC.",
+        },
+        fileKey: {
+          type: "string",
+          description: "Figma file key for the source label.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_design_tokens",
+    description:
+      "Colors, typography, spacing, and surface tokens from the design system. Same data as the BlockSmith wiki.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: {
+          type: "string",
+          description:
+            "Document ref (e.g. apollo.md or upload:design-abc.md). Defaults to BLOCKSMITH_DOC or apollo.md.",
+        },
+        category: {
+          type: "string",
+          description: "Optional filter: color, typography, spacing, surface",
+        },
+      },
+    },
+  },
+  {
+    name: "get_component_docs",
+    description:
+      "Component specs (role, description, agent hints) for building UI. Matches wiki component pages.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        names: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Component names or id fragments (e.g. button, primary-pill). Empty = all components.",
+        },
+      },
+    },
+  },
+  {
+    name: "list_components",
+    description: "List all components in the design system with short summaries.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+      },
+    },
+  },
+  {
+    name: "get_sync_status",
+    description:
+      "File watcher status, block store index, and content hash — use to detect stale wiki vs repo.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+      },
+    },
+  },
+  {
+    name: "get_component_history",
+    description:
+      "Shared work log for a component: who changed it, when, the prompt, and a summary. ALWAYS check this before working on a component — someone may have already fixed the same issue. Omit `component` for a doc-wide recent feed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        component: {
+          type: "string",
+          description: "Component name or id (e.g. primary button). Optional.",
+        },
+        limit: { type: "number", description: "Max entries (default 10)" },
+      },
+    },
+  },
+  {
+    name: "log_component_work",
+    description:
+      "Record work on a component to the shared ledger so teammates (and future you) can see it. Call this AFTER changing UI tied to a component, with the prompt you used and a one-line summary.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        component: {
+          type: "string",
+          description: "Component name or id this work relates to.",
+        },
+        author: {
+          type: "string",
+          description: "Who did the work. Defaults to BLOCKSMITH_AUTHOR env.",
+        },
+        action: {
+          type: "string",
+          description: "One of: prompt, fix, change, note.",
+        },
+        prompt: {
+          type: "string",
+          description: "The prompt/instruction that drove the change.",
+        },
+        summary: {
+          type: "string",
+          description: "One-line summary of what changed (required).",
+        },
+        files: {
+          type: "array",
+          items: { type: "string" },
+          description: "Files touched, if known.",
+        },
+      },
+      required: ["component", "summary"],
+    },
+  },
+  {
+    name: "check_component_governance",
+    description:
+      "Validate a planned UI change against the design system BEFORE writing code: returns the component's authoritative spec, the allowed token palette, do/don't rules, and flags any proposed colors that are off-token (deviations). Use this to stay governed by the wiki.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        component: {
+          type: "string",
+          description: "Component name or id you intend to change.",
+        },
+        proposedColors: {
+          type: "array",
+          items: { type: "string" },
+          description: "Hex colors you plan to use — checked against tokens.",
+        },
+      },
+      required: ["component"],
+    },
+  },
+  {
+    name: "get_governance_rules",
+    description:
+      "Load the design system's rules in one call: allowed color token palette, do/don't guidelines, and component count. Call this at the start of any UI task to know the constraints before writing code.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+      },
+    },
+  },
+  {
+    name: "pulse_codegen",
+    description:
+      "Generate importable @blocksmith/<slug> npm package from workspace-scan markdown: tokens.css, Surface, Text, Button stubs. Run after scan_workspace. Demo at /demo/pulse.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: {
+          type: "string",
+          description:
+            "Scan doc ref (e.g. upload:scan-acme-ui-kit.md). Defaults to BLOCKSMITH_DOC.",
+        },
+      },
+    },
+  },
+  {
+    name: "get_lockfile",
+    description:
+      "Get blocksmith.lock for this design system — pins every promoted block id to an exact version + contentHash, like package-lock.json for design. Write it to the repo root so CI (validate_ui) and future agent sessions resolve the same truth. Reports whether the current repo lock is stale.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+      },
+    },
+  },
+  {
+    name: "get_block_versions",
+    description:
+      "Version history for one block id: every recorded version, its status (draft/finalized/stale/conflict), contentHash, and which version is currently official. Use to audit when a token or component changed and what the lock should pin.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        blockId: {
+          type: "string",
+          description: "Block id, e.g. component:primary-pill-button or token:color:accent.",
+        },
+      },
+      required: ["blockId"],
+    },
+  },
+  {
+    name: "validate_ui_code",
+    description:
+      "Lint a block of UI code (TSX/CSS/etc.) you are ABOUT TO WRITE against the design system. Returns any off-token colors as deviations. ALWAYS check `get_lockfile` first to ensure you are building against the exact pinned block versions in `blocksmith.lock`, not a draft or drifted state. Call this on generated UI before applying it to the file — if it is not governed, replace the raw colors with defined tokens and re-validate.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        code: {
+          type: "string",
+          description: "The UI code you intend to write.",
+        },
+      },
+      required: ["code"],
+    },
+  },
+  {
+    name: "check_governance_diff",
+    description:
+      "Check UI code against promoted component governance (warn-tier prose rules + block-tier off-token colors). Use before commit/push. Set record=true with overrideReason when the developer pushes despite warnings — creates a wiki Violations entry for the design lead.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        doc: { type: "string", description: "Document ref" },
+        code: { type: "string", description: "TSX/CSS snippet or file contents to check" },
+        component: {
+          type: "string",
+          description: "Component name/id (e.g. Footer). Inferred from filePath when omitted.",
+        },
+        filePath: {
+          type: "string",
+          description: "Repo path (e.g. src/components/Footer.tsx) for rule scope + findings.",
+        },
+        record: {
+          type: "boolean",
+          description: "When true and findings exist, append to wiki Governance → Violations.",
+        },
+        author: { type: "string", description: "Developer name for the audit trail." },
+        overrideReason: {
+          type: "string",
+          description: "Required when recording an intentional override of warn-tier rules.",
+        },
+        action: {
+          type: "string",
+          description: "detected | overridden | bypass",
+        },
+        commit: { type: "string", description: "Git commit sha, if known." },
+        branch: { type: "string", description: "Git branch, if known." },
+      },
+      required: ["code"],
+    },
+  },
+] as const;
+
+export const BLOCKSMITH_MCP_TOOL_NAMES: readonly string[] =
+  BLOCKSMITH_MCP_TOOLS.map((t) => t.name);
+
 export function createBlocksmithMcpServer(): Server {
   const server = new Server(
   {
@@ -73,340 +416,7 @@ export function createBlocksmithMcpServer(): Server {
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: "scan_workspace",
-      description:
-        "Scan a vendor repo into canonical .md + wiki. Modes: github URL (server clone), fixture:vendor (demo), or workspace path (server-local fixtures/dev only). For a repo on the developer laptop, use CLI `blocksmith scan /path` instead.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          github: {
-            type: "string",
-            description: "GitHub repo URL or org/repo — server shallow-clones and scans.",
-          },
-          fixture: {
-            type: "string",
-            description: 'Demo fixture name, e.g. "vendor".',
-          },
-          workspace: {
-            type: "string",
-            description:
-              "Server-local path (fixtures/ or dev only). Defaults to BLOCKSMITH_WORKSPACE.",
-          },
-        },
-      },
-    },
-    {
-      name: "import_figma_variables",
-      description:
-        "Import a Figma library (variables from get_variable_defs + published components) into a governed design.md. Figma stays the design source of truth; this seeds the BlockSmith IR so the wiki, tokens, and Component Library render the library. If the file has NO variables (get_variable_defs returns {}), pass the get_design_context code as `designContextCode` and tokens are recovered from the design automatically. Returns the doc ref to govern with.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          variables: {
-            type: "object",
-            description:
-              "Figma variable defs: a { name: value } map (e.g. \"Color/Text/Primary\": \"#1A1A1A\") or an array of { name, value, type }. Omit/empty for files without variables and pass designContextCode instead.",
-          },
-          designContextCode: {
-            type: "string",
-            description:
-              "Raw get_design_context output (React+Tailwind code). Used to recover de-facto tokens (colors/radii/type sizes) when the file has no Figma variables. Real variables win on collision.",
-          },
-          components: {
-            type: "array",
-            description:
-              "Published components: array of { name, description?, key?, componentPropertyDefinitions } (Figma's raw property defs) or pre-normalized { name, variants, booleanProps, textProps, instanceProps }.",
-            items: { type: "object" },
-          },
-          fileKey: {
-            type: "string",
-            description: "Figma file key (from the file URL) — used as the token source label.",
-          },
-          fileName: {
-            type: "string",
-            description: "Human library/file name — becomes the design system name.",
-          },
-          projectName: {
-            type: "string",
-            description: "Optional explicit project name override.",
-          },
-        },
-      },
-    },
-    {
-      name: "figma_token_drift",
-      description:
-        "Reconcile a Figma library against an existing code scan — the wedge payoff: tokens where 'Figma says X, shipped code says Y', plus (when `components` is passed) component drift like 'this Figma component has a size=lg variant your code doesn't'. `doc` must be a workspace-scan upload (run blocksmith scan / scan_workspace first).",
-      inputSchema: {
-        type: "object",
-        properties: {
-          variables: {
-            type: "object",
-            description:
-              "Figma variable defs ({ name: value } map or array of { name, value, type }).",
-          },
-          designContextCode: {
-            type: "string",
-            description:
-              "Raw get_design_context code — recover tokens from the design when the file has no variables.",
-          },
-          components: {
-            type: "array",
-            description:
-              "Optional published components to also drift at the variant/prop level.",
-            items: { type: "object" },
-          },
-          doc: {
-            type: "string",
-            description:
-              "Code-side scan doc ref (upload:scan-*.md). Defaults to BLOCKSMITH_DOC.",
-          },
-          fileKey: {
-            type: "string",
-            description: "Figma file key for the source label.",
-          },
-        },
-      },
-    },
-    {
-      name: "get_design_tokens",
-      description:
-        "Colors, typography, spacing, and surface tokens from the design system. Same data as the BlockSmith wiki.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: {
-            type: "string",
-            description:
-              "Document ref (e.g. apollo.md or upload:design-abc.md). Defaults to BLOCKSMITH_DOC or apollo.md.",
-          },
-          category: {
-            type: "string",
-            description: "Optional filter: color, typography, spacing, surface",
-          },
-        },
-      },
-    },
-    {
-      name: "get_component_docs",
-      description:
-        "Component specs (role, description, agent hints) for building UI. Matches wiki component pages.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          names: {
-            type: "array",
-            items: { type: "string" },
-            description:
-              "Component names or id fragments (e.g. button, primary-pill). Empty = all components.",
-          },
-        },
-      },
-    },
-    {
-      name: "list_components",
-      description: "List all components in the design system with short summaries.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-        },
-      },
-    },
-    {
-      name: "get_sync_status",
-      description:
-        "File watcher status, block store index, and content hash — use to detect stale wiki vs repo.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-        },
-      },
-    },
-    {
-      name: "get_component_history",
-      description:
-        "Shared work log for a component: who changed it, when, the prompt, and a summary. ALWAYS check this before working on a component — someone may have already fixed the same issue. Omit `component` for a doc-wide recent feed.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          component: {
-            type: "string",
-            description: "Component name or id (e.g. primary button). Optional.",
-          },
-          limit: { type: "number", description: "Max entries (default 10)" },
-        },
-      },
-    },
-    {
-      name: "log_component_work",
-      description:
-        "Record work on a component to the shared ledger so teammates (and future you) can see it. Call this AFTER changing UI tied to a component, with the prompt you used and a one-line summary.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          component: {
-            type: "string",
-            description: "Component name or id this work relates to.",
-          },
-          author: {
-            type: "string",
-            description: "Who did the work. Defaults to BLOCKSMITH_AUTHOR env.",
-          },
-          action: {
-            type: "string",
-            description: "One of: prompt, fix, change, note.",
-          },
-          prompt: {
-            type: "string",
-            description: "The prompt/instruction that drove the change.",
-          },
-          summary: {
-            type: "string",
-            description: "One-line summary of what changed (required).",
-          },
-          files: {
-            type: "array",
-            items: { type: "string" },
-            description: "Files touched, if known.",
-          },
-        },
-        required: ["component", "summary"],
-      },
-    },
-    {
-      name: "check_component_governance",
-      description:
-        "Validate a planned UI change against the design system BEFORE writing code: returns the component's authoritative spec, the allowed token palette, do/don't rules, and flags any proposed colors that are off-token (deviations). Use this to stay governed by the wiki.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          component: {
-            type: "string",
-            description: "Component name or id you intend to change.",
-          },
-          proposedColors: {
-            type: "array",
-            items: { type: "string" },
-            description: "Hex colors you plan to use — checked against tokens.",
-          },
-        },
-        required: ["component"],
-      },
-    },
-    {
-      name: "get_governance_rules",
-      description:
-        "Load the design system's rules in one call: allowed color token palette, do/don't guidelines, and component count. Call this at the start of any UI task to know the constraints before writing code.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-        },
-      },
-    },
-    {
-      name: "pulse_codegen",
-      description:
-        "Generate importable @blocksmith/<slug> npm package from workspace-scan markdown: tokens.css, Surface, Text, Button stubs. Run after scan_workspace. Demo at /demo/pulse.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: {
-            type: "string",
-            description:
-              "Scan doc ref (e.g. upload:scan-acme-ui-kit.md). Defaults to BLOCKSMITH_DOC.",
-          },
-        },
-      },
-    },
-    {
-      name: "get_lockfile",
-      description:
-        "Get blocksmith.lock for this design system — pins every promoted block id to an exact version + contentHash, like package-lock.json for design. Write it to the repo root so CI (validate_ui) and future agent sessions resolve the same truth. Reports whether the current repo lock is stale.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-        },
-      },
-    },
-    {
-      name: "get_block_versions",
-      description:
-        "Version history for one block id: every recorded version, its status (draft/finalized/stale/conflict), contentHash, and which version is currently official. Use to audit when a token or component changed and what the lock should pin.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          blockId: {
-            type: "string",
-            description: "Block id, e.g. component:primary-pill-button or token:color:accent.",
-          },
-        },
-        required: ["blockId"],
-      },
-    },
-    {
-      name: "validate_ui_code",
-      description:
-        "Lint a block of UI code (TSX/CSS/etc.) you are ABOUT TO WRITE against the design system. Returns any off-token colors as deviations. ALWAYS check `get_lockfile` first to ensure you are building against the exact pinned block versions in `blocksmith.lock`, not a draft or drifted state. Call this on generated UI before applying it to the file — if it is not governed, replace the raw colors with defined tokens and re-validate.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          code: {
-            type: "string",
-            description: "The UI code you intend to write.",
-          },
-        },
-        required: ["code"],
-      },
-    },
-    {
-      name: "check_governance_diff",
-      description:
-        "Check UI code against promoted component governance (warn-tier prose rules + block-tier off-token colors). Use before commit/push. Set record=true with overrideReason when the developer pushes despite warnings — creates a wiki Violations entry for the design lead.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          doc: { type: "string", description: "Document ref" },
-          code: { type: "string", description: "TSX/CSS snippet or file contents to check" },
-          component: {
-            type: "string",
-            description: "Component name/id (e.g. Footer). Inferred from filePath when omitted.",
-          },
-          filePath: {
-            type: "string",
-            description: "Repo path (e.g. src/components/Footer.tsx) for rule scope + findings.",
-          },
-          record: {
-            type: "boolean",
-            description: "When true and findings exist, append to wiki Governance → Violations.",
-          },
-          author: { type: "string", description: "Developer name for the audit trail." },
-          overrideReason: {
-            type: "string",
-            description: "Required when recording an intentional override of warn-tier rules.",
-          },
-          action: {
-            type: "string",
-            description: "detected | overridden | bypass",
-          },
-          commit: { type: "string", description: "Git commit sha, if known." },
-          branch: { type: "string", description: "Git branch, if known." },
-        },
-        required: ["code"],
-      },
-    },
-  ],
+  tools: BLOCKSMITH_MCP_TOOLS,
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
