@@ -14,9 +14,32 @@ import { LabActivity } from "./LabActivity";
 import { LabPresetBar } from "./LabPresetBar";
 import { LabSpecimen } from "./LabSpecimen";
 import { installDevPolyfill } from "@/lib/webmcp/dev-polyfill";
-import type { PresetSummary, Verdict } from "./types";
+import type { FixReport, PresetSummary, Verdict } from "./types";
 
 const CHECK_DEBOUNCE_MS = 400;
+
+/**
+ * Pull the applied / needs-a-decision lists out of the engine's fix summary.
+ * The format is stable: "- Line N: …" under one of two headings.
+ */
+function parseFixReport(text: string): FixReport | null {
+  const applied: { line: number; text: string }[] = [];
+  const skipped: { line: number; text: string }[] = [];
+  let bucket: "applied" | "skipped" | null = null;
+
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (/^Applied \d+ fix/i.test(line)) { bucket = "applied"; continue; }
+    if (/need a decision from you/i.test(line)) { bucket = "skipped"; continue; }
+    const m = line.match(/^-\s*Line\s+(\d+):\s*(.*)$/);
+    if (!m || !bucket) continue;
+    (bucket === "applied" ? applied : skipped).push({
+      line: Number(m[1]),
+      text: m[2],
+    });
+  }
+  return applied.length || skipped.length ? { applied, skipped } : null;
+}
 
 export function LabShell({
   tools,
@@ -39,6 +62,7 @@ export function LabShell({
   const [verdict, setVerdict] = useState<Verdict>({ state: "idle" });
   const [calls, setCalls] = useState<ToolCall[]>([]);
   const [fixing, setFixing] = useState(false);
+  const [fixReport, setFixReport] = useState<FixReport | null>(null);
   /** Session-local token edits. Never written to the shipped presets. */
   const [overrides, setOverrides] = useState<Record<string, string>>({});
 
@@ -108,6 +132,7 @@ export function LabShell({
       const text = data.text ?? "";
       const fenced = text.match(/^```\n([\s\S]*?)\n```/);
       if (fenced) setCode(fenced[1]);
+      setFixReport(parseFixReport(text));
       return text;
     } catch {
       return "Could not reach the governance engine.";
@@ -383,6 +408,8 @@ export function LabShell({
             presetName={activePreset?.name ?? doc}
             onFix={() => void fix()}
             fixing={fixing}
+            fixReport={fixReport}
+            onDismissFixReport={() => setFixReport(null)}
           />
           <LabActivity calls={calls} />
         </section>

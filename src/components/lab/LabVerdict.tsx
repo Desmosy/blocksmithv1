@@ -1,6 +1,6 @@
 "use client";
 
-import type { Verdict } from "./types";
+import type { FixReport, Verdict } from "./types";
 import { RichText } from "./RichText";
 
 type Row = { line: string | null; body: string };
@@ -10,6 +10,61 @@ type Row = { line: string | null; body: string };
  * rather than a wall of prose. The engine's format is stable: each violation
  * is `- Line N: body`.
  */
+/**
+ * What the last repair pass did.
+ *
+ * Applying fixes silently rewrites the editor, which leaves the human unable
+ * to tell what changed or why some violations survived. The split matters more
+ * than the count: one list is mechanical, the other is waiting on a decision
+ * only a person can make.
+ */
+function FixSummary({
+  report,
+  onDismiss,
+}: {
+  report: FixReport;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="lab-fixreport">
+      <div className="lab-fixreport-head">
+        <span>
+          {report.applied.length} applied
+          {report.skipped.length
+            ? ` · ${report.skipped.length} need you`
+            : ""}
+        </span>
+        <button type="button" className="lab-chip" onClick={onDismiss}>
+          Dismiss
+        </button>
+      </div>
+      {report.applied.length ? (
+        <ul className="lab-fixlist">
+          {report.applied.map((f, i) => (
+            <li key={`a${i}`}>
+              <span className="lab-line">L{f.line}</span>
+              <span><RichText text={f.text} /></span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {report.skipped.length ? (
+        <>
+          <p className="lab-fixnote">Left alone — these are your call:</p>
+          <ul className="lab-fixlist is-skipped">
+            {report.skipped.map((f, i) => (
+              <li key={`s${i}`}>
+                <span className="lab-line">L{f.line}</span>
+                <span><RichText text={f.text} /></span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 function parseRows(text: string): { headline: string; rows: Row[]; tail: string } {
   const lines = text.split("\n");
   const headline = lines[0] ?? "";
@@ -36,11 +91,15 @@ export function LabVerdict({
   presetName,
   onFix,
   fixing,
+  fixReport,
+  onDismissFixReport,
 }: {
   verdict: Verdict;
   presetName: string;
   onFix: () => void;
   fixing: boolean;
+  fixReport: FixReport | null;
+  onDismissFixReport: () => void;
 }) {
   if (verdict.state === "idle") {
     return (
@@ -116,6 +175,10 @@ export function LabVerdict({
       ) : null}
 
       {tail ? <p className="lab-tail">{tail}</p> : null}
+
+      {fixReport ? (
+        <FixSummary report={fixReport} onDismiss={onDismissFixReport} />
+      ) : null}
     </div>
   );
 }

@@ -28,6 +28,12 @@ export type Specimen = {
   fontsHref: string | null;
 };
 
+/** What a repair pass changed, and what it refused to touch. */
+export type FixReport = {
+  applied: { line: number; text: string }[];
+  skipped: { line: number; text: string }[];
+};
+
 export type Verdict =
   | { state: "idle"; text?: undefined }
   | { state: "checking"; text?: string }
