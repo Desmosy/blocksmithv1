@@ -39,12 +39,21 @@ export function LabShell({
   const [verdict, setVerdict] = useState<Verdict>({ state: "idle" });
   const [calls, setCalls] = useState<ToolCall[]>([]);
   const [fixing, setFixing] = useState(false);
+  /** Session-local token edits. Never written to the shipped presets. */
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
 
   const logCall = useCallback((call: ToolCall) => {
     setCalls((prev) => [call, ...prev].slice(0, 40));
   }, []);
 
   /** Run the code through governance. Shared by the editor and the agent. */
+  const selectPreset = useCallback((fileName: string) => {
+    setDoc(fileName);
+    // Overrides name tokens in the system that was active, so they cannot
+    // carry across to a different one.
+    setOverrides({});
+  }, []);
+
   const check = useCallback(
     async (source: string, forDoc: string, signal?: AbortSignal) => {
       setVerdict((v) => ({ ...v, state: "checking" }));
@@ -56,6 +65,7 @@ export function LabShell({
             tool: "check_governance",
             args: { code: source },
             doc: forDoc,
+            tokenOverrides: stateRef.current.overrides,
           }),
           signal,
         });
@@ -91,6 +101,7 @@ export function LabShell({
           tool: "fix_violations",
           args: { code: source },
           doc: stateRef.current.doc,
+          tokenOverrides: stateRef.current.overrides,
         }),
       });
       const data = (await res.json()) as { text?: string };
@@ -123,8 +134,8 @@ export function LabShell({
 
   // Agent tools need the current code and preset without re-registering on
   // every keystroke, which would churn the tool surface constantly.
-  const stateRef = useRef({ doc, code });
-  stateRef.current = { doc, code };
+  const stateRef = useRef({ doc, code, overrides });
+  stateRef.current = { doc, code, overrides };
 
   /**
    * Client tools: these act on what the human is looking at, so they cannot be
@@ -204,6 +215,60 @@ export function LabShell({
         },
       },
       {
+        name: "apply_token_change",
+        description:
+          "Change one design token's colour for this session. The page re-renders in the new colour and every later check judges against it. The shipped design system is not modified — this is a proposal the user can see, not a saved edit.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            token: {
+              type: "string",
+              description: 'Token name as the system spells it, e.g. "Oxblood".',
+            },
+            value: {
+              type: "string",
+              description: 'New colour as hex, e.g. "#8e2436".',
+            },
+          },
+          required: ["token", "value"],
+        },
+        annotations: { readOnlyHint: false },
+        execute: (args) => {
+          const tokenName = String(args.token ?? "").trim();
+          const value = String(args.value ?? "").trim().toLowerCase();
+          const preset = presets.find((p) => p.fileName === stateRef.current.doc);
+          const known = preset?.specimen.colors ?? [];
+
+          if (!/^#[0-9a-f]{3}([0-9a-f]{3})?$/.test(value)) {
+            return `"${args.value}" is not a hex colour. Pass something like #8e2436.`;
+          }
+          const match = known.find(
+            (c) => c.name.toLowerCase() === tokenName.toLowerCase(),
+          );
+          if (!match) {
+            return (
+              `${preset?.name ?? "This system"} has no token called "${tokenName}". ` +
+              `Its tokens are: ${known.map((c) => c.name).join(", ")}.`
+            );
+          }
+
+          setOverrides((prev) => ({ ...prev, [match.name]: value }));
+          const result =
+            `**${match.name}** is now \`${value}\` for this session ` +
+            `(was \`${match.value}\`). The page has re-rendered and later checks ` +
+            `use the new value. Nothing was saved to the design system.`;
+          logCall({
+            id: nextCallId(),
+            name: "apply_token_change",
+            args,
+            result,
+            at: Date.now(),
+            mutating: true,
+          });
+          return result;
+        },
+      },
+      {
         name: "propose_component",
         description:
           "Put component code into the user's editor so they can see it. It is checked against the active design system immediately and the verdict is returned to you. Use this instead of only printing code in chat.",
@@ -249,8 +314,8 @@ export function LabShell({
   );
 
   const serverSpecs = useMemo(
-    () => serverToolSpecs(tools, doc, logCall, activeComponents),
-    [tools, doc, logCall, activeComponents],
+    () => serverToolSpecs(tools, doc, logCall, activeComponents, overrides),
+    [tools, doc, logCall, activeComponents, overrides],
   );
 
   const allTools = useMemo(
@@ -260,6 +325,18 @@ export function LabShell({
 
   const { supported, registered, error } = useWebMcp(allTools);
   const activePreset = presets.find((p) => p.fileName === doc);
+
+  // The specimen renders from the overridden palette, so a token the agent
+  // changes is visible on screen rather than only in the checks.
+  const liveSpecimen = useMemo(() => {
+    if (!activePreset || !Object.keys(overrides).length) return null;
+    return {
+      ...activePreset.specimen,
+      colors: activePreset.specimen.colors.map((c) =>
+        overrides[c.name] ? { ...c, value: overrides[c.name] } : c,
+      ),
+    };
+  }, [activePreset, overrides]);
 
   // Load the active system's own typefaces. Without this the specimen renders
   // in the substitute stack and every preset looks the same.
@@ -282,7 +359,7 @@ export function LabShell({
       <LabPresetBar
         presets={presets}
         active={doc}
-        onSelect={setDoc}
+        onSelect={selectPreset}
         supported={supported}
         registeredCount={registered.length}
         registrationError={error}
@@ -291,7 +368,7 @@ export function LabShell({
       <div className="lab-grid">
         <section className="lab-pane" aria-label="Component code">
           {activePreset ? (
-            <LabSpecimen specimen={activePreset.specimen} />
+            <LabSpecimen specimen={liveSpecimen ?? activePreset.specimen} />
           ) : null}
           <LabEditor
             code={code}

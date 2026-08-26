@@ -7,6 +7,25 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const MAX_OVERRIDES = 40;
+
+/** Keep only well-formed hex overrides, and cap how many a request may carry. */
+function sanitizeOverrides(
+  raw: unknown,
+): Record<string, string> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: Record<string, string> = {};
+  let n = 0;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (n >= MAX_OVERRIDES) break;
+    if (typeof key !== "string" || typeof value !== "string") continue;
+    if (!/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(value.trim())) continue;
+    out[key.slice(0, 80)] = value.trim().toLowerCase();
+    n++;
+  }
+  return n ? out : undefined;
+}
+
 /**
  * Server dispatch for the in-page WebMCP tools.
  *
@@ -19,7 +38,12 @@ export const dynamic = "force-dynamic";
  * not through this route.
  */
 export async function POST(request: NextRequest) {
-  let body: { tool?: string; args?: Record<string, unknown>; doc?: string };
+  let body: {
+    tool?: string;
+    args?: Record<string, unknown>;
+    doc?: string;
+    tokenOverrides?: Record<string, string>;
+  };
   try {
     body = await request.json();
   } catch {
@@ -47,7 +71,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const text = await tool.run(body.args ?? {}, { doc: body.doc });
+    const text = await tool.run(body.args ?? {}, {
+      doc: body.doc,
+      // Session-local only: overrides arrive per request and are never
+      // persisted. This route is public, so a token edit must not be able to
+      // rewrite a shipped preset for everyone.
+      tokenOverrides: sanitizeOverrides(body.tokenOverrides),
+    });
     return NextResponse.json({ text: clampOutput(text) });
   } catch (err) {
     // Return the failure as tool text, not an HTTP error: a descriptive

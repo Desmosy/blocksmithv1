@@ -13,8 +13,6 @@
 
 import {
   handleCheckGovernance,
-  handleGetGovernanceRules,
-  handleValidateUiCode,
   resolveDocRef,
 } from "@/mcp/handlers";
 import {
@@ -22,6 +20,7 @@ import {
   loadDesignSystem,
   readDocMarkdown,
 } from "@/lib/clients/registry";
+import type { DesignSystem } from "@/lib/blocks/types";
 import {
   capabilitySurface,
   describeCapability,
@@ -29,7 +28,9 @@ import {
   summarizeCapability,
 } from "@/lib/governance/capability";
 import {
+  findOffTokenColors,
   nearestToken,
+  paletteFromColors,
   type NearestToken,
   type TokenColor,
 } from "@/lib/governance/color-lint";
@@ -97,7 +98,38 @@ export type WebMcpToolDef = {
 export type ToolContext = {
   /** Document the tools operate against; falls back to the server default. */
   doc?: string;
+  /**
+   * Session-local token edits, keyed by token name.
+   *
+   * The Lab is a public, unauthenticated page, so a token change must never
+   * write to the shipped presets — anyone could rewrite them. Overrides live
+   * for the length of a session and are applied on read instead.
+   */
+  tokenOverrides?: Record<string, string>;
 };
+
+/**
+ * The active design system with any session overrides applied.
+ *
+ * Every tool reads through this rather than `loadDesignSystem` directly, so a
+ * token the agent just changed governs the very next check.
+ */
+export function systemFor(ctx: ToolContext): DesignSystem {
+  const system = loadDesignSystem(resolveDocRef(ctx.doc));
+  const overrides = ctx.tokenOverrides;
+  if (!overrides || !Object.keys(overrides).length) return system;
+
+  const byName = new Map(
+    Object.entries(overrides).map(([k, v]) => [k.trim().toLowerCase(), v]),
+  );
+  return {
+    ...system,
+    colors: system.colors.map((c) => {
+      const next = byName.get(c.name.trim().toLowerCase());
+      return next ? { ...c, value: next } : c;
+    }),
+  };
+}
 
 const str = (v: unknown): string | undefined =>
   typeof v === "string" && v.trim() ? v.trim() : undefined;
@@ -123,7 +155,16 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
     run: (_args, ctx) => {
-      const r = handleGetGovernanceRules({ doc: ctx.doc });
+      const system = systemFor(ctx);
+      const r = {
+        systemName: system.name,
+        componentCount: system.components.length,
+        palette: system.colors
+          .filter((c) => c.value.startsWith("#"))
+          .map((c) => ({ name: c.name, value: c.value.toLowerCase() })),
+        dos: system.dos,
+        donts: system.donts,
+      };
       const lines = [
         `# ${r.systemName}`,
         `${r.componentCount} components · ${r.palette.length} color tokens`,
@@ -329,13 +370,19 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       const code = str(args.code);
       if (!code) return "No code supplied. Pass the component source as `code`.";
 
-      const r = handleValidateUiCode({ doc: ctx.doc, code });
-      const system = loadDesignSystem(resolveDocRef(ctx.doc));
+      // All four linters read the same system, so a token the agent just
+      // changed governs this check rather than the shipped value.
+      const system = systemFor(ctx);
+      const palette = system.colors
+        .filter((c) => c.value.startsWith("#"))
+        .map((c) => ({ name: c.name, value: c.value.toLowerCase(), cssVar: c.cssVar }));
+
+      const colorViolations = findOffTokenColors(code, paletteFromColors(system.colors));
       const scaleViolations = findScaleViolations(code, system);
       const ruleViolations = findRuleViolations(code, system);
       const twViolations = findTailwindViolations(code, system);
       const total =
-        r.violations.length +
+        colorViolations.length +
         scaleViolations.length +
         ruleViolations.length +
         twViolations.length;
@@ -343,12 +390,12 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       if (total === 0) {
         return (
           `PASS — no design system violations. Checked colors against ` +
-          `${r.tokenCount} tokens, plus spacing, type size, radius, and ` +
+          `${palette.length} tokens, plus spacing, type size, radius, and ` +
           `${system.name}'s stated rules.`
         );
       }
 
-      const rules = handleGetGovernanceRules({ doc: ctx.doc });
+      const rules = { systemName: system.name, palette };
 
       // Several linters can legitimately flag the same token on the same line
       // — `to-black` is both a banned pure color and an off-palette Tailwind
@@ -363,7 +410,7 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         detail.push(`- Line ${line}: ${text}`);
       };
 
-      for (const v of r.violations) {
+      for (const v of colorViolations) {
         const near = nearestTokenMatch(v.hex, rules.palette);
         const fix = !near
           ? ""
@@ -426,7 +473,7 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       const code = str(args.code);
       if (!code) return "No code supplied. Pass the component source as `code`.";
 
-      const system = loadDesignSystem(resolveDocRef(ctx.doc));
+      const system = systemFor(ctx);
       const result = applyFixes(code, system);
       if (!result.applied.length) {
         return describeFixResult(result);
@@ -462,7 +509,14 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       const hex = str(args.hex)?.toLowerCase();
       if (!hex) return "Pass the rejected color as `hex`.";
 
-      const rules = handleGetGovernanceRules({ doc: ctx.doc });
+      const system = systemFor(ctx);
+      const rules = {
+        systemName: system.name,
+        donts: system.donts,
+        palette: system.colors
+          .filter((c) => c.value.startsWith("#"))
+          .map((c) => ({ name: c.name, value: c.value.toLowerCase(), cssVar: c.cssVar })),
+      };
       const exact = rules.palette.find((p) => p.value === hex);
       if (exact) {
         return `\`${hex}\` is a valid token — it is **${exact.name}** in ${rules.systemName}.`;
