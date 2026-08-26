@@ -12,6 +12,8 @@
  * `untrustedContentHint`.
  */
 
+import { renderSiteDesign, type RenderedComponent, type Rendered } from "./render-site";
+
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_BYTES = 1_500_000;
 // Sites split CSS across many bundles and the fonts are rarely in the first
@@ -46,6 +48,8 @@ export type Extracted = {
   easings: string[];
   /** Gradients the page defines — for some brands this *is* the imagery. */
   gradients: string[];
+  /** Components read off the rendered page. Empty when no browser was available. */
+  components: RenderedComponent[];
 };
 
 /** Values ordered by how often the page uses them, capped. */
@@ -426,6 +430,42 @@ function stylesheetUrls(html: string, base: URL): string[] {
     .map((x) => x.u);
 }
 
+/**
+ * Merge what the page renders into what its CSS says.
+ *
+ * Rendering is the better source wherever the two disagree: it knows which
+ * colour covers the screen and which font actually applied, where the text pass
+ * only knows what was mentioned. On monad.com the text pass surfaced an orange
+ * that appears nowhere on screen, while rendering found the #f6f3f1 parchment
+ * covering 98% of it. The text pass still contributes what rendering cannot
+ * see cheaply — breakpoints, the full spacing scale, gradients.
+ */
+function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
+  // Rendered colours lead, weighted by painted area; text-only finds follow.
+  const seen = new Set(rendered.colors.map((c) => c.value));
+  const colors = [
+    ...rendered.colors.map((c, i) => ({
+      value: c.value,
+      count: Math.round(c.weight * 10_000) + (rendered.colors.length - i),
+    })),
+    ...text.colors.filter((c) => !seen.has(c.value)).slice(0, 4),
+  ].slice(0, 14);
+
+  const renderedFonts = rendered.fonts
+    .map((name) => text.fonts.find((f) => f.name.toLowerCase() === name.toLowerCase()) ?? {
+      name,
+      substitute: name,
+    })
+    .filter((f) => !/^(ui-|system-|-apple)/i.test(f.name));
+
+  return {
+    ...text,
+    colors,
+    fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
+    components: rendered.components,
+  };
+}
+
 export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
   const url = assertPublicUrl(rawUrl);
   const html = await fetchText(url.href);
@@ -450,13 +490,14 @@ export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
   );
   css += "\n" + sheets.join("\n");
 
+  const rendered = await renderSiteDesign(url.href);
   const colorCounts = collectColors(css);
   const colors = [...colorCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 14)
     .map(([value, count]) => ({ value, count }));
 
-  return {
+  const textPass: Extracted = {
     url: url.href,
     title,
     colors,
@@ -517,5 +558,8 @@ export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
       3,
       (v) => (v.includes("var(") ? null : v.trim()),
     ),
+    components: [],
   };
+
+  return rendered ? mergeRendered(textPass, rendered) : textPass;
 }

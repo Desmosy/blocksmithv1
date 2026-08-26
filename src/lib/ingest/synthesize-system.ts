@@ -67,8 +67,27 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
   const byLuminance = [...usable].sort(
     (a, b) => luminance(b.value) - luminance(a.value),
   );
-  const ground = byLuminance[0];
-  const ink = byLuminance[byLuminance.length - 1];
+
+  // Ground is the light colour the page actually uses, not the lightest one it
+  // mentions. monad.com paints #f6f3f1 across 98% of the screen and #ffffff
+  // almost nowhere; picking by luminance alone called the wrong one the page.
+  // Light *and* close to neutral. Lightness alone lets a saturated colour win:
+  // linear.app paints a large yellow panel that is bright enough to pass a
+  // luminance test, and calling it the page background is plainly wrong.
+  const ground =
+    [...usable]
+      .filter((c) => luminance(c.value) > 0.7 && chroma(c.value) <= 30)
+      .sort((a, b) => b.count - a.count)[0] ??
+    [...usable].filter((c) => chroma(c.value) <= 30).sort((a, b) => b.count - a.count)[0] ??
+    byLuminance[0];
+
+  // Ink likewise: the dark colour carrying the text, not merely the darkest.
+  const ink =
+    [...usable]
+      .filter(
+        (c) => c.value !== ground.value && luminance(c.value) < 0.3 && chroma(c.value) <= 60,
+      )
+      .sort((a, b) => b.count - a.count)[0] ?? byLuminance[byLuminance.length - 1];
 
   // The accent is the colour the page *uses most*, among those saturated
   // enough to be a colour rather than a tinted neutral.
@@ -315,6 +334,21 @@ export function synthesizeDesignSystem(found: Extracted): {
   }
   if (layoutRows.length) {
     lines.push("### Layout", "", "| Label | Value |", "|-------|-------|", ...layoutRows, "");
+  }
+
+  // Components, read off the rendered page. Absent when no browser was
+  // available — a system with no components is honest; inventing them is not.
+  if (found.components.length) {
+    lines.push("## Components", "");
+    for (const c of found.components) {
+      lines.push(
+        `### ${c.name}`,
+        `**Role:** ${c.role}`,
+        "",
+        `${c.spec}${c.count > 1 ? ` Used ${c.count} times on the captured page.` : ""}`,
+        "",
+      );
+    }
   }
 
   // Surfaces: the light end of the palette, ordered. These are the planes a

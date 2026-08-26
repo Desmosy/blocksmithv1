@@ -112,6 +112,7 @@
     "next": "^15.1.0",
     "nuqs": "^2.9.0",
     "openai": "^4.77.0",
+    "playwright-core": "^1.62.1",
     "radix-ui": "^1.6.2",
     "react": "^19.0.0",
     "react-aria-components": "^1.19.0",
