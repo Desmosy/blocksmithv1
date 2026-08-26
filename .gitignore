@@ -14,5 +14,9 @@ packages/generated/
 *.pem
 npm-debug.log*
 
-# reference clone, not part of the app
-ui/
+# reference clone at the repo root, not part of the app.
+# Leading slash is load-bearing: a bare `ui/` also matches src/components/ui/,
+# which un-tracks every shadcn component and — because Tailwind v4 skips
+# gitignored files during source detection — silently stops generating the
+# utilities they use.
+/ui/
