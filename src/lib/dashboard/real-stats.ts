@@ -62,6 +62,10 @@ export async function getDashboardFacts(): Promise<DashboardFacts> {
     uploads = [];
   }
 
+  // Counted over every upload. Deriving this from `recent` below would cap it
+  // at the length of that slice — 38 captures would have reported as 5.
+  const capturedSites = uploads.filter((u) => u.fileName.startsWith("capture-")).length;
+
   const recent: RecentItem[] = uploads
     .slice()
     .sort((a, b) => (b.savedAt ?? "").localeCompare(a.savedAt ?? ""))
@@ -103,7 +107,7 @@ export async function getDashboardFacts(): Promise<DashboardFacts> {
       },
       {
         label: "Captured sites",
-        value: recent.filter((r) => r.kind === "capture").length || null,
+        value: capturedSites || null,
         hint: "read from a live page",
       },
     ],

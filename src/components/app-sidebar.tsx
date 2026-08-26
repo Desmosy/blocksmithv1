@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LogoIcon } from "@/components/logo";
 import {
@@ -27,10 +28,10 @@ export function AppSidebar() {
 		>
 			<SidebarHeader className="h-14 justify-center border-b px-2">
 				<SidebarMenuButton asChild>
-					<a href="#link">
+					<Link href="/dashboard">
 						<LogoIcon />
 						<span className="font-medium text-foreground!">BlockSmith</span>
-					</a>
+					</Link>
 				</SidebarMenuButton>
 			</SidebarHeader>
 			<SidebarContent>
@@ -48,10 +49,10 @@ export function AppSidebar() {
 								isActive={item.isActive}
 								size="sm"
 							>
-								<a href={item.path}>
+								<Link href={item.path ?? "#"}>
 									{item.icon}
 									<span>{item.title}</span>
-								</a>
+								</Link>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					))}

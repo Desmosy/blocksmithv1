@@ -58,7 +58,7 @@ export default async function ConnectorsPage() {
       what: "Your IDE agent reads the design system over Model Context Protocol.",
       state: "ready",
       detail: `${BLOCKSMITH_MCP_TOOL_NAMES.length} tools served over stdio and at /api/mcp`,
-      href: "/dashboard/settings",
+      href: "/dashboard/api-keys",
       hrefLabel: "Install in Cursor",
     },
     {

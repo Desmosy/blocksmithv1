@@ -1,15 +1,8 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardThemeProvider } from "@/components/dashboard/DashboardThemeProvider";
+import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
 import { DashboardThemeToggle } from "@/components/dashboard/DashboardThemeToggle";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import "@/styles/dashboard.css";
 import Link from "next/link";
@@ -40,23 +33,13 @@ export default function DashboardLayout({
                 <div className="flex items-center gap-2">
                   <SidebarTrigger className="-ml-1" />
                   <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
-                  <Breadcrumb className="hidden md:flex">
-                    <BreadcrumbList>
-                      <BreadcrumbItem>
-                        <BreadcrumbLink href="/dashboard">Workspace</BreadcrumbLink>
-                      </BreadcrumbItem>
-                      <BreadcrumbSeparator />
-                      <BreadcrumbItem>
-                        <BreadcrumbPage>Overview</BreadcrumbPage>
-                      </BreadcrumbItem>
-                    </BreadcrumbList>
-                  </Breadcrumb>
+                  <DashboardBreadcrumb />
                 </div>
                 
                 {/* Mobile only right actions */}
                 <div className="flex items-center gap-2 md:hidden">
                   <DashboardThemeToggle />
-                  <Link href="/dashboard/connectors" aria-label="Create or import" className="grid size-8 place-items-center rounded-lg hover:bg-muted">
+                  <Link href="/dashboard" aria-label="Create or import" className="grid size-8 place-items-center rounded-lg hover:bg-muted">
                     <Plus size={16} />
                   </Link>
                 </div>
