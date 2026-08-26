@@ -27,7 +27,8 @@ That is the thing that was difficult before: the human and the agent operating o
 | Watches code land in the editor | Gets the verdict back in the same call |
 | Sees `REJECTED` with the rule quoted | Calls `fix_violations` and self-corrects |
 | Switches design system | Its tool schemas re-register — `toolchange` fires |
-| Names a site they like | Calls `capture_site_design` to read its tokens |
+| Names a site they like | Calls `capture_site_design`, which saves it as a system they can build against |
+| Leaves for their editor | Calls `export_skill` so the same rules follow them there |
 
 Every tool call the agent makes is listed on the page. An agent working in a
 sidebar the human cannot see is indistinguishable from one making things up.
@@ -69,7 +70,9 @@ Registration is lifecycle-bound: `useWebMcp()` registers on mount and aborts the
 - **Tool output stays under 1,500 characters.** Chrome enforces this. A `design.md` is 10–50× that, so tools return a summary plus a link — never the document itself.
 - **`untrustedContentHint` on `capture_site_design`.** That tool returns content fetched from an arbitrary third-party URL, which is a textbook indirect prompt-injection vector. The annotation tells the agent to treat the result as data, not instructions.
 - **`readOnlyHint` split.** Every `get_*` and `check_*` tool is marked read-only so the agent knows which actions need confirmation.
-- **Nine tools, not fifteen.** The remote MCP server exposes fifteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow.
+- **Composition is checked, not just values.** `check_governance` catches two primary actions in one view, a card nested inside itself, and a card missing its required label — rules about arrangement that no value-level linter can see.
+- **Every violation is citable.** Each carries a stable rule id (`off-token-color`, `banned-gradient`, `contract-max`).
+- **Fourteen tools, not fifteen.** The remote MCP server exposes fifteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow.
 - **The tool surface is live.** `check_component`'s schema carries an enum of the active system's components. Switching design systems re-registers the tools and fires `toolchange`, so the agent's options change with the rules — it cannot name a component the current system doesn't have.
 - **Auto-fix stops where judgement starts.** `fix_violations` applies every mechanical repair and returns what it refused to touch: colours with no close token, and rules like "no gradients" whose fix changes the composition rather than a value.
 
