@@ -56,7 +56,7 @@
     "validate:ui": "tsx --conditions=react-server scripts/validate-ui.ts",
     "verify:ir-cicd": "tsx --conditions=react-server scripts/verify-ir-cicd.ts",
     "compile:device": "tsx --conditions=react-server scripts/compile-device.ts",
-    "protocol:conformance": "tsx packages/protocol/conformance/run.ts && tsx packages/protocol/conformance/drift.ts",
+    "protocol:conformance": "tsx packages/protocol/conformance/run.ts && tsx --conditions=react-server packages/protocol/conformance/drift.ts",
     "protocol:sync-schemas": "node scripts/sync-protocol-schemas.mjs",
     "ingest:storybook": "tsx --conditions=react-server scripts/ingest-storybook.ts",
     "build:sdk": "npm run build -w @blocksmith/sdk",
