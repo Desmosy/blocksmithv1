@@ -72,10 +72,17 @@ export function WikiAgentTools({
           const code = String(args.code ?? "").trim();
           if (!code) return "No code supplied. Pass the component markup as `code`.";
 
-          setProposal({
-            code,
-            intent: args.intent ? String(args.intent) : undefined,
-            at: Date.now(),
+          const intent = args.intent ? String(args.intent) : undefined;
+          setProposal({ code, intent, at: Date.now() });
+
+          // Publish it so the human sees this even when they are in a different
+          // browser — an agent in ChatGPT's browser is not in the user's Chrome.
+          void fetch("/api/webmcp/proposal", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ code, intent, doc: docFileName }),
+          }).catch(() => {
+            /* the local view already updated; publishing is best effort */
           });
 
           // Return the verdict in the same call so the agent can correct itself

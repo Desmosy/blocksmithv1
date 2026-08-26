@@ -47,6 +47,37 @@ export function GovernanceCheckPanel({
     return subscribeToProposals(setLocal);
   }, []);
 
+  // Watch the server too. The agent is often in a different browser — one on
+  // OpenAI's machines, say — so a proposal that only lived in page memory would
+  // never reach the person it was built for.
+  useEffect(() => {
+    let cancelled = false;
+    let lastSeen = 0;
+
+    const poll = async () => {
+      try {
+        const url = `/api/webmcp/proposal${docFileName ? `?doc=${encodeURIComponent(docFileName)}` : ""}`;
+        const res = await fetch(url, { cache: "no-store" });
+        const data = (await res.json()) as { proposal: Proposal | null };
+        if (cancelled) return;
+        const next = data.proposal;
+        if (next && next.at > lastSeen) {
+          lastSeen = next.at;
+          setLocal(next);
+        }
+      } catch {
+        /* a dropped poll is not worth surfacing; the next one will land */
+      }
+    };
+
+    void poll();
+    const timer = setInterval(poll, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [docFileName]);
+
   const code = proposal?.code ?? manual;
   const fromAgent = Boolean(proposal);
 
@@ -54,6 +85,12 @@ export function GovernanceCheckPanel({
     setProposal(null);
     setManual("");
     setShowCode(false);
+    // Clear it for every viewer, not just this tab.
+    void fetch("/api/webmcp/proposal", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: "", doc: docFileName }),
+    }).catch(() => {});
   };
 
   return (
