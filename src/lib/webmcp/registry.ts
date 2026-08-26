@@ -350,7 +350,18 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
           found.colors.slice(0, 10).map((c) => c.value).join(" · "),
         ];
         if (found.fonts.length) {
-          lines.push("", "Typefaces: " + found.fonts.slice(0, 4).join(" · "));
+          lines.push(
+            "",
+            "Typefaces: " +
+              found.fonts
+                .slice(0, 4)
+                .map((f) =>
+                  f.substitute && f.substitute !== f.name
+                    ? `${f.name} (use ${f.substitute})`
+                    : f.name,
+                )
+                .join(" · "),
+          );
         }
         lines.push(
           "",

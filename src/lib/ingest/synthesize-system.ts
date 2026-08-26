@@ -181,8 +181,11 @@ export function synthesizeDesignSystem(found: Extracted): {
             ? "Secondary typeface observed on the page"
             : "Third typeface observed on the page";
       lines.push(
-        `### ${font} — ${role}. · \`--font-${slug(font)}\``,
-        `- **Substitute:** ${font}`,
+        `### ${font.name} — ${role}. · \`--font-${slug(font.name)}\``,
+        // The substitute is what a reader can actually load. Where the real
+        // face has no free counterpart it repeats the name, which is honest:
+        // the system says what it saw and what you can use instead.
+        `- **Substitute:** ${font.substitute}`,
         `- **Weights:** 400, 500, 700`,
         `- **Sizes:** ${(sizes.length ? sizes : [16]).map((n) => `${n}px`).join(", ")}`,
         "",

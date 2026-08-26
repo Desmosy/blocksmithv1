@@ -14,13 +14,15 @@
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_BYTES = 1_500_000;
-const MAX_STYLESHEETS = 4;
+// Sites split CSS across many bundles and the fonts are rarely in the first
+// one — linear.app loads 51 sheets and declares its typeface around the 20th.
+const MAX_STYLESHEETS = 16;
 
 export type Extracted = {
   url: string;
   title: string | null;
   colors: { value: string; count: number }[];
-  fonts: string[];
+  fonts: CapturedFont[];
   radii: number[];
   spacing: number[];
   fontSizes: number[];
@@ -178,23 +180,154 @@ function collectNumbers(css: string, props: string[]): number[] {
     .map(([n]) => n);
 }
 
-function collectFonts(css: string): string[] {
-  const out = new Set<string>();
-  for (const m of css.matchAll(/font-family\s*:\s*([^;{}]+)/gi)) {
-    const first = m[1].split(",")[0].trim().replace(/^["']|["']$/g, "");
-    // Skip generics and CSS variables — neither names a typeface.
-    if (!first || first.startsWith("var(") || first.startsWith("--")) continue;
-    if (/^(inherit|initial|unset|sans-serif|serif|monospace|system-ui|ui-\w+|cursive|fantasy)$/i.test(first)) {
-      continue;
-    }
-    out.add(first);
-  }
-  return [...out].slice(0, 8);
+/**
+ * Map a real typeface to something a reader can actually load.
+ *
+ * A captured system is a starting point, not a forgery: the goal is for the
+ * result to *read* like the site, not to relicense its fonts. Where a brand
+ * face has an obvious free counterpart, this names it; where it does not, the
+ * original is kept and the substitute falls back to a generic.
+ */
+const FONT_SUBSTITUTES: { match: RegExp; substitute: string }[] = [
+  // Anything monospaced resolves to a monospace, whatever brand it belongs to.
+  // This has to precede the family rules: "Geist Mono" matching the Geist rule
+  // first would substitute a sans for a mono, which is worse than nothing.
+  { match: /mono|code|courier/i, substitute: "JetBrains Mono" },
+  { match: /^inter/i, substitute: "Inter" },
+  { match: /^roboto/i, substitute: "Roboto" },
+  { match: /^(sf pro|apple system|blinkmac|helvetica|arial|sohne|graphik|gt america|founders|neue haas)/i, substitute: "Inter" },
+  { match: /^(circular|geist|general sans|satoshi|aeonik)/i, substitute: "Manrope" },
+  { match: /^(poppins|montserrat|nunito|raleway|work sans|dm sans|open sans|lato|source sans)/i, substitute: "" },
+  { match: /^(georgia|times|charter|tiempos|freight|publico|lyon|sentinel|chronicle)/i, substitute: "Source Serif 4" },
+  { match: /^(playfair|canela|ogg|editorial)/i, substitute: "Playfair Display" },
+];
+
+export type CapturedFont = { name: string; substitute: string };
+
+/** The typeface's own name, cleaned of weight and variable suffixes. */
+function cleanFamily(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    // "GeistSans Fallback", "Inter Variable", "sohne-var" all name one face.
+    .replace(/[\s-]+(fallback|variable|var|vf)$/i, "")
+    .replace(/\s+(display|text|web)$/i, "")
+    .trim();
 }
 
-/** Absolute URLs for the page's own stylesheets, capped. */
+/** Diacritic- and separator-insensitive, so "Söhne" and "sohne-var" agree. */
+function normaliseForMatch(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim();
+}
+
+function substituteFor(name: string): string {
+  const probe = normaliseForMatch(name);
+  for (const { match, substitute } of FONT_SUBSTITUTES) {
+    if (match.test(probe)) return substitute || name;
+  }
+  // Unknown brand face: keep the name, let the reader pick.
+  return name;
+}
+
+const GENERIC_FAMILY =
+  /^(inherit|initial|unset|revert|none|auto|sans-serif|serif|monospace|system-ui|ui-[\w-]+|cursive|fantasy|emoji|math|fangsong)$/i;
+
+/**
+ * Faces that are never part of a design system: emoji fallbacks, icon fonts,
+ * and the platform stacks a page lists after its real typeface. Reporting
+ * "Apple Color Emoji" as a captured typeface is noise that makes the whole
+ * capture look careless.
+ */
+const NOT_A_TYPEFACE =
+  /(emoji|icon|symbol|glyph|webdings|wingdings|noto color|segoe ui symbol|material)/i;
+
+/**
+ * OpenType feature tags and patch faces that ride along in the same
+ * declarations as real families — "cv01", "ss03", "Noto Sans Backtick Fix".
+ * They are real strings in the CSS but nobody would call them the site's
+ * typeface.
+ */
+const FEATURE_TAG = /^(cv|ss|liga|calt|tnum|onum|salt|zero|case|frac)\d*$/i;
+const PATCH_FACE = /\b(fix|patch|fallback|subset|backtick)\b/i;
+
+/**
+ * Every typeface the page names, from three places: plain `font-family`
+ * declarations, `@font-face` blocks, and CSS custom properties that hold a font
+ * stack. Reading only the first misses any site that sets its font through a
+ * variable — which is most well-built ones.
+ */
+function collectFonts(css: string): CapturedFont[] {
+  const found = new Map<string, CapturedFont & { uses: number }>();
+
+  const add = (raw: string, weight = 1) => {
+    const value = String(raw);
+    // `font-variation-settings: "opsz" auto` and friends sit in the same
+    // declarations and are settings, not families.
+    if (/\b(opsz|wght|slnt|wdth|ital|GRAD)\b/.test(value)) return;
+    const first = cleanFamily(value.split(",")[0] ?? "");
+    if (!first || first.startsWith("var(") || first.startsWith("--")) return;
+    if (GENERIC_FAMILY.test(first) || NOT_A_TYPEFACE.test(first)) return;
+    if (first.length < 3 || FEATURE_TAG.test(first) || PATCH_FACE.test(first)) return;
+    const key = first.toLowerCase();
+    const existing = found.get(key);
+    if (existing) {
+      existing.uses += weight;
+      return;
+    }
+    if (found.size >= 12) return;
+    found.set(key, {
+      name: first,
+      substitute: substituteFor(first),
+      uses: weight,
+    });
+  };
+
+  // @font-face first: it names the real typeface even when everything else
+  // reaches it through a variable.
+  for (const block of css.matchAll(/@font-face\s*\{([^}]*)\}/gi)) {
+    const family = block[1].match(/font-family\s*:\s*([^;]+)/i)?.[1];
+    if (family) add(family);
+  }
+  // Every `font-family` use counts toward the ranking: the face a page asks
+  // for most is the one it is actually set in, which is rarely the first
+  // @font-face block it happens to declare.
+  for (const m of css.matchAll(/font-family\s*:\s*([^;{}]+)/gi)) add(m[1]);
+  // Custom properties holding a stack: --font-body: "Inter", sans-serif
+  for (const m of css.matchAll(/--([\w-]*font[\w-]*)\s*:\s*([^;{}]+)/gi)) {
+    const prop = m[1].toLowerCase();
+    const value = m[2].trim();
+    // --font-size-*, --font-weight-*, --font-letter-spacing hold measurements,
+    // not families. Their values look like ".6875rem" and "-0.01em".
+    if (/size|weight|spacing|height|leading|tracking/.test(prop)) continue;
+    if (/^[\d.\-+]/.test(value) || value.startsWith("var(")) continue;
+    if (/\d\s*(px|rem|em|%|pt)\b/i.test(value)) continue;
+    add(value);
+  }
+
+  return [...found.values()]
+    .sort((a, b) => b.uses - a.uses)
+    .slice(0, 5)
+    .map(({ name, substitute }) => ({ name, substitute }));
+}
+
+/**
+ * The page's own stylesheets, deduplicated and ordered by how likely each is
+ * to carry the design system.
+ *
+ * Taking the first N in document order does not work on a code-split site:
+ * linear.app loads 51 sheets, lists some twice, and declares its typeface in
+ * the 40th. Bundles named index/main/app/global are where `@font-face` and
+ * token definitions actually live, and the biggest sheets carry the most, so
+ * those go first and the cap applies after.
+ */
 function stylesheetUrls(html: string, base: URL): string[] {
+  const seen = new Set<string>();
   const urls: string[] = [];
+
   for (const m of html.matchAll(/<link\b[^>]*>/gi)) {
     const tag = m[0];
     if (!/rel\s*=\s*["']?stylesheet/i.test(tag)) continue;
@@ -202,15 +335,28 @@ function stylesheetUrls(html: string, base: URL): string[] {
     if (!href) continue;
     try {
       const abs = new URL(href, base);
-      if (abs.protocol === "http:" || abs.protocol === "https:") {
-        urls.push(abs.href);
-      }
+      if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
+      if (seen.has(abs.href)) continue;
+      seen.add(abs.href);
+      urls.push(abs.href);
     } catch {
       /* skip unparseable href */
     }
-    if (urls.length >= MAX_STYLESHEETS) break;
   }
-  return urls;
+
+  const priority = (u: string): number => {
+    const name = u.split("/").pop()?.toLowerCase() ?? "";
+    if (/\b(font|typography|type)\b/.test(name)) return 0;
+    if (/^(index|main|app|global|root|style|styles|theme|tokens)\b/.test(name)) return 1;
+    if (/(index|main|app|global)/.test(name)) return 2;
+    return 3;
+  };
+
+  return urls
+    .map((u, i) => ({ u, i, p: priority(u) }))
+    .sort((a, b) => a.p - b.p || a.i - b.i)
+    .slice(0, MAX_STYLESHEETS)
+    .map((x) => x.u);
 }
 
 export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
