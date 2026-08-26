@@ -17,7 +17,8 @@ import {
   WEBMCP_TOOLS,
   clampOutput,
 } from "../src/lib/webmcp/registry";
-import { loadDesignSystem } from "../src/lib/clients/registry";
+import { loadDesignSystem, readDocMarkdown } from "../src/lib/clients/registry";
+import { resolveCapability } from "../src/lib/governance/capability";
 import { applyFixes } from "../src/lib/governance/autofix";
 import { findScaleViolations } from "../src/lib/governance/scale-lint";
 import { findRuleViolations } from "../src/lib/governance/rule-lint";
@@ -138,6 +139,23 @@ const PRESETS: PresetCase[] = [
 }`,
   },
   {
+    doc: "docs.md",
+    compliant: `export function Note() {
+  return (
+    <div style={{ background: "#e2f0f1", padding: 16, borderRadius: 6, color: "#1c1826" }}>
+      <p style={{ fontSize: 17 }}>Every request needs an API key.</p>
+    </div>
+  );
+}`,
+    offending: `export function Note() {
+  return (
+    <div className="shadow-lg rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500" style={{ padding: 18, fontSize: 42 }}>
+      <p style={{ color: "#ffffff" }}>Heads up</p>
+    </div>
+  );
+}`,
+  },
+  {
     doc: "saas.md",
     compliant: `export function Metric() {
   return <div style={{ padding: 16, borderRadius: 8 }}>Revenue</div>;
@@ -207,6 +225,37 @@ for (const p of PRESETS) {
   const twice = applyFixes(result.code, system);
   if (twice.code !== result.code) {
     fail(`${p.doc}: auto-fix is not idempotent — a second pass changed the code again`);
+  }
+}
+
+/* ------------------------------------------------------- capability matching */
+
+console.log("\nCapability matching");
+{
+  const system = loadDesignSystem("docs.md");
+  const md = readDocMarkdown("docs.md");
+
+  // Regression: naive substring matching made a rule about "Tab" swallow
+  // "Parameter Table", because "parametertable".includes("tab").
+  const table = resolveCapability("Parameter Table", system, md);
+  if (table.status !== "available") {
+    fail(`Parameter Table resolved as "${table.status}" — word-boundary matching regressed`);
+  } else {
+    ok("Parameter Table is not shadowed by a Tab rule");
+  }
+
+  const plural = resolveCapability("modals", loadDesignSystem("portfolio.md"), readDocMarkdown("portfolio.md"));
+  if (plural.status !== "unavailable") {
+    fail(`"modals" resolved as "${plural.status}" — plural matching regressed`);
+  } else {
+    ok("plurals resolve to the singular rule");
+  }
+
+  const unknown = resolveCapability("Blorptron", system, md);
+  if (unknown.status !== "unknown") {
+    fail(`an unknown pattern resolved as "${unknown.status}" instead of unknown`);
+  } else {
+    ok("an unrecognised pattern returns unknown rather than a guess");
   }
 }
 

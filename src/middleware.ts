@@ -19,6 +19,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // Kept in sync with isPublicContent() in src/lib/cloud/saas.ts.
 const PUBLIC_DOC_PARAMS = new Set([
   "apollo.md",
+  "docs.md",
   "portfolio.md",
   "saas.md",
   "scan-acme-ui-kit.md",

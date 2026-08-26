@@ -47,7 +47,7 @@ The engine has to catch what actually goes wrong, not just what's easy to catch.
 ### Days 3–4 · The preset system
 This is the product for anyone who doesn't already have a design system.
 
-- [ ] Third preset (`docs.md` or `landing.md`)
+- [x] Third preset (`docs.md` or `landing.md`)
 - [x] Preset picker UI — choose a system, see it rendered, adopt it
 - [x] `use_preset` tool so an agent can adopt one mid-conversation
 - [ ] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
@@ -57,7 +57,7 @@ This is the product for anyone who doesn't already have a design system.
 ### Days 5–6 · The live loop
 The thing judges actually watch.
 
-- [ ] `apply_token_change` — agent mutates, page visibly updates, human confirms
+- [x] `apply_token_change` — agent mutates, page visibly updates, human confirms
 - [x] `get_current_context` — which page/component the human is looking at
 - [x] Dynamic registration — tools appear/disappear via `toolchange` as system state changes
 - [ ] Governed vs ungoverned split view, same prompt, both results on screen
@@ -65,7 +65,7 @@ The thing judges actually watch.
 
 ### Day 7 · Capture
 - [x] `capture_site_design({url})` with **`untrustedContentHint`**
-- [ ] Extraction validated against the presets as ground truth
+- [x] Extraction validated against the presets as ground truth
 - [x] Captured systems enter as drafts, never straight into a lock
 
 ### Day 8 · Hardening

@@ -110,12 +110,34 @@ export function parseCapabilityRules(markdown: string): CapabilityRule[] {
   return rules;
 }
 
-/** Match a request against a component title, allowing plural and substring. */
+/**
+ * Match a request against a component title on whole words.
+ *
+ * Raw substring matching is too loose: a rule about "Tabs" matched
+ * "Parameter Table", because `"parametertable".includes("tab")`. Comparing
+ * word sets instead means "Tab" no longer collides with "Table", while
+ * "Primary Button" still finds "Primary Action Button" and plurals still
+ * resolve.
+ */
+function words(text: string): string[] {
+  return text
+    .split(/[^a-zA-Z0-9]+/)
+    .map((w) => singular(w.toLowerCase()))
+    .filter(Boolean);
+}
+
 function matchesComponent(request: string, title: string): boolean {
-  const a = singular(norm(request));
-  const b = singular(norm(title));
-  if (!a || !b) return false;
-  return a === b || b.includes(a) || a.includes(b);
+  const a = words(request);
+  const b = words(title);
+  if (!a.length || !b.length) return false;
+
+  if (a.join(" ") === b.join(" ")) return true;
+
+  // Either side may be the more specific name, so a subset match in either
+  // direction counts — but every word has to be present.
+  const setA = new Set(a);
+  const setB = new Set(b);
+  return a.every((w) => setB.has(w)) || b.every((w) => setA.has(w));
 }
 
 /**

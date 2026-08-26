@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Write UI with an agent while a design system judges every change. Open in a WebMCP browser to give your agent the tools.",
 };
 
-const PREFERRED_ORDER = ["portfolio.md", "saas.md", "apollo.md"];
+const PREFERRED_ORDER = ["portfolio.md", "saas.md", "docs.md", "apollo.md"];
 
 const STARTER = `export function PricingCard() {
   return (
