@@ -1,10 +1,4 @@
-/**
- * What capture and import actually recovered, across every system.
- *
- * Deliberately includes the facets that do badly. A coverage chart that only
- * showed the strong rows would be a marketing graphic; the useful reading is
- * the short bar, because that is where the next fix is.
- */
+/** Which facets capture and import recovered, across every system. */
 
 import type { Analytics } from "@/lib/dashboard/analytics";
 

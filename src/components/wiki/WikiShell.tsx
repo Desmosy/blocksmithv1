@@ -144,9 +144,8 @@ function WikiShellInner({
           style={{ backgroundColor: "var(--wiki-bg)" }}
         >
           <VisualizeLoadingOverlay open={loading} stage={loadingStage} />
-          {/* Outside WikiBuildGate on purpose: the gate withholds its children
-              while a doc opens, and an agent arriving mid-build would find no
-              tools at all. Registration is page-level, not content-level. */}
+          {/* Outside WikiBuildGate on purpose: the gate withholds children while
+              a doc opens, and an agent arriving mid-build would find no tools. */}
           <div
             className="mx-auto px-8 pt-6 sm:px-10"
             style={{ maxWidth: "var(--wiki-content-max, 72rem)" }}

@@ -57,11 +57,7 @@ Treat deviations from the design system as bugs. When unsure which token to use,
 
 export const BLOCKSMITH_MCP_INSTRUCTIONS = SERVER_INSTRUCTIONS;
 
-/**
- * The tools this server advertises. Hoisted out of the ListTools handler so
- * the app can report how many there really are instead of quoting a number
- * someone typed into a marketing page and forgot to update.
- */
+/** The tools this server advertises. Exported so the app can count them. */
 export const BLOCKSMITH_MCP_TOOLS = [
   {
     name: "scan_workspace",

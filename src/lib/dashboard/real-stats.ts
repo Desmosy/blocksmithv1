@@ -1,14 +1,7 @@
 /**
- * Numbers for the dashboard, counted rather than invented.
+ * Dashboard counters, read from the docs on disk.
  *
- * These widgets shipped as template placeholders — "12 design systems",
- * "1,248 components", "94% governance score", "Acme UI Kit synced 2 hours
- * ago". None of it was real, and a fabricated number on a governance product
- * is worse than an empty one: the whole claim is that what you see is what is
- * actually true.
- *
- * Anything that cannot be counted from real state is returned as null so the
- * UI can say "nothing yet" instead of filling the gap.
+ * Anything with nothing to count returns null so the UI can say "none yet".
  */
 
 import { listAllDocSources, loadDesignSystem } from "@/lib/clients/registry";
@@ -62,8 +55,7 @@ export async function getDashboardFacts(): Promise<DashboardFacts> {
     uploads = [];
   }
 
-  // Counted over every upload. Deriving this from `recent` below would cap it
-  // at the length of that slice — 38 captures would have reported as 5.
+  // Counted over every upload, not the `recent` slice below.
   const capturedSites = uploads.filter((u) => u.fileName.startsWith("capture-")).length;
 
   const recent: RecentItem[] = uploads

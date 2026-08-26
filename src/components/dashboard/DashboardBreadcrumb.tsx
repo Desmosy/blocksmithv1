@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * The header breadcrumb said "Workspace / Overview" on every page — including
- * Settings, Connectors and API keys. A breadcrumb that never changes is worse
- * than no breadcrumb: it tells you where you are, incorrectly.
- *
- * Titles come from the same nav definition the sidebar renders, so the two can
- * never disagree about what a page is called.
+ * Header breadcrumb. Titles come from the same nav definition the sidebar
+ * renders, so the two cannot disagree about what a page is called.
  */
 
 import Link from "next/link";

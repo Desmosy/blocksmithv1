@@ -8,24 +8,7 @@ import {
 	BookOpenIcon,
 } from "lucide-react";
 
-/**
- * Dashboard navigation.
- *
- * This shipped as a template menu: ten entries, six of which pointed at `#/`
- * fragments that scrolled nowhere — Projects, Team, API Keys, Settings,
- * Billing, Help Center — and Settings pointed at `#/settings` while a real
- * settings page sat at /dashboard/settings the whole time. A menu that mostly
- * does nothing teaches people not to trust the ones that do.
- *
- * Every entry below resolves to a page that exists:
- *   - Projects was the dashboard itself, so it is not a second entry.
- *   - Team is org membership, which Settings already shows.
- *   - Billing has no implementation to link to.
- *   - Help Center had nothing behind it; Documentation goes to /protocol,
- *     which is the actual spec.
- *   - API keys were real but reachable only from inside the wiki, so they
- *     now have a dashboard page rather than losing their entry.
- */
+/** Dashboard navigation. Every entry resolves to a page that exists. */
 
 export type SidebarNavItem = {
 	title: string;

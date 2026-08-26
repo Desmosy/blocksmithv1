@@ -1,16 +1,5 @@
 /**
- * Connectors — what this server is actually wired to.
- *
- * This page used to be a template: six services BlockSmith has never
- * integrated with, each showing a sync time someone typed by hand ("2 minutes
- * ago"), a toggle that changed nothing, and an "API Key" field whose Save
- * button dropped the key on the floor. On a product whose entire claim is that
- * what you see is verified, an invented integration list is the worst possible
- * thing to ship — and inviting someone to paste a credential into a dead form
- * is worse than merely untrue.
- *
- * Every row below is read from real state at request time. Where something is
- * not configured, it says so rather than showing a plausible number.
+ * Connectors — what this server is wired to, resolved per request.
  */
 
 import Link from "next/link";

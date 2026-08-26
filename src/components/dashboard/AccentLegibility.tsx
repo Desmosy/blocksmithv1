@@ -1,10 +1,6 @@
 /**
- * Accent legibility across every design system in the workspace.
- *
- * This is the contrast failure that actually happens in practice: a brand
- * colour is chosen to look right as a button fill, then reused as link text,
- * where WCAG asks for 4.5:1. Each system contributes one measurement — its
- * accent against its ground — so a band's count is a number of systems.
+ * Accent contrast across the workspace. One measurement per system (its accent
+ * against its ground), so each band's count is a number of systems.
  */
 
 import type { Analytics, ContrastBand } from "@/lib/dashboard/analytics";

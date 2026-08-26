@@ -1,15 +1,8 @@
 /**
- * Analytics computed from the design systems this workspace actually holds.
+ * Workspace analytics: accent contrast and capture coverage.
  *
- * The two things measured here were chosen because they vary. A metric that
- * reads the same for every system teaches nobody anything — ink-on-ground
- * contrast, for instance, sits between 17:1 and 21:1 across every system here,
- * because captured sites almost always use near-black text on near-white.
- * Charting that would be decoration wearing the costume of rigour.
- *
- * Accent legibility does vary, and it is the failure that actually happens:
- * brand colours are picked to look right as a fill, then reused as link text.
- * Capture coverage varies too, and it is honest about where capture is weak.
+ * Ink-on-ground is deliberately not measured — it sits at 17:1-21:1 for every
+ * system, so it carries no signal.
  */
 
 import { listAllDocSources, loadDesignSystem } from "@/lib/clients/registry";

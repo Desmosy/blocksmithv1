@@ -36,10 +36,7 @@ export default function DashboardLayout({
                   <DashboardBreadcrumb />
                 </div>
                 
-                {/* The theme toggle was inside a md:hidden block, so the dark
-                    theme the dashboard ships with was unreachable on desktop —
-                    the only place most people use it. The + shortcut stays
-                    mobile-only: on desktop the prompt bar is already on screen. */}
+                {/* + is mobile-only: the prompt bar is already on screen on desktop. */}
                 <div className="flex items-center gap-2">
                   <DashboardThemeToggle />
                   <Link href="/dashboard" aria-label="Create or import" className="grid size-8 place-items-center rounded-lg hover:bg-muted md:hidden">

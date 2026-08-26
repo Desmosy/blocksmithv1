@@ -84,4 +84,3 @@ flowchart LR
 
 - [01-vision-and-positioning.md](./01-vision-and-positioning.md) — human steering layer
 - [08-web-ide-handshake.md](./08-web-ide-handshake.md) — draft/finalize/pull loop
-- `Update.md` — changelog entries for Goal 2 / 2.5

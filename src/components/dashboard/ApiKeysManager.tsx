@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * API keys, on the dashboard.
- *
- * The sidebar advertised "API Keys" and pointed at `#/api-keys`, which went
- * nowhere. The feature is real — self-serve keys back the CLI and the MCP
- * server — it just lived only inside the wiki's Sync page, styled with the
- * wiki's tokens. This is the same endpoints in the dashboard's own language.
+ * Self-serve API keys for the CLI and the MCP server. Same endpoints as the
+ * wiki's Sync panel, in the dashboard's own tokens.
  */
 
 import { useCallback, useEffect, useState } from "react";
