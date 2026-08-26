@@ -50,6 +50,13 @@ export type Extracted = {
   gradients: string[];
   /** Components read off the rendered page. Empty when no browser was available. */
   components: RenderedComponent[];
+  /**
+   * Which pass produced this. Reports what actually happened rather than what
+   * was configured: a remote browser that fails to answer still falls back to
+   * text, and saying "rendered" then would be a lie in the one place a reader
+   * is deciding how much to trust the result.
+   */
+  readFrom: "rendered" | "css";
 };
 
 /** Values ordered by how often the page uses them, capped. */
@@ -463,6 +470,7 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     colors,
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
     components: rendered.components,
+    readFrom: "rendered",
   };
 }
 
@@ -559,6 +567,7 @@ export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
       (v) => (v.includes("var(") ? null : v.trim()),
     ),
     components: [],
+    readFrom: "css",
   };
 
   return rendered ? mergeRendered(textPass, rendered) : textPass;

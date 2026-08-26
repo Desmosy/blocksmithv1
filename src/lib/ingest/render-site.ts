@@ -42,10 +42,26 @@ export type Rendered = {
 };
 
 /**
+ * A remote browser to connect to instead of launching one.
+ *
+ * Serverless hosts have no Chromium and a bundle limit a real one blows past,
+ * so on Vercel and friends the browser lives somewhere else and we attach to it
+ * over CDP. Any provider works — Browserless, Browserbase, Cloudflare Browser
+ * Rendering — because they all speak the same protocol.
+ *
+ *   BLOCKSMITH_BROWSER_WS=wss://chrome.browserless.io?token=…
+ */
+function remoteEndpoint(): string | null {
+  const ws = process.env.BLOCKSMITH_BROWSER_WS?.trim();
+  return ws && /^wss?:\/\//i.test(ws) ? ws : null;
+}
+
+/**
  * A Chromium we can drive without downloading one.
  *
  * Prefers Playwright's cached headless shell, then a system Chrome. Deployment
- * targets without either simply get the text-only capture.
+ * targets without either fall back to the text-only capture, unless a remote
+ * endpoint is configured.
  */
 function findBrowser(): string | null {
   const cache = join(homedir(), "Library", "Caches", "ms-playwright");
@@ -86,7 +102,13 @@ function findBrowser(): string | null {
 }
 
 export function canRender(): boolean {
-  return findBrowser() !== null;
+  return Boolean(remoteEndpoint()) || findBrowser() !== null;
+}
+
+/** Where rendering would come from, for diagnostics and honest messaging. */
+export function renderSource(): "remote" | "local" | "none" {
+  if (remoteEndpoint()) return "remote";
+  return findBrowser() ? "local" : "none";
 }
 
 /**
@@ -324,13 +346,21 @@ function cluster(
 }
 
 export async function renderSiteDesign(url: string): Promise<Rendered | null> {
-  const executablePath = findBrowser();
-  if (!executablePath) return null;
+  const remote = remoteEndpoint();
+  const executablePath = remote ? null : findBrowser();
+  if (!remote && !executablePath) return null;
 
   let browser: import("playwright-core").Browser | null = null;
   try {
     const { chromium } = await import("playwright-core");
-    browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
+    browser = remote
+      ? // Attaching costs nothing at deploy time, which is the point: the
+        // function stays small and the browser lives with whoever hosts it.
+        await chromium.connectOverCDP(remote, { timeout: NAV_TIMEOUT_MS })
+      : await chromium.launch({
+          executablePath: executablePath as string,
+          args: ["--no-sandbox"],
+        });
     const page = await browser.newPage({
       viewport: VIEWPORT,
       userAgent:

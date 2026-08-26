@@ -96,6 +96,21 @@ Without the flag the wiki still works — it simply does not show the agent line
 
 Or open the deployed URL in **ChatGPT's in-app browser**, which supports WebMCP natively.
 
+### Capturing a site on a deployed host
+
+Capture reads the *rendered* page, which needs a Chromium. Locally it uses one
+already on your machine. Serverless hosts have neither a browser nor room to
+bundle one, so point it at a remote browser instead — any provider that speaks
+CDP works:
+
+```bash
+BLOCKSMITH_BROWSER_WS=wss://your-browser-host/?token=…
+```
+
+Without it, capture still works and falls back to reading CSS text — thinner,
+and no components. The tool says which pass it used, so a thin result never
+looks like a broken one.
+
 ### Environment
 
 Copy `.env.example` to `.env.local` and fill in what you need. The public demo route runs without credentials; Supabase and model keys are only required for authenticated projects and live capture.
