@@ -26,7 +26,74 @@ export type Extracted = {
   radii: number[];
   spacing: number[];
   fontSizes: number[];
+  /** Elevation, most-used first. Raw box-shadow values. */
+  shadows: string[];
+  /** Responsive breakpoints in px, ascending. */
+  breakpoints: number[];
+  /** Container max-widths in px, ascending. */
+  containers: number[];
+  /** Font weights the page actually asks for. */
+  weights: number[];
+  /** Line heights, most-used first — ratios where unitless. */
+  lineHeights: string[];
+  /** Letter spacing values, most-used first. */
+  letterSpacings: string[];
+  /** Border widths in px, ascending. */
+  borderWidths: number[];
+  /** Transition durations, most-used first. */
+  durations: string[];
+  /** Easing curves, most-used first. */
+  easings: string[];
+  /** Gradients the page defines — for some brands this *is* the imagery. */
+  gradients: string[];
 };
+
+/** Values ordered by how often the page uses them, capped. */
+function byFrequency(
+  css: string,
+  re: RegExp,
+  cap: number,
+  clean: (v: string) => string | null = (v) => v.trim() || null,
+): string[] {
+  const seen = new Map<string, number>();
+  for (const m of css.matchAll(re)) {
+    const value = clean(m[1] ?? m[0]);
+    if (!value) continue;
+    seen.set(value, (seen.get(value) ?? 0) + 1);
+  }
+  return [...seen.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, cap)
+    .map(([v]) => v);
+}
+
+/**
+ * The px values a page uses most, returned ascending.
+ *
+ * Ranking by frequency and *then* sorting matters: taking the smallest N
+ * instead keeps incidental component widths and throws away the real ones —
+ * stripe.com reported a 264px "content width" because its true 939px container
+ * lost to a handful of tiny max-widths that happened to sort first.
+ */
+function pxScale(
+  css: string,
+  re: RegExp,
+  cap: number,
+  max = 4000,
+  min = 1,
+): number[] {
+  const seen = new Map<number, number>();
+  for (const m of css.matchAll(re)) {
+    const n = Number(String(m[1]).replace(/px$/i, ""));
+    if (!Number.isFinite(n) || n < min || n > max) continue;
+    seen.set(n, (seen.get(n) ?? 0) + 1);
+  }
+  return [...seen.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, cap)
+    .map(([n]) => n)
+    .sort((a, b) => a - b);
+}
 
 export class CaptureError extends Error {}
 
@@ -397,5 +464,58 @@ export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
     radii: collectNumbers(css, ["border-radius"]).slice(0, 8),
     spacing: collectNumbers(css, ["padding", "margin", "gap"]).slice(0, 10),
     fontSizes: collectNumbers(css, ["font-size"]).slice(0, 10),
+
+    // A design system is more than colour and size. Everything below is stated
+    // in the page's own CSS — none of it is inferred.
+    shadows: byFrequency(
+      css,
+      /box-shadow\s*:\s*([^;{}]+)/gi,
+      5,
+      (v) => {
+        const t = v.trim();
+        // "none" and variable indirection say nothing about elevation.
+        if (!t || /^(none|inherit|initial|unset)$/i.test(t) || t.startsWith("var(")) return null;
+        return t.length > 90 ? null : t;
+      },
+    ),
+    breakpoints: pxScale(css, /@media[^{]*?\(min-width:\s*([\d.]+)px\)/gi, 5, 2560, 320),
+    // Below ~480px a max-width is a component, not a container.
+    containers: pxScale(css, /max-width\s*:\s*([\d.]+)px/gi, 5, 2000, 480),
+    weights: [
+      ...new Set(
+        [...css.matchAll(/font-weight\s*:\s*([1-9]00)\b/gi)].map((m) => Number(m[1])),
+      ),
+    ].sort((a, b) => a - b),
+    lineHeights: byFrequency(css, /line-height\s*:\s*([\d.]+(?:px|rem|em)?)\b/gi, 6, (v) => {
+      const t = v.trim();
+      return t === "0" ? null : t;
+    }),
+    letterSpacings: byFrequency(
+      css,
+      /letter-spacing\s*:\s*(-?[\d.]+(?:em|px|rem))/gi,
+      5,
+      (v) => (parseFloat(v) === 0 ? null : v.trim()),
+    ),
+    borderWidths: pxScale(css, /border(?:-[a-z]+)?-?width\s*:\s*([\d.]+)px/gi, 4, 24),
+    // Match only the duration itself. An alternation with two groups fell
+    // back to the whole declaration, so the doc listed
+    // "transition:background-color .3s" as a duration.
+    durations: byFrequency(
+      css,
+      /transition[^;{}]{0,60}?(?<![\w.])(\d*\.?\d+m?s)\b/gi,
+      4,
+      (v) => {
+        const ms = /ms$/i.test(v) ? parseFloat(v) : parseFloat(v) * 1000;
+        // Sub-frame and multi-second values are not interface motion.
+        return ms >= 40 && ms <= 1200 ? v.trim() : null;
+      },
+    ),
+    easings: byFrequency(css, /(cubic-bezier\([^)]{1,40}\))/gi, 3),
+    gradients: byFrequency(
+      css,
+      /(linear-gradient\([^;{}]{10,120}\))/gi,
+      3,
+      (v) => (v.includes("var(") ? null : v.trim()),
+    ),
   };
 }

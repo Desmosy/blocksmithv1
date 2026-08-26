@@ -34,6 +34,14 @@ function chroma(hex: string): number {
   return Math.max(...rgb) - Math.min(...rgb);
 }
 
+/**
+ * Saturation floor for "this is a colour, not a tinted neutral".
+ *
+ * Tuned against real sites: Stripe's #32325d navy text sits at 43 and must not
+ * qualify, while its #533afd indigo at 195 must.
+ */
+const ACCENT_MIN_CHROMA = 100;
+
 function contrast(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
@@ -62,12 +70,28 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
   const ground = byLuminance[0];
   const ink = byLuminance[byLuminance.length - 1];
 
-  // The accent is the most saturated colour that reads on the ground.
-  const accent = [...usable]
+  // The accent is the colour the page *uses most*, among those saturated
+  // enough to be a colour rather than a tinted neutral.
+  //
+  // Ranking by saturation instead picks decorative gradient stops, which are
+  // always more saturated than a brand colour: on stripe.com that chose an
+  // orange used 8 times over Stripe's indigo used 20. Usage separates the two
+  // because a brand colour appears on every button and link, while a gradient
+  // stop appears once.
+  const accentCandidates = usable
     .filter((c) => c.value !== ground.value && c.value !== ink.value)
-    .filter((c) => chroma(c.value) > 40)
-    .sort((a, b) => chroma(b.value) - chroma(a.value))
-    .find((c) => contrast(c.value, ground.value) >= 3);
+    .filter((c) => chroma(c.value) >= ACCENT_MIN_CHROMA)
+    .filter((c) => contrast(c.value, ground.value) >= 3);
+
+  const accent =
+    [...accentCandidates].sort((a, b) => b.count - a.count)[0] ??
+    // Nothing clearly chromatic: fall back to the most saturated thing there
+    // is, rather than claiming the system has no accent at all.
+    [...usable]
+      .filter((c) => c.value !== ground.value && c.value !== ink.value)
+      .filter((c) => chroma(c.value) > 40)
+      .sort((a, b) => chroma(b.value) - chroma(a.value))
+      .find((c) => contrast(c.value, ground.value) >= 3);
 
   const out: Named[] = [
     { name: "Ground", value: ground.value, role: "Primary page background" },
@@ -186,7 +210,7 @@ export function synthesizeDesignSystem(found: Extracted): {
         // face has no free counterpart it repeats the name, which is honest:
         // the system says what it saw and what you can use instead.
         `- **Substitute:** ${font.substitute}`,
-        `- **Weights:** 400, 500, 700`,
+        `- **Weights:** ${(found.weights.length ? found.weights : [400, 500, 700]).join(", ")}`,
         `- **Sizes:** ${(sizes.length ? sizes : [16]).map((n) => `${n}px`).join(", ")}`,
         "",
       );
@@ -201,9 +225,18 @@ export function synthesizeDesignSystem(found: Extracted): {
       "|------|------|-------------|----------------|-------|",
       ...sizes.map((n, i) => {
         const role = TYPE_ROLES[i] ?? `size-${i + 1}`;
-        // Line height is not extracted; a readable ratio is stated as such in
-        // the intro rather than presented as observed.
-        return `| ${role} | ${n}px | ${Math.round(n * 1.5)} | 0px | \`--text-${role}\` |`;
+        // Use a line height and tracking the page actually states. Larger text
+        // gets the tightest observed ratio, body text the roomiest — which is
+        // how type scales behave — rather than one invented multiplier.
+        const ratios = found.lineHeights
+          .map((v) => (/^[\d.]+$/.test(v) ? Number(v) : null))
+          .filter((v): v is number => v !== null && v >= 1 && v <= 2.2)
+          .sort((a, b) => b - a);
+        const ratio = ratios.length
+          ? ratios[Math.min(Math.floor((i / Math.max(sizes.length - 1, 1)) * ratios.length), ratios.length - 1)]
+          : 1.5;
+        const tracking = n >= 32 ? (found.letterSpacings[0] ?? "0px") : "0px";
+        return `| ${role} | ${n}px | ${Math.round(n * ratio)} | ${tracking} | \`--text-${role}\` |`;
       }),
       "",
     );
@@ -242,25 +275,172 @@ export function synthesizeDesignSystem(found: Extracted): {
     );
   }
 
+  if (found.borderWidths.length) {
+    lines.push(
+      "### Border Widths",
+      "",
+      found.borderWidths.map((n) => `${n}px`).join(" · "),
+      "",
+      "The hairline is the first value — it is what most of the interface uses",
+      "to separate one surface from another.",
+      "",
+    );
+  }
+
+  if (found.shadows.length) {
+    lines.push(
+      "### Elevation",
+      "",
+      "Observed shadows, most used first. Level 1 is the one the interface",
+      "reaches for; anything deeper is reserved for something that floats.",
+      "",
+      ...found.shadows.map((sh, i) => `${i + 1}. \`${sh}\``),
+      "",
+    );
+  }
+
+  const layoutRows: string[] = [];
+  if (found.containers.length) {
+    layoutRows.push(`| Content width | ${found.containers[found.containers.length - 1]}px |`);
+    layoutRows.push(`| Narrow width | ${found.containers[0]}px |`);
+  }
+  if (found.breakpoints.length) {
+    found.breakpoints.forEach((bp, i) => {
+      const name = ["Small", "Medium", "Large", "X-Large", "2X-Large", "3X-Large"][i] ?? `Breakpoint ${i + 1}`;
+      layoutRows.push(`| ${name} breakpoint | ${bp}px |`);
+    });
+  }
+  if (spacing.length) {
+    layoutRows.push(`| Base spacing unit | ${spacing[0]}px |`);
+  }
+  if (layoutRows.length) {
+    lines.push("### Layout", "", "| Label | Value |", "|-------|-------|", ...layoutRows, "");
+  }
+
+  // Surfaces: the light end of the palette, ordered. These are the planes a
+  // page is built from, and naming them is most of what "surface" means.
+  const surfaceCandidates = colors
+    .filter((c) => luminance(c.value) > 0.55)
+    .slice(0, 4);
+  if (surfaceCandidates.length) {
+    lines.push(
+      "## Surfaces",
+      "",
+      "| Level | Name | Value | Purpose |",
+      "|-------|------|-------|---------|",
+      ...surfaceCandidates.map((c, i) => {
+        const purpose =
+          i === 0
+            ? "The page itself"
+            : i === 1
+              ? "Cards and raised panels"
+              : "Alternating bands and hover states";
+        return `| ${i} | ${c.name} | \`${c.value}\` | ${purpose} |`;
+      }),
+      "",
+    );
+  }
+
+  // Imagery: for some brands the gradient *is* the visual language, so it
+  // belongs here rather than being discarded as decoration.
+  const imagery: string[] = [];
+  if (found.gradients.length) {
+    imagery.push(
+      `${host} uses gradients as part of its visual language. Observed:`,
+      "",
+      ...found.gradients.map((g) => `- \`${g}\``),
+      "",
+      "These were read from the page. Whether they belong in your system is a",
+      "decision — a gradient carried over without its context usually reads as",
+      "borrowed rather than owned.",
+    );
+  } else {
+    imagery.push(
+      `No gradients were found on ${host}; its imagery is flat colour and`,
+      "photography. Nothing else about image treatment is recorded in CSS, so",
+      "this section is yours to write.",
+    );
+  }
+  lines.push("## Imagery", "", ...imagery, "");
+
+  // Layout prose, from the breakpoints and containers actually declared.
+  const layoutProse: string[] = [];
+  if (found.containers.length) {
+    layoutProse.push(
+      `Content is constrained to ${found.containers[found.containers.length - 1]}px at its widest,` +
+        ` with a narrower ${found.containers[0]}px measure for denser passages.`,
+    );
+  }
+  if (found.breakpoints.length) {
+    layoutProse.push(
+      `The page responds at ${found.breakpoints.map((b) => `${b}px`).join(", ")}.` +
+        ` The first is where the layout stops being a single column.`,
+    );
+  }
+  if (found.easings.length || found.durations.length) {
+    const parts: string[] = [];
+    if (found.durations.length) parts.push(`durations of ${found.durations.join(", ")}`);
+    if (found.easings.length) parts.push(`easing \`${found.easings[0]}\``);
+    layoutProse.push(`Motion is consistent: ${parts.join(", ")}.`);
+  }
+  if (layoutProse.length) lines.push("## Layout", "", layoutProse.join(" "), "");
+
   // No Components and no Capabilities section on purpose: a page's CSS says
   // nothing about which components a team maintains or which patterns they
   // have ruled out, and inventing either would make the system look decided
   // when it is not.
+  const dos: string[] = [
+    `Use the tokens above rather than the raw values — they were read from ${host}, and renaming them is how they become yours.`,
+    "Replace the observed role labels with what each colour is actually for in your product.",
+  ];
+  if (found.borderWidths.length) {
+    dos.push(
+      `Separate surfaces with the ${found.borderWidths[0]}px hairline before reaching for elevation — it is what this page uses most.`,
+    );
+  }
+  if (found.easings.length) {
+    dos.push(
+      `Use \`${found.easings[0]}\` for motion. One easing across a product is what makes it feel like one product.`,
+    );
+  }
+
+  const donts: string[] = [
+    "Do not treat this as a finished design system. It records what one page does, not what your team has decided.",
+    "Do not add colours outside the palette without deciding what they are for first.",
+  ];
+  if (sizes.length) {
+    donts.push(
+      `Do not use type sizes outside the scale. Intermediate sizes flatten the hierarchy the scale exists to create.`,
+    );
+  }
+  if (spacing.length) {
+    donts.push(
+      `Do not use spacing outside the scale — off-scale gaps are what make a page feel accidental.`,
+    );
+  }
+
   lines.push(
     "## Do's and Don'ts",
     "",
     "### Do",
-    `- Use the tokens above rather than the raw values — they were read from ${host}, and renaming them is how they become yours.`,
-    "- Replace the observed role labels with what each colour is actually for in your product.",
+    ...dos.map((d) => `- ${d}`),
     "",
     "### Don't",
-    "- Do not treat this as a finished design system. It records what one page does, not what your team has decided.",
-    "- Do not add colours outside the palette without deciding what they are for first.",
+    ...donts.map((d) => `- ${d}`),
     "",
     "## Agent Prompt Guide",
     "",
     "- This system was captured, not authored. If a value looks wrong, say so rather than building on it.",
+    "- Every colour, size, space and radius must come from a table above. If the value you want is not there, ask.",
     "- There are no components defined yet, so do not claim one exists. Ask before introducing a new pattern.",
+    found.shadows.length
+      ? "- Elevation is listed in order of use. Reach for level 1; anything deeper needs a reason."
+      : "- No shadows were observed. Separate surfaces with borders and space.",
+    "",
+    "## Similar Brands",
+    "",
+    `Read as ${host} reads. The palette, type scale and spacing above are that`,
+    "site's; the composition and voice are not recorded in CSS and remain yours.",
     "",
   );
 
