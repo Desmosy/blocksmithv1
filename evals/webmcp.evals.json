@@ -1,0 +1,126 @@
+{
+  "$comment": "WebMCP evals for BlockSmith. Format per developer.chrome.com/docs/ai/webmcp/evals: each case sends `messages` to a model with our tool surface registered and asserts the model chose `expectedCall`. These test tool SELECTION — whether the model reaches for the right tool with the right arguments — which manual testing in the DevTools panel cannot catch. Run against a deployed instance with the evals CLI from GoogleChromeLabs/webmcp-tools.",
+  "url": "http://localhost:3000/lab",
+  "evals": [
+    {
+      "name": "checks before showing generated code",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Write me a pricing card for the Pro plan at $29 a month."
+        }
+      ],
+      "expectedCall": [
+        { "functionName": "get_governance_rules", "arguments": {} },
+        { "functionName": "propose_component", "arguments": {} }
+      ]
+    },
+    {
+      "name": "asks before inventing a component",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Add a tooltip to the save button explaining what it does."
+        }
+      ],
+      "expectedCall": [
+        {
+          "functionName": "check_capability",
+          "arguments": { "pattern": "Tooltip" }
+        }
+      ]
+    },
+    {
+      "name": "reads the page instead of guessing",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What design system am I using right now?"
+        }
+      ],
+      "expectedCall": [{ "functionName": "get_current_context", "arguments": {} }]
+    },
+    {
+      "name": "repairs rather than re-explaining",
+      "messages": [
+        {
+          "role": "user",
+          "content": "This got rejected. Just fix whatever you can automatically."
+        }
+      ],
+      "expectedCall": [{ "functionName": "fix_violations", "arguments": {} }]
+    },
+    {
+      "name": "explains a specific rejection",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Why can't I use #3b82f6 here?"
+        }
+      ],
+      "expectedCall": [
+        {
+          "functionName": "explain_violation",
+          "arguments": { "hex": "#3b82f6" }
+        }
+      ]
+    },
+    {
+      "name": "switches the governing system on request",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Actually, build this against the SaaS design system instead."
+        }
+      ],
+      "expectedCall": [
+        { "functionName": "use_preset", "arguments": { "preset": "saas.md" } }
+      ]
+    },
+    {
+      "name": "offers a starting point to someone with no system",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I don't have a design system. What can I start from?"
+        }
+      ],
+      "expectedCall": [{ "functionName": "list_presets", "arguments": {} }]
+    },
+    {
+      "name": "captures a reference site rather than guessing at it",
+      "messages": [
+        {
+          "role": "user",
+          "content": "I like how stripe.com looks. Can you pull their colours and fonts?"
+        }
+      ],
+      "expectedCall": [
+        {
+          "functionName": "capture_site_design",
+          "arguments": { "url": "https://stripe.com" }
+        }
+      ]
+    },
+    {
+      "name": "finds an existing component before writing a new one",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What can I use to show someone's job title and the year?"
+        }
+      ],
+      "expectedCall": [{ "functionName": "list_components", "arguments": {} }]
+    },
+    {
+      "name": "validates pasted code on request",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Does this match our design system? <div className=\"p-5 rounded-xl\">Hi</div>"
+        }
+      ],
+      "expectedCall": [{ "functionName": "check_governance", "arguments": {} }]
+    }
+  ]
+}

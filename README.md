@@ -4,7 +4,7 @@
 
 Built for the **WebMCP Challenge**. BlockSmith exposes its design-system governance engine as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent working alongside you in the browser can read your design system, propose changes, and *get told no* when a change breaks it.
 
-**Live demo:** _TBD_ · **License:** [MIT](./LICENSE)
+**Live demo:** _TBD_ — run `npm run dev` and open `/lab` · **License:** [MIT](./LICENSE)
 
 ---
 
@@ -22,11 +22,15 @@ That is the thing that was difficult before: the human and the agent operating o
 
 | The human | The agent |
 |---|---|
-| Opens a component page | Reads it with `get_current_context` |
-| Asks for a variant | Calls `check_governance` before writing a line |
-| Watches the token change land on screen | Calls `apply_token_change` behind the confirm gate |
-| Points at another site | Calls `capture_site_design` to extract its system |
-| Keeps working in their editor | Loads `export_skill` output so its next component is already correct |
+| Opens `/lab` | Reads the screen with `get_current_context` |
+| Asks for a component | Calls `get_governance_rules`, then `propose_component` |
+| Watches code land in the editor | Gets the verdict back in the same call |
+| Sees `REJECTED` with the rule quoted | Calls `fix_violations` and self-corrects |
+| Switches design system | Its tool schemas re-register — `toolchange` fires |
+| Names a site they like | Calls `capture_site_design` to read its tokens |
+
+Every tool call the agent makes is listed on the page. An agent working in a
+sidebar the human cannot see is indistinguishable from one making things up.
 
 ## How WebMCP is implemented
 
@@ -65,7 +69,9 @@ Registration is lifecycle-bound: `useWebMcp()` registers on mount and aborts the
 - **Tool output stays under 1,500 characters.** Chrome enforces this. A `design.md` is 10–50× that, so tools return a summary plus a link — never the document itself.
 - **`untrustedContentHint` on `capture_site_design`.** That tool returns content fetched from an arbitrary third-party URL, which is a textbook indirect prompt-injection vector. The annotation tells the agent to treat the result as data, not instructions.
 - **`readOnlyHint` split.** Every `get_*` and `check_*` tool is marked read-only so the agent knows which actions need confirmation.
-- **Six tools, not fifteen.** The remote MCP server exposes fifteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow.
+- **Nine tools, not fifteen.** The remote MCP server exposes fifteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow.
+- **The tool surface is live.** `check_component`'s schema carries an enum of the active system's components. Switching design systems re-registers the tools and fires `toolchange`, so the agent's options change with the rules — it cannot name a component the current system doesn't have.
+- **Auto-fix stops where judgement starts.** `fix_violations` applies every mechanical repair and returns what it refused to touch: colours with no close token, and rules like "no gradients" whose fix changes the composition rather than a value.
 
 ---
 
@@ -81,7 +87,11 @@ Open <http://localhost:3000>.
 To exercise the WebMCP tools, enable the API in Chrome:
 
 1. Visit `chrome://flags/#enable-webmcp-testing`, enable it, relaunch.
-2. Open the app, then DevTools → **Application** → **WebMCP** to see registered tools and invoke them manually.
+2. Open <http://localhost:3000/lab>, then DevTools → **Application** → **WebMCP** to see registered tools and invoke them manually.
+
+Without the flag the page still works — it just says no agent is connected. To
+exercise the registration path without it, append `?agent=sim` in development
+for a spec-shaped `document.modelContext` stub.
 
 Or open the deployed URL in **ChatGPT's in-app browser**, which supports WebMCP natively.
 
@@ -95,14 +105,28 @@ Copy `.env.example` to `.env.local` and fill in what you need. The public demo r
 
 ```
 src/
-├── lib/webmcp/        # shared tool registry — one source of truth
-├── hooks/useWebMcp.ts # registration lifecycle
-├── app/api/webmcp/    # server dispatch
-├── lib/mcp/           # remote MCP server (Streamable HTTP)
-├── mcp/handlers.ts    # tool implementations, transport-agnostic
-├── lib/governance/    # the rules engine that says no
-└── app/wiki/          # the design system UI humans use
-packages/              # @blocksmith CLI, SDK, protocol
+├── app/lab/             # the page humans and agents share
+├── components/lab/      # editor, verdict, agent activity log
+├── lib/webmcp/          # shared tool registry — one source of truth
+│   └── dev-polyfill.ts  # spec-shaped stub for testing without the flag
+├── hooks/useWebMcp.ts   # registration lifecycle, AbortSignal-bound
+├── app/api/webmcp/      # server dispatch
+├── lib/governance/      # colour, scale, Tailwind, rule and capability checks
+│   └── autofix.ts       # applies what is mechanical, refuses what is not
+├── lib/ingest/          # capture a public site's tokens
+├── lib/mcp/             # remote MCP server (Streamable HTTP)
+└── mcp/handlers.ts      # implementations, transport-agnostic
+docs/designs.md/         # the design systems themselves, as markdown
+evals/                   # tool-selection evals
+packages/                # @blocksmith CLI, SDK, protocol
+```
+
+## Verify
+
+```bash
+npm run verify:webmcp   # budgets, per-preset governance, auto-fix safety
+npm run typecheck
+npm run build
 ```
 
 ## Other surfaces

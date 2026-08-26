@@ -41,15 +41,15 @@ The engine has to catch what actually goes wrong, not just what's easy to catch.
 - [x] Prose-rule enforcement — gradients, shadows, pure #000/#fff, undeclared fonts *(agent)*
 - [x] Second preset (`saas.md`) *(agent)*
 - [x] Wire all three linters into `check_governance`
-- [ ] Consolidate: one `runGovernance(code, system)` returning all violation classes
-- [ ] Regression fixtures — compliant + non-compliant snippet per preset, asserted in CI
+- [x] Consolidate: one `runGovernance(code, system)` returning all violation classes
+- [x] Regression fixtures — compliant + non-compliant snippet per preset, asserted in CI
 
 ### Days 3–4 · The preset system
 This is the product for anyone who doesn't already have a design system.
 
 - [ ] Third preset (`docs.md` or `landing.md`)
-- [ ] Preset picker UI — choose a system, see it rendered, adopt it
-- [ ] `use_preset` tool so an agent can adopt one mid-conversation
+- [x] Preset picker UI — choose a system, see it rendered, adopt it
+- [x] `use_preset` tool so an agent can adopt one mid-conversation
 - [ ] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
 - [ ] Render a full example page per preset so the taste is visible, not just described
 - [ ] Version the presets (`portfolio.v1`) through the existing registry semantics
@@ -58,22 +58,22 @@ This is the product for anyone who doesn't already have a design system.
 The thing judges actually watch.
 
 - [ ] `apply_token_change` — agent mutates, page visibly updates, human confirms
-- [ ] `get_current_context` — which page/component the human is looking at
-- [ ] Dynamic registration — tools appear/disappear via `toolchange` as system state changes
+- [x] `get_current_context` — which page/component the human is looking at
+- [x] Dynamic registration — tools appear/disappear via `toolchange` as system state changes
 - [ ] Governed vs ungoverned split view, same prompt, both results on screen
 - [ ] Optimistic UI so the change lands instantly while the agent talks
 
 ### Day 7 · Capture
-- [ ] `capture_site_design({url})` with **`untrustedContentHint`**
+- [x] `capture_site_design({url})` with **`untrustedContentHint`**
 - [ ] Extraction validated against the presets as ground truth
-- [ ] Captured systems enter as drafts, never straight into a lock
+- [x] Captured systems enter as drafts, never straight into a lock
 
 ### Day 8 · Hardening
-- [ ] Public route reachable with no auth wall, seeded
+- [x] Public route reachable with no auth wall, seeded
 - [x] Every tool output verified under 1,500 chars
 - [x] Errors are descriptive enough for an agent to self-correct
-- [ ] Mid-chain failure doesn't dead-end the agent
-- [ ] Evals written (`messages` + `expectedCall`) and passing
+- [x] Mid-chain failure doesn't dead-end the agent
+- [x] Evals written (`messages` + `expectedCall`) and passing
 - [ ] Tested in DevTools → Application → WebMCP: registration, schemas, manual invoke
 - [ ] Tested in ChatGPT's in-app browser end to end
 
