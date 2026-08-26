@@ -52,7 +52,7 @@ This is the product for anyone who doesn't already have a design system.
 - [x] `use_preset` tool so an agent can adopt one mid-conversation
 - [x] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
 - [x] Render a full example page per preset so the taste is visible, not just described
-- [ ] Version the presets (`portfolio.v1`) through the existing registry semantics
+- [ ] Version the presets (`portfolio.v1`) through the existing registry semantics *(deferred — registry versioning is built for scanned docs; presets ship as files)*
 
 ### Days 5–6 · The live loop
 The thing judges actually watch.
@@ -60,8 +60,8 @@ The thing judges actually watch.
 - [x] `apply_token_change` — agent mutates, page visibly updates, human confirms
 - [x] `get_current_context` — which page/component the human is looking at
 - [x] Dynamic registration — tools appear/disappear via `toolchange` as system state changes
-- [ ] Governed vs ungoverned split view, same prompt, both results on screen
-- [ ] Optimistic UI so the change lands instantly while the agent talks
+- [x] ~~Governed vs ungoverned split view~~ — superseded: the Lab opens on ungoverned output, and the fix report shows the transformation in place. A second view would duplicate it.
+- [x] Optimistic UI so the change lands instantly while the agent talks
 
 ### Day 7 · Capture
 - [x] `capture_site_design({url})` with **`untrustedContentHint`**
@@ -123,8 +123,8 @@ Annotations are not decoration: `readOnlyHint` on every read tool, **`untrustedC
 ## Submission requirements (verbatim)
 
 - [ ] Working live URL judges can open in ChatGPT's browser or Chrome with WebMCP enabled
-- [ ] Text description: why the use case fits WebMCP · how it improves UX · what people+agents can now do that was hard before · how WebMCP was implemented
+- [x] Text description: why the use case fits WebMCP · how it improves UX · what people+agents can now do that was hard before · how WebMCP was implemented
 - [ ] <3-min public YouTube demo with audio
 - [ ] Public repo with all source, assets, and run instructions
-- [ ] Open source license, detectable in the About section
-- [ ] Repo contains a visible `document.modelContext.registerTool({...})`
+- [x] Open source license, detectable in the About section
+- [x] Repo contains a visible `document.modelContext.registerTool({...})`
