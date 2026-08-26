@@ -45,6 +45,7 @@ import {
   describeTailwindViolation,
   findTailwindViolations,
 } from "@/lib/governance/tailwind-lint";
+import { applyFixes, describeFixResult } from "@/lib/governance/autofix";
 
 /**
  * How many violations one result lists. Chosen so a full response stays inside
@@ -341,6 +342,42 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         ...(hidden > 0
           ? ["", `…and ${hidden} more. Fix these first, then re-check.`]
           : ["", "Fix these and call check_governance again."]),
+      ].join("\n");
+    },
+  },
+
+  {
+    name: "fix_violations",
+    description:
+      "Apply every mechanical fix the design system can make to a piece of code — off-token colours with a near match, off-scale spacing, type sizes, radii, and Tailwind classes. Returns the corrected code plus anything that still needs a human decision. Use after check_governance rejects something.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description: "The component source to repair.",
+        },
+      },
+      required: ["code"],
+    },
+    annotations: { readOnlyHint: true },
+    run: (args, ctx) => {
+      const code = str(args.code);
+      if (!code) return "No code supplied. Pass the component source as `code`.";
+
+      const system = loadDesignSystem(resolveDocRef(ctx.doc));
+      const result = applyFixes(code, system);
+      if (!result.applied.length) {
+        return describeFixResult(result);
+      }
+      // The corrected source is the point, so it leads. The summary follows and
+      // is trimmed by clampOutput first if the budget runs short.
+      return [
+        "```",
+        result.code,
+        "```",
+        "",
+        describeFixResult(result),
       ].join("\n");
     },
   },

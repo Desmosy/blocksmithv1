@@ -34,9 +34,13 @@ function parseRows(text: string): { headline: string; rows: Row[]; tail: string 
 export function LabVerdict({
   verdict,
   presetName,
+  onFix,
+  fixing,
 }: {
   verdict: Verdict;
   presetName: string;
+  onFix: () => void;
+  fixing: boolean;
 }) {
   if (verdict.state === "idle") {
     return (
@@ -76,6 +80,16 @@ export function LabVerdict({
       <div className="lab-pane-head">
         <span className="lab-pane-title">Verdict</span>
         {checking ? <span className="lab-checking">checking…</span> : null}
+        {verdict.state === "fail" && !checking ? (
+          <button
+            type="button"
+            className="lab-fix"
+            onClick={onFix}
+            disabled={fixing}
+          >
+            {fixing ? "Fixing…" : "Fix what can be fixed"}
+          </button>
+        ) : null}
       </div>
 
       <p className="lab-headline">

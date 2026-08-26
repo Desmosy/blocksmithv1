@@ -37,6 +37,7 @@ export function LabShell({
   const [code, setCode] = useState(initialCode);
   const [verdict, setVerdict] = useState<Verdict>({ state: "idle" });
   const [calls, setCalls] = useState<ToolCall[]>([]);
+  const [fixing, setFixing] = useState(false);
 
   const logCall = useCallback((call: ToolCall) => {
     setCalls((prev) => [call, ...prev].slice(0, 40));
@@ -75,6 +76,33 @@ export function LabShell({
     },
     [],
   );
+
+  /** Apply every mechanical fix, then re-check. Shared by the button and the agent. */
+  const fix = useCallback(async () => {
+    const source = stateRef.current.code;
+    if (!source.trim()) return "Nothing to fix — the editor is empty.";
+    setFixing(true);
+    try {
+      const res = await fetch("/api/webmcp/invoke", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          tool: "fix_violations",
+          args: { code: source },
+          doc: stateRef.current.doc,
+        }),
+      });
+      const data = (await res.json()) as { text?: string };
+      const text = data.text ?? "";
+      const fenced = text.match(/^```\n([\s\S]*?)\n```/);
+      if (fenced) setCode(fenced[1]);
+      return text;
+    } catch {
+      return "Could not reach the governance engine.";
+    } finally {
+      setFixing(false);
+    }
+  }, []);
 
   // Re-check as the human types, and whenever the active preset changes.
   useEffect(() => {
@@ -253,7 +281,12 @@ export function LabShell({
         </section>
 
         <section className="lab-pane" aria-label="Governance verdict">
-          <LabVerdict verdict={verdict} presetName={activePreset?.name ?? doc} />
+          <LabVerdict
+            verdict={verdict}
+            presetName={activePreset?.name ?? doc}
+            onFix={() => void fix()}
+            fixing={fixing}
+          />
           <LabActivity calls={calls} />
         </section>
       </div>
