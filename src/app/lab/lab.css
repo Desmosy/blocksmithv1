@@ -15,7 +15,9 @@
   --lab-line-strong: #c9ccc6;
   --lab-ink: #16181a;
   --lab-body: #474c48;
-  --lab-muted: #767d77;
+  /* 4.78:1 on --lab-ground. The lighter grey this replaced measured 4.08:1,
+     under WCAG AA, and light is the default most visitors get. */
+  --lab-muted: #6b726b;
   --lab-pass: #1c6b45;
   --lab-pass-wash: #e4f1ea;
   --lab-fail: #a32c30;
@@ -378,10 +380,20 @@
   color: var(--lab-pass);
 }
 
-.is-fail .lab-badge,
-.is-checking .lab-badge {
+.is-fail .lab-badge {
   background: var(--lab-fail-wash);
   color: var(--lab-fail);
+}
+
+/* Neutral while in flight — the rows below are the previous result. */
+.is-checking .lab-badge {
+  background: var(--lab-sunken);
+  color: var(--lab-muted);
+}
+
+.is-checking .lab-violations,
+.is-checking .lab-tail {
+  opacity: 0.5;
 }
 
 .lab-violations {

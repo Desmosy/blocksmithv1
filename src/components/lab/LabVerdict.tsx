@@ -93,8 +93,11 @@ export function LabVerdict({
       </div>
 
       <p className="lab-headline">
+        {/* While a check is in flight the rows below are the previous result.
+            Labelling them PASS or REJECTED would assert a verdict the engine
+            has not returned yet. */}
         <span className="lab-badge">
-          {verdict.state === "pass" ? "PASS" : "REJECTED"}
+          {checking ? "CHECKING" : verdict.state === "pass" ? "PASS" : "REJECTED"}
         </span>
         <RichText text={headline.replace(/^(PASS|REJECTED)\s*—\s*/, "")} />
       </p>
