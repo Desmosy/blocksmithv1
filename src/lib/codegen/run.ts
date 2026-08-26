@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { generatePulsePackage, type PulseCodegenResult } from "./pulse";
 import { parseWorkspaceScanMarkdown } from "@/lib/scan/parse";
+import { loadDesignSystem } from "@/lib/clients/registry";
+import type { DesignSystem } from "@/lib/blocks/types";
 import {
   isUploadDocRef,
   resolveUploadPath,
@@ -84,6 +86,50 @@ export async function loadScanMarkdownForCodegen(
   return { markdown: readFileSync(path, "utf-8"), resolvedFrom: path };
 }
 
+/**
+ * Build the CSS custom properties a bundled design system declares.
+ *
+ * The scan parser fills `scanCssVars` from a repo's real stylesheet; a Style
+ * Reference doc instead declares its tokens across the colour, spacing, type
+ * and radius tables. Codegen emits `tokens.css` from `scanCssVars`, so without
+ * this the generated package ships `:root {}` and every component references
+ * variables that do not exist.
+ */
+function cssVarsFromDesignSystem(
+  system: DesignSystem,
+): { name: string; value: string; source: string }[] {
+  const out: { name: string; value: string; source: string }[] = [];
+  const seen = new Set<string>();
+  const push = (name: string | undefined, value: string, source: string) => {
+    const varName = name?.trim();
+    if (!varName?.startsWith("--") || !value?.trim() || seen.has(varName)) return;
+    seen.add(varName);
+    out.push({ name: varName, value: value.trim(), source });
+  };
+
+  for (const c of system.colors) push(c.cssVar, c.value, "color");
+  for (const sp of system.spacing) push(sp.token, sp.value, "spacing");
+  for (const t of system.typeScale) push(t.token, t.size, "type");
+  for (const r of system.borderRadius) {
+    const slug = r.element.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    push(`--radius-${slug}`, r.value, "radius");
+  }
+  for (const f of system.typography) push(f.cssVar, `"${f.name}", ${f.substitute || "sans-serif"}`, "font");
+  return out;
+}
+
+/**
+ * A bundled design system in `docs/designs.md/` is written in the Style
+ * Reference format, not the workspace-scan format. Running the scan parser
+ * over one silently yields a package with no tokens and no components, so
+ * pick the parser by what the doc actually is.
+ */
+function isBundledDesignDoc(ref: string): boolean {
+  const name = ref.replace(/^docs\/designs\.md\//, "");
+  if (name.includes("/") || name.includes("\\")) return false;
+  return existsSync(join(process.cwd(), "docs", "designs.md", name));
+}
+
 export async function runPulseCodegen(
   docRef?: string,
 ): Promise<PulseCodegenOutput> {
@@ -92,8 +138,20 @@ export async function runPulseCodegen(
     process.env.BLOCKSMITH_DOC?.trim() ||
     "upload:scan-acme-ui-kit.md";
 
-  const { markdown, resolvedFrom } = await loadScanMarkdownForCodegen(ref);
-  const system = parseWorkspaceScanMarkdown(markdown, ref);
+  let system: DesignSystem;
+  let resolvedFrom: string;
+
+  if (isBundledDesignDoc(ref)) {
+    const fileName = ref.replace(/^docs\/designs\.md\//, "");
+    const loadedSystem = loadDesignSystem(fileName);
+    system = { ...loadedSystem, scanCssVars: cssVarsFromDesignSystem(loadedSystem) };
+    resolvedFrom = join(process.cwd(), "docs", "designs.md", fileName);
+  } else {
+    const loaded = await loadScanMarkdownForCodegen(ref);
+    system = parseWorkspaceScanMarkdown(loaded.markdown, ref);
+    resolvedFrom = loaded.resolvedFrom;
+  }
+
   const result = generatePulsePackage(system, CODEGEN_ROOT);
 
   const importExample = [

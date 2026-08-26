@@ -417,7 +417,7 @@ export function HomeStudio() {
         {/* Announcement Banner */}
         <div className="bg-signal-orange w-full py-2.5 px-4 flex items-center justify-center text-center">
           <p className="text-paper-white text-[13px] font-medium tracking-wide">
-            Introducing BlockSmith Pipelines: A CI/CD SDK for AI Agents. <Link href="/protocol" className="underline underline-offset-4 decoration-white/50 hover:decoration-white font-semibold ml-2">LEARN MORE HERE <IconArrowRight size={12} className="inline-block" /></Link>
+            New: BlockSmith Lab — build UI with your agent, against a design system that says no. <Link href="/lab" className="underline underline-offset-4 decoration-white/50 hover:decoration-white font-semibold ml-2">OPEN THE LAB <IconArrowRight size={12} className="inline-block" /></Link>
           </p>
         </div>
 

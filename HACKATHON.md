@@ -50,7 +50,7 @@ This is the product for anyone who doesn't already have a design system.
 - [x] Third preset (`docs.md` or `landing.md`)
 - [x] Preset picker UI — choose a system, see it rendered, adopt it
 - [x] `use_preset` tool so an agent can adopt one mid-conversation
-- [ ] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
+- [x] Pulse codegen verified against each preset → real `@blocksmith/<preset>` package
 - [x] Render a full example page per preset so the taste is visible, not just described
 - [ ] Version the presets (`portfolio.v1`) through the existing registry semantics
 

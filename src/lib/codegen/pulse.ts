@@ -238,14 +238,28 @@ const TSCONFIG = `{
  *   2. IR-synthesized real prop signature (faithful interface)
  *   3. generic stub (no IR available — legacy/un-parseable source)
  */
-function emitComponent(comp: ComponentDoc): string {
+function emitComponent(comp: ComponentDoc, spaceVar: string): string {
   return (
     sourceComponent(comp) ??
-    (comp.scan?.interface ? synthesizedComponent(comp) : genericStub(comp))
+    (comp.scan?.interface ? synthesizedComponent(comp) : genericStub(comp, spaceVar))
   );
 }
 
-function genericStub(comp: ComponentDoc): string {
+/**
+ * The system's own spacing variable for stub padding.
+ *
+ * Falls back to the acme scan tokens only when the system declares no spacing
+ * of its own — emitting `--acme-space-4` into a package built from a different
+ * design system references a variable that package's tokens.css never defines.
+ */
+function stubSpacingVar(system: DesignSystem): string {
+  const declared = (system.scanCssVars ?? []).find((v) => /space|spacing/i.test(v.name));
+  if (declared) return declared.name;
+  const token = system.spacing.find((sp) => sp.token?.startsWith("--"))?.token;
+  return token ?? "--acme-space-4";
+}
+
+function genericStub(comp: ComponentDoc, spaceVar: string): string {
   return `/** Auto-generated stub for ${comp.title} — no structural IR captured */
 import type { ReactNode, CSSProperties } from "react";
 
@@ -253,12 +267,31 @@ export type ${comp.title}Props = { children?: ReactNode; style?: CSSProperties }
 
 export function ${comp.title}({ children, style }: ${comp.title}Props) {
   return (
-    <div data-blocksmith-component="${comp.id}" style={{ padding: "var(--acme-space-4, 8px)", ...style }}>
+    <div data-blocksmith-component="${comp.id}" style={{ padding: "var(${spaceVar}, 8px)", ...style }}>
       {children ?? "${comp.title}"}
     </div>
   );
 }
 `;
+}
+
+/**
+ * A valid PascalCase identifier for a component.
+ *
+ * Scan-derived titles are already identifiers ("Button"), but a hand-authored
+ * design system names components the way a person would ("Anchor Link"), and
+ * emitting that verbatim produces `export function Anchor Link()` and a
+ * filename with a space in it. Normalising once, here, keeps the identifier,
+ * the filename and the index export in agreement.
+ */
+export function componentIdent(title: string): string | null {
+  const parts = title
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1));
+  const ident = parts.join("");
+  // Must start with a letter to be a legal identifier.
+  return /^[A-Za-z][A-Za-z0-9]*$/.test(ident) ? ident : null;
 }
 
 export function generatePulsePackage(
@@ -273,18 +306,27 @@ export function generatePulsePackage(
   writeFile(outDir, "tsconfig.json", TSCONFIG);
   writeFile(outDir, "src/tokens.css", cssRootBlock(system));
   writeFile(outDir, "src/tokens.ts", tokensTs(system));
-  writeFile(outDir, "src/index.ts", indexTs(system.components, packageName));
+  // Emit under normalised identifiers, and drop anything that cannot become
+  // one rather than writing a file that will not compile.
+  const emittable = system.components
+    .map((comp) => {
+      const ident = componentIdent(comp.title);
+      return ident ? { ...comp, title: ident } : null;
+    })
+    .filter((c): c is (typeof system.components)[number] => c !== null);
 
-  for (const comp of system.components) {
-    if (!/^[A-Z]/.test(comp.title)) continue;
-    writeFile(outDir, `src/components/${comp.title}.tsx`, emitComponent(comp));
+  writeFile(outDir, "src/index.ts", indexTs(emittable, packageName));
+
+  const spaceVar = stubSpacingVar(system);
+  for (const comp of emittable) {
+    writeFile(outDir, `src/components/${comp.title}.tsx`, emitComponent(comp, spaceVar));
   }
 
   return {
     outDir,
     packageName,
     slug,
-    componentCount: system.components.length,
+    componentCount: emittable.length,
     cssVarCount: system.scanCssVars?.length ?? 0,
   };
 }
