@@ -49,6 +49,7 @@ import {
 import { applyFixes, describeFixResult } from "@/lib/governance/autofix";
 import { extractSiteDesign, CaptureError } from "@/lib/ingest/extract-site";
 import { synthesizeDesignSystem } from "@/lib/ingest/synthesize-system";
+import { buildSkill } from "@/lib/governance/skill";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
 import { prepareDesignSystemDoc } from "@/lib/clients/registry";
 
@@ -97,6 +98,8 @@ export type WebMcpToolDef = {
    */
   run: (args: ToolArgs, ctx: ToolContext) => string | Promise<string>;
 };
+
+export { loadDesignSystem, readDocMarkdown, resolveDocRef };
 
 export type ToolContext = {
   /** Document the tools operate against; falls back to the server default. */
@@ -357,6 +360,37 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         const detail = err instanceof Error ? err.message : "unknown error";
         return `Could not capture that page (${detail}). Check the URL and try again.`;
       }
+    },
+  },
+
+  {
+    name: "export_skill",
+    description:
+      "Turn the active design system into a skill file a coding agent can load, so it writes compliant UI in an editor where these tools are not reachable. Returns a summary and a URL to fetch the file. Use when the user wants their agent to follow this system outside this page.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true },
+    run: (_args, ctx) => {
+      const docRef = resolveDocRef(ctx.doc);
+      const system = systemFor(ctx);
+      const skill = buildSkill(system, readDocMarkdown(docRef));
+
+      // The document itself is far over the 1500-char output budget, so the
+      // tool hands back a handle. Returning a truncated skill would be worse
+      // than returning none — the agent would follow half a rulebook.
+      const url = `/api/webmcp/skill?doc=${encodeURIComponent(docRef)}`;
+      const lines = skill.split("\n").length;
+
+      return [
+        `Built a skill for **${system.name}** — ${skill.length} characters, ${lines} lines.`,
+        "",
+        `Fetch it at \`${url}\`, or save it directly:`,
+        "",
+        `    curl -s '${url}' > ${system.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-skill.md`,
+        "",
+        "It carries the token tables, the type and spacing scales, the components",
+        "that exist, and the patterns this system has ruled out — so an agent",
+        "writing UI elsewhere follows the same rules this page enforces.",
+      ].join("\n");
     },
   },
 
