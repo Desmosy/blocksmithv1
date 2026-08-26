@@ -20,3 +20,13 @@ npm-debug.log*
 # gitignored files during source detection — silently stops generating the
 # utilities they use.
 /ui/
+
+# Runtime state written by the app and by test runs. These were tracked, so a
+# deploy shipped a governance history of six "bypass" events authored by
+# @verify — the test script, not a person — against a design system that only
+# exists on a dev machine. The stores degrade to empty when the file is absent,
+# which is the honest starting state for a fresh instance.
+data/cloud/*.json
+data/uploads/*.md
+data/uploads/*.json
+data/public-share/*.json
