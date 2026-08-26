@@ -44,7 +44,12 @@ export function useWebMcp(tools: WebMcpToolSpec[]): WebMcpStatus {
   const toolsRef = useRef(tools);
   toolsRef.current = tools;
 
-  const key = tools.map((t) => t.name).join(",");
+  // Re-register when anything the agent can see changes — not just names.
+  // A schema whose enum tracks the active design system is the whole point of
+  // a live tool surface, and keying on names alone would silently skip it.
+  const key = JSON.stringify(
+    tools.map((t) => [t.name, t.description, t.inputSchema, t.annotations]),
+  );
 
   useEffect(() => {
     if (!isWebMcpSupported()) {
