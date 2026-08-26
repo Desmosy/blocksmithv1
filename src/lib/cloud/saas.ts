@@ -51,6 +51,19 @@ export function isBundledSampleDoc(fileName: string): boolean {
  * bundled repo samples. Everything else (uploads, GitHub scans) is private and
  * subject to default-deny ownership checks.
  */
+/**
+ * A system captured from a public website. It contains only values that site
+ * already serves publicly, so viewing one needs no account — and the capture
+ * flow is the main thing a first-time visitor comes to try.
+ */
+export function isCapturedDocument(fileName: string): boolean {
+  return /^capture-[a-z0-9-]+\.md$/i.test(fileName);
+}
+
 export function isPublicContent(fileName: string): boolean {
-  return isPublicDemoDocument(fileName) || isBundledSampleDoc(fileName);
+  return (
+    isPublicDemoDocument(fileName) ||
+    isCapturedDocument(fileName) ||
+    isBundledSampleDoc(fileName)
+  );
 }

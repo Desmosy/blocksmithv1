@@ -101,7 +101,12 @@ export function middleware(request: NextRequest): NextResponse {
     // wiki handler still authorizes via canAccessDocument (published flag), so
     // forging this param grants no access to unpublished docs.
     const fromPublicSite = searchParams.has("site");
-    const isPublic = fromPublicSite || !doc || PUBLIC_DOC_PARAMS.has(doc);
+    // A system captured from a public website is public content: it holds
+    // nothing but values already served by that site. Gating it would put a
+    // sign-in wall in the middle of the one flow a visitor comes here to try.
+    const isCapture = /^upload:capture-[a-z0-9-]+\.md$/i.test(doc ?? "");
+    const isPublic =
+      fromPublicSite || !doc || isCapture || PUBLIC_DOC_PARAMS.has(doc);
     if (!isPublic) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
