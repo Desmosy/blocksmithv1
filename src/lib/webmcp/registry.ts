@@ -46,6 +46,10 @@ import {
   describeTailwindViolation,
   findTailwindViolations,
 } from "@/lib/governance/tailwind-lint";
+import {
+  describeContractViolation,
+  findContractViolations,
+} from "@/lib/governance/contract-lint";
 import { applyFixes, describeFixResult } from "@/lib/governance/autofix";
 import { extractSiteDesign, CaptureError } from "@/lib/ingest/extract-site";
 import { synthesizeDesignSystem } from "@/lib/ingest/synthesize-system";
@@ -424,17 +428,25 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       const scaleViolations = findScaleViolations(code, system);
       const ruleViolations = findRuleViolations(code, system);
       const twViolations = findTailwindViolations(code, system);
+      // Composition rules — how components are arranged, not what values they
+      // use. The only class here that a value-level linter cannot see.
+      const contractViolations = findContractViolations(
+        code,
+        system,
+        readDocMarkdown(resolveDocRef(ctx.doc)),
+      );
       const total =
         colorViolations.length +
         scaleViolations.length +
         ruleViolations.length +
-        twViolations.length;
+        twViolations.length +
+        contractViolations.length;
 
       if (total === 0) {
         return (
           `PASS — no design system violations. Checked colors against ` +
-          `${palette.length} tokens, plus spacing, type size, radius, and ` +
-          `${system.name}'s stated rules.`
+          `${palette.length} tokens, plus spacing, type size, radius, ` +
+          `composition, and ${system.name}'s stated rules.`
         );
       }
 
@@ -478,6 +490,10 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       // an inline style that mean the same thing get the same verdict.
       for (const v of twViolations) {
         add(v.line, v.utility, describeTailwindViolation(v));
+      }
+
+      for (const v of contractViolations) {
+        add(v.line, `${v.kind}:${v.component}`, describeContractViolation(v));
       }
 
       // Cap deliberately rather than letting clampOutput cut a line in half.

@@ -160,6 +160,18 @@ What this system will and won't build. Anything not listed here and not in Compo
 | Testimonial Card | unavailable | Callout | Keep third-party praise in the same visual language as the work |
 | Breadcrumb | unavailable | Nav Link | The site is not deep enough to need a trail |
 
+## Contracts
+
+Rules about how components are put together, not what values they use. These
+are checked mechanically.
+
+| Contract | Component | Detail | Message |
+|----------|-----------|--------|---------|
+| max | Primary Action Button | 1 | A view has exactly one primary action. Demote the others to Secondary Action Button — two primaries means neither reads as the thing to do. |
+| max | Section Heading | 6 | More than six sections on a personal site is a sitemap, not a page. Split it or cut it. |
+| no-nest | Project Card | — | Project Cards do not nest. A piece of work inside a piece of work has no meaning here — use the card's own content instead. |
+| requires | Project Card | Meta Label | Every Project Card carries a Meta Label. Work without a date or a role is hard to place. |
+
 ## Do's and Don'ts
 
 ### Do

@@ -19,6 +19,7 @@ import {
 } from "../src/lib/webmcp/registry";
 import { loadDesignSystem, readDocMarkdown } from "../src/lib/clients/registry";
 import { resolveCapability } from "../src/lib/governance/capability";
+import { findContractViolations } from "../src/lib/governance/contract-lint";
 import { applyFixes } from "../src/lib/governance/autofix";
 import { findScaleViolations } from "../src/lib/governance/scale-lint";
 import { findRuleViolations } from "../src/lib/governance/rule-lint";
@@ -256,6 +257,72 @@ console.log("\nCapability matching");
     fail(`an unknown pattern resolved as "${unknown.status}" instead of unknown`);
   } else {
     ok("an unrecognised pattern returns unknown rather than a guess");
+  }
+}
+
+/* ------------------------------------------------------ component contracts */
+
+console.log("\nComponent contracts");
+{
+  const doc = "portfolio.md";
+  const system = loadDesignSystem(doc);
+  const md = readDocMarkdown(doc);
+  const check = (code: string) => findContractViolations(code, system, md);
+
+  const cases: { name: string; code: string; expect: number }[] = [
+    {
+      name: "two primary actions is rejected",
+      code: "<div><PrimaryActionButton>a</PrimaryActionButton><PrimaryActionButton>b</PrimaryActionButton></div>",
+      expect: 1,
+    },
+    {
+      name: "one primary beside a secondary passes",
+      code: "<div><PrimaryActionButton>a</PrimaryActionButton><SecondaryActionButton>b</SecondaryActionButton></div>",
+      expect: 0,
+    },
+    {
+      name: "a card nested in itself is rejected",
+      code: "<ProjectCard>\n<MetaLabel>x</MetaLabel>\n<ProjectCard>\n<MetaLabel>y</MetaLabel>\n</ProjectCard>\n</ProjectCard>",
+      expect: 1,
+    },
+    {
+      name: "a card without its required label is rejected",
+      code: "<ProjectCard><h3>Untitled</h3></ProjectCard>",
+      expect: 1,
+    },
+    {
+      name: "a complete card passes",
+      code: "<ProjectCard><MetaLabel>2026</MetaLabel><h3>Work</h3></ProjectCard>",
+      expect: 0,
+    },
+    {
+      name: "plain HTML never trips a contract",
+      code: "<div><button>a</button><button>b</button></div>",
+      expect: 0,
+    },
+  ];
+
+  for (const c of cases) {
+    const got = check(c.code).length;
+    if (got !== c.expect) {
+      fail(`contracts — ${c.name}: expected ${c.expect} violation(s), got ${got}`);
+    } else {
+      ok(c.name);
+    }
+  }
+
+  // Contracts are declared per system: a system that states none must not
+  // inherit another's.
+  const saas = loadDesignSystem("saas.md");
+  const inherited = findContractViolations(
+    cases[0].code,
+    saas,
+    readDocMarkdown("saas.md"),
+  );
+  if (inherited.length) {
+    fail(`saas.md inherited ${inherited.length} contract(s) it never declared`);
+  } else {
+    ok("a system without contracts inherits none");
   }
 }
 
