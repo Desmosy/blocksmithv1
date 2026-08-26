@@ -37,10 +37,10 @@ The engine has to catch what actually goes wrong, not just what's easy to catch.
 
 - [x] Scale linting — spacing, font-size, radius off-scale detection
 - [x] First preset (`portfolio.md`) authored and parsing
-- [ ] Tailwind class linting — `p-4`, `text-2xl`, `rounded-xl`, `bg-blue-500` *(agent)*
-- [ ] Prose-rule enforcement — gradients, shadows, pure #000/#fff, undeclared fonts *(agent)*
-- [ ] Second preset (`saas.md`) *(agent)*
-- [ ] Wire all three linters into `check_governance`
+- [x] Tailwind class linting — `p-4`, `text-2xl`, `rounded-xl`, `bg-blue-500` *(agent)*
+- [x] Prose-rule enforcement — gradients, shadows, pure #000/#fff, undeclared fonts *(agent)*
+- [x] Second preset (`saas.md`) *(agent)*
+- [x] Wire all three linters into `check_governance`
 - [ ] Consolidate: one `runGovernance(code, system)` returning all violation classes
 - [ ] Regression fixtures — compliant + non-compliant snippet per preset, asserted in CI
 
@@ -70,8 +70,8 @@ The thing judges actually watch.
 
 ### Day 8 · Hardening
 - [ ] Public route reachable with no auth wall, seeded
-- [ ] Every tool output verified under 1,500 chars
-- [ ] Errors are descriptive enough for an agent to self-correct
+- [x] Every tool output verified under 1,500 chars
+- [x] Errors are descriptive enough for an agent to self-correct
 - [ ] Mid-chain failure doesn't dead-end the agent
 - [ ] Evals written (`messages` + `expectedCall`) and passing
 - [ ] Tested in DevTools → Application → WebMCP: registration, schemas, manual invoke
