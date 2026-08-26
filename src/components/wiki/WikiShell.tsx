@@ -12,6 +12,7 @@ import { WikiWorkspaceBar } from "./WikiWorkspaceBar";
 import { VisualizeStyleButton } from "./VisualizeStyleButton";
 import { VisualizeLoadingOverlay } from "./VisualizeLoadingOverlay";
 import { WikiBuildGate } from "./WikiBuildGate";
+import { WikiAgentTools } from "./WikiAgentTools";
 import { SyncToast } from "./SyncToast";
 import { ScanStaleBanner } from "./ScanStaleBanner";
 import { PostScanBanner } from "./PostScanBanner";
@@ -142,8 +143,20 @@ function WikiShellInner({
           style={{ backgroundColor: "var(--wiki-bg)" }}
         >
           <VisualizeLoadingOverlay open={loading} stage={loadingStage} />
+          {/* Outside WikiBuildGate on purpose: the gate withholds its children
+              while a doc opens, and an agent arriving mid-build would find no
+              tools at all. Registration is page-level, not content-level. */}
           <div
-            className="mx-auto px-8 py-10 sm:px-10"
+            className="mx-auto px-8 pt-6 sm:px-10"
+            style={{ maxWidth: "var(--wiki-content-max, 72rem)" }}
+          >
+            <WikiAgentTools
+              docFileName={currentFileName}
+              systemName={system.name}
+            />
+          </div>
+          <div
+            className="mx-auto px-8 pb-10 pt-4 sm:px-10"
             style={{ maxWidth: "var(--wiki-content-max, 72rem)" }}
           >
             <WikiBuildGate

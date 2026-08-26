@@ -10,6 +10,7 @@ import type { ActivityEntry } from "@/lib/activity/store";
 import { IconCheck, IconDelete } from "@/components/icons/streamline";
 import { ComponentActivityPanel } from "../ComponentActivityPanel";
 import { GovernanceViolationsPanel } from "../GovernanceViolationsPanel";
+import { GovernanceCheckPanel } from "../GovernanceCheckPanel";
 
 const STATUS_BORDER: Record<FidelityCheck["status"], string> = {
   pass: "var(--wiki-text)",
@@ -138,6 +139,8 @@ export function GovernancePage({
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--wiki-muted)]">
         Fidelity score and drift since the last version.
       </p>
+
+      <GovernanceCheckPanel docFileName={docFileName} />
 
       {/* Fidelity */}
       <section className="mt-10 rounded-xl border border-[var(--wiki-border)] bg-[var(--wiki-sidebar)] p-6">

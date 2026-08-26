@@ -14,7 +14,6 @@
 import type {
   ModelContext,
   RegisterToolOptions,
-  WebMcpResult,
   WebMcpToolDescriptor,
 } from "./types";
 
@@ -80,14 +79,33 @@ export function installDevPolyfill(): boolean {
       return [...registry.values()];
     },
 
+    /**
+     * Matches Chrome's shape deliberately: arguments arrive as a JSON string
+     * and the result comes back as a string, per the spec's
+     * `Promise<DOMString> executeTool(...)`. An earlier version took and
+     * returned objects, which meant anything verified against the shim broke
+     * the moment it met a real browser.
+     */
     async executeTool(
       tool: unknown,
-      args: Record<string, unknown>,
-    ): Promise<WebMcpResult> {
-      const name = typeof tool === "string" ? tool : (tool as { name: string })?.name;
+      args: string | Record<string, unknown>,
+    ): Promise<string> {
+      const name =
+        typeof tool === "string" ? tool : (tool as { name?: string })?.name ?? "";
       const found = registry.get(name);
       if (!found) throw new Error(`No tool named "${name}".`);
-      return found.execute(args ?? {});
+
+      let parsed: Record<string, unknown> = {};
+      if (typeof args === "string") {
+        try {
+          parsed = args.trim() ? JSON.parse(args) : {};
+        } catch {
+          throw new Error("Failed to parse input arguments");
+        }
+      } else if (args && typeof args === "object") {
+        parsed = args;
+      }
+      return JSON.stringify(await found.execute(parsed));
     },
 
     listTools() {

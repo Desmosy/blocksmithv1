@@ -4,7 +4,7 @@
 
 Built for the **WebMCP Challenge**. BlockSmith exposes its design-system governance engine as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent working alongside you in the browser can read your design system, propose changes, and *get told no* when a change breaks it.
 
-**Live demo:** _TBD_ — run `npm run dev` and open `/lab` · **License:** [MIT](./LICENSE)
+**Live demo:** _TBD_ — run `npm run dev` and open `/wiki?doc=portfolio.md` · **License:** [MIT](./LICENSE)
 
 ---
 
@@ -22,9 +22,9 @@ That is the thing that was difficult before: the human and the agent operating o
 
 | The human | The agent |
 |---|---|
-| Opens `/lab` | Reads the screen with `get_current_context` |
-| Asks for a component | Calls `get_governance_rules`, then `propose_component` |
-| Watches code land in the editor | Gets the verdict back in the same call |
+| Opens their design system in the wiki | Reads the screen with `get_current_context` |
+| Asks for a component | Calls `get_governance_rules` before writing a line |
+| Pastes it into Governance, or edits in the Playground | `check_governance` returns the verdict inline |
 | Sees `REJECTED` with the rule quoted | Calls `fix_violations` and self-corrects |
 | Switches design system | Its tool schemas re-register — `toolchange` fires |
 | Names a site they like | Calls `capture_site_design`, which saves it as a system they can build against |
@@ -90,11 +90,9 @@ Open <http://localhost:3000>.
 To exercise the WebMCP tools, enable the API in Chrome:
 
 1. Visit `chrome://flags/#enable-webmcp-testing`, enable it, relaunch.
-2. Open <http://localhost:3000/lab>, then DevTools → **Application** → **WebMCP** to see registered tools and invoke them manually.
+2. Open <http://localhost:3000/wiki?doc=portfolio.md>, then DevTools → **Application** → **WebMCP** to see registered tools and invoke them manually.
 
-Without the flag the page still works — it just says no agent is connected. To
-exercise the registration path without it, append `?agent=sim` in development
-for a spec-shaped `document.modelContext` stub.
+Without the flag the wiki still works — it simply does not show the agent line.
 
 Or open the deployed URL in **ChatGPT's in-app browser**, which supports WebMCP natively.
 
@@ -108,8 +106,8 @@ Copy `.env.example` to `.env.local` and fill in what you need. The public demo r
 
 ```
 src/
-├── app/lab/             # the page humans and agents share
-├── components/lab/      # editor, verdict, agent activity log
+├── app/wiki/            # the design system UI — and where the tools register
+├── components/wiki/     # shell, Governance check panel, Component Playground
 ├── lib/webmcp/          # shared tool registry — one source of truth
 │   └── dev-polyfill.ts  # spec-shaped stub for testing without the flag
 ├── hooks/useWebMcp.ts   # registration lifecycle, AbortSignal-bound

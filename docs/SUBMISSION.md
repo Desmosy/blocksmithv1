@@ -8,10 +8,10 @@ estimated.
 
 ## What it is
 
-**BlockSmith Lab** — a page where you and your agent build UI against the same
-design system, and the page refuses the work that breaks it.
+**BlockSmith** — the design-system wiki a team already uses, which now hands the
+agent looking at it that system's rules, and refuses the work that breaks them.
 
-Open `/lab`, pick a design system, and ask your agent for a component. It reads
+Open the wiki on a design system and ask your agent for a component. It reads
 the rules through WebMCP tools, writes the component into your editor, and gets
 back a verdict. When the verdict is `REJECTED`, it carries the rule that was
 broken and the value to use instead — so the agent corrects itself in the same
@@ -56,9 +56,10 @@ REJECTED — 11 violation(s) in Portfolio.
 - Line 4: `text-blue-600` is a stock Tailwind color, not a design token.
 ```
 
-**Everything the agent does is on screen.** Every tool call appears in an
-activity log beside the editor. An agent working in a sidebar you cannot see is
-indistinguishable from one making things up.
+**The human and the agent are on the same page, literally.** The tools register
+on the wiki the design team already uses, bound to the document open on screen.
+The same check a reviewer runs from the Governance page is the one the agent
+gets — one answer, not two.
 
 **Nobody has to have a design system already.** Three curated presets ship with
 it, and `capture_site_design` reads the colours, typefaces, radii and spacing
@@ -80,10 +81,10 @@ larger problem than wrong colour values.
 limitation is that tools go stale — Chrome's docs note that clients must visit a
 site directly to know what it offers. Here the tool surface is bound to the
 design system: `check_component`'s schema carries an enum of the active system's
-components, so switching design systems re-registers the tools and fires
-`toolchange`. Verified: Portfolio → SaaS swaps the enum from 11 component names
-to 13 different ones mid-conversation. The agent cannot name a component the
-current system does not have.
+components, and re-registers when the reader opens a different system.
+Verified: Portfolio's enum carries 11 component names, SaaS's carries 13
+different ones. The agent cannot name a component the system on screen does not
+have.
 
 **Split the repair by who should make it.** `fix_violations` applies every
 mechanical correction and refuses the rest. On the sample card it takes 11
@@ -120,9 +121,10 @@ await document.modelContext.registerTool({
 change to a tool's name, description, schema or annotations, aborts and
 re-registers. That is what makes the surface live rather than static.
 
-**Nine server tools** answer questions about the design system and dispatch over
-HTTP. **Three client tools** act on what the human is looking at and can only
-run in the page: `get_current_context`, `use_preset`, `propose_component`.
+**Ten server tools** answer questions about the design system and dispatch over
+HTTP. **One page tool** can only run in the browser: `get_current_context`,
+which reports the design system and page the reader has open — the thing a
+remote MCP server cannot answer.
 
 ### Decisions worth calling out
 
@@ -164,8 +166,9 @@ format, for the evals CLI in `GoogleChromeLabs/webmcp-tools`.
 ## Honest limits
 
 - Enforcement is mechanical: colours, spacing, type sizes, radii, Tailwind
-  classes, and the categorical rules a system states. It does not judge
-  composition, hierarchy, or whether a layout is any good.
+  classes, the categorical rules a system states, and composition contracts
+  (how many primaries, what may nest, what must accompany what). It does not
+  judge hierarchy or whether a layout is any good.
 - Enforcing a design system makes output *more* uniform, not less. This is not
   a cure for AI sameness — it is a way to choose which sameness you get.
 - `capture_site_design` reads what CSS states. It cannot see why a choice was

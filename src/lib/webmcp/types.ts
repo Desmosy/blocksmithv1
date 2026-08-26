@@ -40,11 +40,15 @@ export interface ModelContext extends EventTarget {
     options?: RegisterToolOptions,
   ): Promise<void>;
   getTools?(options?: { fromOrigins?: string[] }): Promise<unknown[]>;
+  /**
+   * Chrome takes arguments as a JSON string and returns a string — the spec
+   * declares `Promise<DOMString>`, not a structured result. Callers parse it.
+   */
   executeTool?(
     tool: unknown,
-    args: Record<string, unknown>,
+    args: string,
     options?: { signal?: AbortSignal },
-  ): Promise<WebMcpResult>;
+  ): Promise<string>;
 }
 
 declare global {

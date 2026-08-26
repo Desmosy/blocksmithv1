@@ -25,6 +25,7 @@ import {
 } from "@/ai-lab/04-component-previews";
 import { useDesignIROptional } from "@/lib/design-ir/context";
 import { CopyButton } from "../visual/CopyButton";
+import { GovernanceVerdict } from "../GovernanceVerdict";
 
 const KIND_ORDER: ComponentPreviewKind[] = [
   "button",
@@ -90,6 +91,7 @@ function htmlSnippet(spec: ComponentPreviewSpec, cls: string): string {
 
 export function ComponentPlaygroundPage({
   system,
+  docFileName,
 }: {
   system: DesignSystem;
   docFileName?: string;
@@ -203,7 +205,12 @@ export function ComponentPlaygroundPage({
         </aside>
 
         {/* Canvas + code + controls remount per component for a clean spec */}
-        <Playground key={selected.id} component={selected} ctx={ctx} />
+        <Playground
+          key={selected.id}
+          component={selected}
+          ctx={ctx}
+          docFileName={docFileName}
+        />
       </div>
     </article>
   );
@@ -212,9 +219,12 @@ export function ComponentPlaygroundPage({
 function Playground({
   component,
   ctx,
+  docFileName,
 }: {
   component: ComponentDoc;
   ctx: ComponentPreviewContext;
+  /** Which design system to judge against; falls back to the server default. */
+  docFileName?: string;
 }) {
   const initial = useMemo(
     () => parseComponentPreviewSpec(component, ctx),
@@ -309,6 +319,20 @@ function Playground({
           <CodeBlock title="CSS" code={css} />
           <CodeBlock title="HTML" code={html} />
         </div>
+
+        {/*
+          The same check an agent gets through the page, run on what you are
+          editing. The controls above snap to tokens, so this usually passes —
+          it earns its place on the values they cannot constrain, and on
+          anything hand-edited afterwards.
+        */}
+        <GovernanceVerdict
+          code={`${css}\n${html}`}
+          doc={docFileName}
+          live
+          title="Governance — live"
+          emptyHint="Adjust a control above and this checks the result against this system's own rules."
+        />
       </div>
 
       {/* Controls */}
