@@ -572,6 +572,7 @@ function renderGovernance(
       report={report}
       diff={diff}
       previousLabel={previousLabel}
+      system={system}
       docFileName={docFileName}
       teamActivity={teamActivity}
     />

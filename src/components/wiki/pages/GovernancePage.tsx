@@ -7,6 +7,7 @@ import type {
   SystemDiff,
 } from "@/ai-lab/08-governance";
 import type { ActivityEntry } from "@/lib/activity/store";
+import type { DesignSystem } from "@/lib/blocks/types";
 import { IconCheck, IconDelete } from "@/components/icons/streamline";
 import { ComponentActivityPanel } from "../ComponentActivityPanel";
 import { GovernanceViolationsPanel } from "../GovernanceViolationsPanel";
@@ -122,10 +123,12 @@ export function GovernancePage({
   report,
   diff,
   previousLabel,
+  system,
   docFileName = "apollo.md",
   teamActivity = [],
 }: {
   report: FidelityReport;
+  system: DesignSystem;
   diff: SystemDiff | null;
   previousLabel: string | null;
   docFileName?: string;
@@ -140,7 +143,7 @@ export function GovernancePage({
         Fidelity score and drift since the last version.
       </p>
 
-      <GovernanceCheckPanel docFileName={docFileName} />
+      <GovernanceCheckPanel system={system} docFileName={docFileName} />
 
       {/* Fidelity */}
       <section className="mt-10 rounded-xl border border-[var(--wiki-border)] bg-[var(--wiki-sidebar)] p-6">

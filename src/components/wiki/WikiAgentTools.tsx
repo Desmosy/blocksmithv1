@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useWebMcp, type WebMcpToolSpec } from "@/hooks/useWebMcp";
 import { serverToolSpecs, type ToolDescriptor } from "@/lib/webmcp/client";
 import { isWebMcpSupported } from "@/lib/webmcp/types";
+import { setProposal } from "@/lib/webmcp/proposal-store";
 
 export function WikiAgentTools({
   docFileName,
@@ -47,6 +48,58 @@ export function WikiAgentTools({
    */
   const pageTools = useMemo<WebMcpToolSpec[]>(
     () => [
+      {
+        name: "propose_component",
+        description:
+          "Put a component in front of the user on the page they are reading, rendered in this design system's own tokens, and get back the governance verdict. Use this instead of only printing code in chat — the user should see the thing, not the markup.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            code: {
+              type: "string",
+              description: "The component markup to show.",
+            },
+            intent: {
+              type: "string",
+              description: "One line on what you built, e.g. \"pricing card\".",
+            },
+          },
+          required: ["code"],
+        },
+        // Puts something on the user's screen, so it is not a read.
+        annotations: { readOnlyHint: false },
+        execute: async (args) => {
+          const code = String(args.code ?? "").trim();
+          if (!code) return "No code supplied. Pass the component markup as `code`.";
+
+          setProposal({
+            code,
+            intent: args.intent ? String(args.intent) : undefined,
+            at: Date.now(),
+          });
+
+          // Return the verdict in the same call so the agent can correct itself
+          // without a second round trip.
+          try {
+            const res = await fetch("/api/webmcp/invoke", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                tool: "check_governance",
+                args: { code },
+                doc: docFileName,
+              }),
+            });
+            const data = (await res.json()) as { text?: string };
+            return (
+              (data.text ?? "Shown on the page.") +
+              "\n\nIt is now on the user's screen, rendered in this system's tokens."
+            );
+          } catch {
+            return "Shown on the user's screen, but the governance check could not run.";
+          }
+        },
+      },
       {
         name: "get_current_context",
         description:

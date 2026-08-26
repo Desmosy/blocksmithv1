@@ -143,6 +143,9 @@ npm run build:packages
 
 ## Docs
 
+- [`JUDGING.md`](./JUDGING.md) — for judges and designers: no code required
+- [`TESTING.md`](./TESTING.md) — every path, including the developer ones
+
 - [`docs/MCP.md`](docs/MCP.md) — the handshake, tools, and auth
 - [`docs/BLOCKS-V1-SPEC.md`](docs/BLOCKS-V1-SPEC.md) — the design interchange format
 - [`docs/DESIGN-CICD.md`](docs/DESIGN-CICD.md) — governance, staging, promotion

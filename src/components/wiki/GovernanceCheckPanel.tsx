@@ -1,73 +1,149 @@
 "use client";
 
 /**
- * GovernanceCheckPanel — paste code, get the system's verdict.
+ * GovernanceCheckPanel — what an agent proposed, and whether the system allows it.
  *
  * The rest of the Governance page reports on what has already been ingested.
- * This checks something that has not: a snippet from a PR, from an agent, from
- * anywhere. It is the same tool an agent reaches through the page, so what a
- * reviewer sees here and what an agent is told are the same answer.
+ * This is for something that has not been: a component an agent just built.
+ *
+ * The agent puts it here through `propose_component` — nobody pastes anything.
+ * The panel shows the rendered result first, because the person judging it is
+ * usually looking at a component, not reading markup. Pasting by hand is kept
+ * as a fallback for when there is no agent in the browser.
  */
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import type { DesignSystem } from "@/lib/blocks/types";
 import { GovernanceVerdict } from "./GovernanceVerdict";
+import { ProposalPreview } from "./ProposalPreview";
+import {
+  getProposal,
+  subscribeToProposals,
+  setProposal,
+  type Proposal,
+} from "@/lib/webmcp/proposal-store";
 
-const SAMPLE = `<div className="p-5 rounded-xl shadow-lg bg-gradient-to-br from-slate-900 to-black">
-  <h3 className="text-2xl text-blue-600">Pro</h3>
-  <button className="rounded-lg px-6 py-3 bg-blue-500">Start trial</button>
+const SAMPLE = `<div class="p-5 rounded-xl shadow-lg bg-gradient-to-br from-slate-900 to-black">
+  <h3 class="text-2xl text-blue-600">Pro</h3>
+  <p class="text-sm mt-3">$29 / month</p>
+  <button class="rounded-lg px-6 py-3 bg-blue-500">Start trial</button>
 </div>`;
 
-export function GovernanceCheckPanel({ docFileName }: { docFileName?: string }) {
-  const [code, setCode] = useState("");
+export function GovernanceCheckPanel({
+  system,
+  docFileName,
+}: {
+  system: DesignSystem;
+  docFileName?: string;
+}) {
+  const [proposal, setLocal] = useState<Proposal | null>(null);
+  const [manual, setManual] = useState("");
+  const [showCode, setShowCode] = useState(false);
   const id = useId();
+
+  // An agent proposing a component is the primary path in.
+  useEffect(() => {
+    setLocal(getProposal());
+    return subscribeToProposals(setLocal);
+  }, []);
+
+  const code = proposal?.code ?? manual;
+  const fromAgent = Boolean(proposal);
+
+  const clear = () => {
+    setProposal(null);
+    setManual("");
+    setShowCode(false);
+  };
 
   return (
     <section className="mt-10">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-lg font-medium text-[var(--wiki-text)]">
-          Check code against this system
+          {fromAgent ? "Your agent proposed this" : "Check a component"}
         </h2>
-        <button
-          type="button"
-          className="text-xs text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
-          onClick={() => setCode(code ? "" : SAMPLE)}
-        >
-          {code ? "Clear" : "Paste a typical AI component"}
-        </button>
+        <div className="flex items-center gap-3 text-xs">
+          {code ? (
+            <button
+              type="button"
+              className="text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
+              onClick={() => setShowCode((v) => !v)}
+            >
+              {showCode ? "Hide code" : "Show code"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
+            onClick={() => (code ? clear() : setManual(SAMPLE))}
+          >
+            {code ? "Clear" : "Try a typical AI component"}
+          </button>
+        </div>
       </div>
+
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--wiki-muted)]">
-        Colours, spacing, type sizes, radii, banned patterns, and composition —
-        the same checks an agent gets through this page.
+        {fromAgent
+          ? proposal?.intent
+            ? `“${proposal.intent}” — rendered in this system's own tokens, and checked against its rules.`
+            : "Rendered in this system's own tokens, and checked against its rules."
+          : "Ask an agent for a component and it appears here. You can also paste one."}
       </p>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div>
-          <label
-            htmlFor={id}
-            className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wiki-muted)]"
-          >
-            Component
-          </label>
-          <textarea
-            id={id}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            spellCheck={false}
-            autoCapitalize="off"
-            autoCorrect="off"
-            rows={12}
-            placeholder="Paste a component…"
-            className="mt-2 w-full resize-y rounded-xl border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--wiki-text)] outline-none focus:border-[var(--wiki-text)]"
+      {code ? (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <ProposalPreview code={code} system={system} />
+            {/* Say what the frame can and cannot show. It renders inline styles
+                and this system's CSS variables, but the sandbox has no scripts,
+                so a utility-class framework never runs — a missing gradient here
+                is the preview's limit, not the component's. */}
+            <p className="text-[11px] leading-relaxed text-[var(--wiki-muted)]">
+              Rendered with this system&apos;s tokens and inline styles. Utility
+              classes such as Tailwind are not applied, so the verdict is the
+              accurate account of what the markup actually does.
+            </p>
+            {showCode ? (
+              <pre className="max-h-64 overflow-auto rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[11px] leading-relaxed text-[var(--wiki-text)]">
+                {code}
+              </pre>
+            ) : null}
+          </div>
+          <GovernanceVerdict
+            code={code}
+            doc={docFileName}
+            live
+            title="Verdict"
           />
         </div>
-        <GovernanceVerdict
-          code={code}
-          doc={docFileName}
-          live
-          title="Verdict"
-          emptyHint="Paste a component, or load the sample. It is checked as you type."
-        />
-      </div>
+      ) : (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div>
+            <label
+              htmlFor={id}
+              className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wiki-muted)]"
+            >
+              Paste a component
+            </label>
+            <textarea
+              id={id}
+              value={manual}
+              onChange={(e) => setManual(e.target.value)}
+              spellCheck={false}
+              rows={10}
+              placeholder="…or just ask your agent for one."
+              className="mt-2 w-full resize-y rounded-xl border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--wiki-text)] outline-none focus:border-[var(--wiki-text)]"
+            />
+          </div>
+          <GovernanceVerdict
+            code=""
+            doc={docFileName}
+            live
+            title="Verdict"
+            emptyHint="Nothing to check yet. Ask your agent to build something, and it will appear here rendered."
+          />
+        </div>
+      )}
     </section>
   );
 }
