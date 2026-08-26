@@ -186,14 +186,23 @@ export function synthesizeDesignSystem(found: Extracted): {
     "",
     "**Theme:** light",
     "",
-    `This design system was read from the CSS of ${found.url}. Colours, type` +
-      ` sizes, spacing and radii below are what that page states. Roles were` +
-      ` assigned from measurable properties — the lightest heavily-used colour` +
-      ` is the ground, the darkest is ink, the most saturated is the accent —` +
-      ` so they are a starting point rather than a decision. Nothing here` +
-      ` describes composition, hierarchy, or the reasons behind any choice,` +
-      ` because CSS does not record those. Rename the tokens, drop what you do` +
-      ` not want, and add your own rules before treating this as governing.`,
+    found.readFrom === "rendered"
+      ? `This design system was read from ${found.url} as it renders. Colours are` +
+        ` ranked by how much of the screen they actually cover, type and spacing` +
+        ` by what the page applies, and the components below were measured from` +
+        ` real elements — their fills, radii and padding are what you would find` +
+        ` in the browser. Roles are inferred: the most-painted neutral is the` +
+        ` ground, the darkest heavily-used colour is the ink, and the accent is` +
+        ` the most-used colour saturated enough to be one. Nothing here records` +
+        ` *why* any choice was made, because a rendered page does not say.` +
+        ` Rename the tokens and add your own rules before treating this as` +
+        ` governing.`
+      : `This design system was read from the CSS of ${found.url}, without` +
+        ` rendering it. Colours, type sizes, spacing and radii are what the` +
+        ` stylesheet mentions — not necessarily what the page paints — and there` +
+        ` are no components, because those can only be measured from real` +
+        ` elements. Treat this as the thinner of the two captures: useful as a` +
+        ` starting point, and worth re-capturing somewhere with a browser.`,
     "",
   ];
 
