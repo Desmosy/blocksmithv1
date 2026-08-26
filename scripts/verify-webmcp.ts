@@ -260,6 +260,35 @@ console.log("\nCapability matching");
   }
 }
 
+/* ---------------------------------------------- real check_governance output */
+
+console.log("\nLive tool output");
+{
+  const worst = `<div className="shadow-lg rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500" style={{ padding: 18, fontSize: 42, fontFamily: "Inter", color: "#ffffff", background: "#000000", borderRadius: 18, gap: 14 }}>
+  <span className="text-2xl bg-slate-200 p-7 rounded-xl">x</span>
+</div>`;
+
+  const tool = WEBMCP_TOOLS.find((t) => t.name === "check_governance")!;
+  for (const doc of ["portfolio.md", "docs.md", "saas.md"]) {
+    const text = String(tool.run({ code: worst }, { doc }));
+    if (text.length > WEBMCP_LIMITS.output) {
+      fail(
+        `${doc}: check_governance returned ${text.length} chars, over the ` +
+          `${WEBMCP_LIMITS.output} budget — a fix instruction would be cut in half`,
+      );
+      continue;
+    }
+    // Every reported violation must be citable.
+    const rows = text.split("\n").filter((l) => l.startsWith("- Line "));
+    const missingId = rows.filter((l) => !/`[a-z][a-z0-9-]+`/.test(l));
+    if (missingId.length) {
+      fail(`${doc}: ${missingId.length} violation(s) reported without a rule id`);
+    } else {
+      ok(`${doc}: ${rows.length} violations, ${text.length}/${WEBMCP_LIMITS.output} chars, all carry rule ids`);
+    }
+  }
+}
+
 /* ------------------------------------------------------ component contracts */
 
 console.log("\nComponent contracts");

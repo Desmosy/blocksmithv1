@@ -458,11 +458,20 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       // budget and push genuine violations into the "and N more" remainder.
       const seen = new Set<string>();
       const detail: string[] = [];
-      const add = (line: number, subject: string, text: string) => {
+      // Every violation carries a stable rule id, following the convention
+      // already in the engine (off-token-color, stale-date). An id is what
+      // makes a violation citable — in a report, in a suppression, or in a
+      // conversation about whether the rule itself is right.
+      const add = (
+        line: number,
+        subject: string,
+        ruleId: string,
+        text: string,
+      ) => {
         const key = `${line}|${subject.toLowerCase()}`;
         if (seen.has(key)) return;
         seen.add(key);
-        detail.push(`- Line ${line}: ${text}`);
+        detail.push(`- Line ${line} \`${ruleId}\` — ${text}`);
       };
 
       for (const v of colorViolations) {
@@ -473,27 +482,37 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
             ? ` Use \`${near.name}\` (${tokenFix(near)}) instead.`
             : ` No token is close to this color — it doesn't belong to ${rules.systemName}.` +
               ` Call get_governance_rules and pick a token, or ask the user to add one.`;
-        add(v.line, v.hex, `\`${v.hex}\` is not a design token.${fix}`);
+        add(v.line, v.hex, "off-token-color", `\`${v.hex}\` is not a design token.${fix}`);
       }
 
       for (const v of scaleViolations) {
-        add(v.line, `${v.property}:${v.value}`, describeScaleViolation(v));
+        add(
+          v.line,
+          `${v.property}:${v.value}`,
+          `off-scale-${v.kind === "fontSize" ? "type" : v.kind}`,
+          describeScaleViolation(v),
+        );
       }
 
       // Rule violations quote the design system's own words back, so the
       // rejection teaches the rule rather than just reporting a failure.
       for (const v of ruleViolations) {
-        add(v.line, v.matched, describeRuleViolation(v));
+        add(v.line, v.matched, `banned-${v.kind === "pureColor" ? "pure-color" : v.kind === "fontFamily" ? "undeclared-font" : v.kind}`, describeRuleViolation(v));
       }
 
       // Tailwind utilities resolve to px before being judged, so a class and
       // an inline style that mean the same thing get the same verdict.
       for (const v of twViolations) {
-        add(v.line, v.utility, describeTailwindViolation(v));
+        add(
+          v.line,
+          v.utility,
+          v.kind === "color" ? "off-token-utility" : `off-scale-utility`,
+          describeTailwindViolation(v),
+        );
       }
 
       for (const v of contractViolations) {
-        add(v.line, `${v.kind}:${v.component}`, describeContractViolation(v));
+        add(v.line, `${v.kind}:${v.component}`, `contract-${v.kind}`, describeContractViolation(v));
       }
 
       // Cap deliberately rather than letting clampOutput cut a line in half.

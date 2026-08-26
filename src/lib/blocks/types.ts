@@ -1,4 +1,14 @@
-export type BlockStatus = "draft" | "finalized" | "stale" | "conflict";
+/**
+ * `deprecated` is distinct from `stale`: stale means the source vanished,
+ * deprecated means a human decided it should not be used in new work while it
+ * still exists and still renders.
+ */
+export type BlockStatus =
+  | "draft"
+  | "finalized"
+  | "stale"
+  | "conflict"
+  | "deprecated";
 
 export type BlockType =
   | "page"

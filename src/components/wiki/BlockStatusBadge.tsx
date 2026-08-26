@@ -3,7 +3,7 @@
 /**
  * BlockStatusBadge — visual indicator for block sync state.
  *
- * Surfaces the draft/finalized/stale/conflict status that's been
+ * Surfaces the draft/finalized/stale/deprecated/conflict status that's been
  * in the type system since day 1 but never wired to the UI.
  */
 
@@ -27,6 +27,13 @@ const STATUS_CONFIG: Record<
     label: "Stale",
     className:
       "border border-[var(--wiki-border)] bg-[var(--wiki-active)] text-[var(--wiki-text)]",
+  },
+  // Deprecated still renders and still works — it is a decision, not a
+  // failure — so it reads quieter than conflict rather than as an error.
+  deprecated: {
+    label: "Deprecated",
+    className:
+      "border border-dashed border-[var(--wiki-border)] bg-transparent text-[var(--wiki-muted)] line-through decoration-1",
   },
   conflict: {
     label: "Conflict",
