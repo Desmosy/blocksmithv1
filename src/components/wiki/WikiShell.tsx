@@ -13,6 +13,7 @@ import { VisualizeStyleButton } from "./VisualizeStyleButton";
 import { VisualizeLoadingOverlay } from "./VisualizeLoadingOverlay";
 import { WikiBuildGate } from "./WikiBuildGate";
 import { WikiAgentTools } from "./WikiAgentTools";
+import { ProposedChanges } from "./ProposedChanges";
 import { SyncToast } from "./SyncToast";
 import { ScanStaleBanner } from "./ScanStaleBanner";
 import { PostScanBanner } from "./PostScanBanner";
@@ -154,6 +155,9 @@ function WikiShellInner({
               docFileName={currentFileName}
               systemName={system.name}
             />
+            {/* Sits above the page content on every wiki page: a change waiting
+                on you should not be something you have to go find. */}
+            <ProposedChanges docFileName={currentFileName} />
           </div>
           <div
             className="mx-auto px-8 pb-10 pt-4 sm:px-10"

@@ -108,6 +108,81 @@ export function WikiAgentTools({
         },
       },
       {
+        name: "propose_design_change",
+        description:
+          "Propose a change to the design system itself — add or edit a colour token, add a do/don't rule, revise a component's guidance. The change is staged for the human to approve; you cannot apply it. Use this when the user wants the system changed, not code written against it.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            blockId: {
+              type: "string",
+              description:
+                'What to change: "guidelines", "token:color:<name>", "component:<id>", "agent-guide".',
+            },
+            summary: {
+              type: "string",
+              description: "One line a human will read, e.g. \"Add a warning colour\".",
+            },
+            updatedData: {
+              type: "string",
+              description:
+                "JSON for that block. guidelines takes {dos:[],donts:[]}; a colour takes {name,value,role}.",
+            },
+            rationale: {
+              type: "string",
+              description: "Why this is the right change, in one or two sentences.",
+            },
+          },
+          required: ["blockId", "summary", "updatedData"],
+        },
+        // Stages something for a human. It cannot reach the design system.
+        annotations: { readOnlyHint: false },
+        execute: async (args) => {
+          const blockId = String(args.blockId ?? "").trim();
+          const summary = String(args.summary ?? "").trim();
+          if (!blockId || !summary) {
+            return "Pass at least `blockId` and `summary`.";
+          }
+
+          let updatedData: unknown;
+          const raw = args.updatedData;
+          if (typeof raw === "string") {
+            try {
+              updatedData = JSON.parse(raw);
+            } catch {
+              return "`updatedData` must be valid JSON for that block type.";
+            }
+          } else {
+            updatedData = raw;
+          }
+
+          try {
+            const res = await fetch("/api/webmcp/change", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                blockId,
+                summary,
+                updatedData,
+                rationale: args.rationale ? String(args.rationale) : undefined,
+                doc: docFileName,
+              }),
+            });
+            const data = (await res.json()) as { error?: string; pending?: number };
+            if (data.error) return data.error;
+            return [
+              `Staged: “${summary}”.`,
+              "",
+              "It is now waiting on the design system page for the user to approve",
+              "or discard. You cannot apply it yourself — only they can, and the",
+              `change does not exist in ${systemName ?? "the system"} until they do.`,
+            ].join("\n");
+          } catch {
+            return "Could not stage that change. The page may be offline.";
+          }
+        },
+      },
+      {
         name: "get_current_context",
         description:
           "See what the user is looking at right now: which design system is open in their browser and which page of it. Call this first so your answer applies to their actual screen rather than a guess.",
