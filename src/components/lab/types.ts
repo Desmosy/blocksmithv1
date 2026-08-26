@@ -8,6 +8,24 @@ export type PresetSummary = {
   swatches: string[];
   /** Component names, used to bind tool schemas to what this system offers. */
   components: string[];
+  specimen: Specimen;
+};
+
+/** Everything needed to render a design system as itself. */
+export type Specimen = {
+  name: string;
+  tagline: string;
+  colors: { name: string; value: string; role: string }[];
+  display: string;
+  body: string;
+  mono: string;
+  sizes: { meta: number; body: number; subheading: number; heading: number };
+  /** Ascending spacing steps, in px. */
+  space: number[];
+  /** Radii in px, smallest first. */
+  radii: number[];
+  /** Google Fonts stylesheet href for this system, when resolvable. */
+  fontsHref: string | null;
 };
 
 export type Verdict =

@@ -542,3 +542,24 @@
   opacity: 0.55;
   cursor: default;
 }
+
+/* ---- specimen ---- */
+
+/*
+ * The design system rendered as itself. It sits above the editor so the first
+ * thing on screen is the taste being enforced, not the code being judged.
+ */
+.lab-specimen {
+  border-bottom: 1px solid var(--lab-line);
+  overflow: hidden;
+}
+
+.lab-specimen-inner {
+  display: flex;
+  flex-direction: column;
+  max-width: 46rem;
+}
+
+.lab-specimen h2 {
+  font-weight: 400;
+}

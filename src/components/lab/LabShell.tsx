@@ -12,6 +12,7 @@ import { LabEditor } from "./LabEditor";
 import { LabVerdict } from "./LabVerdict";
 import { LabActivity } from "./LabActivity";
 import { LabPresetBar } from "./LabPresetBar";
+import { LabSpecimen } from "./LabSpecimen";
 import { installDevPolyfill } from "@/lib/webmcp/dev-polyfill";
 import type { PresetSummary, Verdict } from "./types";
 
@@ -260,6 +261,22 @@ export function LabShell({
   const { supported, registered, error } = useWebMcp(allTools);
   const activePreset = presets.find((p) => p.fileName === doc);
 
+  // Load the active system's own typefaces. Without this the specimen renders
+  // in the substitute stack and every preset looks the same.
+  useEffect(() => {
+    const href = activePreset?.specimen.fontsHref;
+    if (!href) return;
+    const id = "blocksmith-lab-fonts";
+    let link = document.getElementById(id) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+    if (link.href !== href) link.href = href;
+  }, [activePreset?.specimen.fontsHref]);
+
   return (
     <div className="lab">
       <LabPresetBar
@@ -273,6 +290,9 @@ export function LabShell({
 
       <div className="lab-grid">
         <section className="lab-pane" aria-label="Component code">
+          {activePreset ? (
+            <LabSpecimen specimen={activePreset.specimen} />
+          ) : null}
           <LabEditor
             code={code}
             onChange={setCode}
