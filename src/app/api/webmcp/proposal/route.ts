@@ -97,3 +97,31 @@ export async function GET(request: NextRequest) {
     { headers: { "cache-control": "no-store" } },
   );
 }
+
+/**
+ * Clear staged proposals so a demo can be re-run from a known state.
+ *
+ * Development only. In production this 404s, because the deployed demo must not
+ * carry an unauthenticated way to mutate state — /api/webmcp/invoke refuses
+ * anything that is not read-only, and this route should not be the exception
+ * that undoes that. Proposals there are per-process, one per system, and expire
+ * after thirty minutes, so a redeploy or the next proposal is the reset.
+ *
+ * Used by `npm run demo:reset`.
+ */
+export async function DELETE(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  const docParam = request.nextUrl.searchParams.get("doc");
+  if (docParam) {
+    const doc = resolveDocRef(docParam);
+    const existed = proposals.delete(doc);
+    return NextResponse.json({ ok: true, cleared: existed ? 1 : 0, doc });
+  }
+
+  const cleared = proposals.size;
+  proposals.clear();
+  return NextResponse.json({ ok: true, cleared });
+}

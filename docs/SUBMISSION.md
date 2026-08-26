@@ -61,7 +61,7 @@ on the wiki the design team already uses, bound to the document open on screen.
 The same check a reviewer runs from the Governance page is the one the agent
 gets — one answer, not two.
 
-**Nobody has to have a design system already.** Three curated presets ship with
+**Nobody has to have a design system already.** Four curated presets ship with
 it, and `capture_site_design` reads the colours, typefaces, radii and spacing
 straight out of any public page's CSS.
 
@@ -122,9 +122,10 @@ change to a tool's name, description, schema or annotations, aborts and
 re-registers. That is what makes the surface live rather than static.
 
 **Ten server tools** answer questions about the design system and dispatch over
-HTTP. **One page tool** can only run in the browser: `get_current_context`,
-which reports the design system and page the reader has open — the thing a
-remote MCP server cannot answer.
+HTTP. **Three page tools** can only run in the browser: `propose_component` and
+`propose_design_change`, which put work on the human's screen for approval, and
+`get_current_context`, which reports the design system and page the reader has
+open — the thing a remote MCP server cannot answer. Thirteen in total.
 
 ### Decisions worth calling out
 

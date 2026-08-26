@@ -694,6 +694,26 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
 export const WEBMCP_TOOLS_BY_NAME = new Map(WEBMCP_TOOLS.map((t) => [t.name, t]));
 
 /**
+ * Tools that exist only in the page, registered by `WikiAgentTools` rather than
+ * dispatched to `/api/webmcp/invoke`. They are named here, beside the server
+ * tools, so that the counts stated in README / JUDGING / TESTING / SUBMISSION
+ * have exactly one source to be checked against. `verify:webmcp` fails when a
+ * document disagrees with these numbers.
+ *
+ * `get_current_context` is the reason this split matters: a remote MCP server
+ * cannot answer what the reader is currently looking at.
+ */
+export const WEBMCP_PAGE_TOOL_NAMES = [
+  "propose_component",
+  "propose_design_change",
+  "get_current_context",
+] as const;
+
+/** What an agent sees on the wiki: dispatched tools plus page-only tools. */
+export const WEBMCP_REGISTERED_TOOL_COUNT =
+  WEBMCP_TOOLS.length + WEBMCP_PAGE_TOOL_NAMES.length;
+
+/**
  * Nearest token, plus a judgement about whether it's actually a substitute.
  *
  * `nearestToken` from the governance engine returns a raw squared distance and

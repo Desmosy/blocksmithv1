@@ -72,7 +72,7 @@ Registration is lifecycle-bound: `useWebMcp()` registers on mount and aborts the
 - **`readOnlyHint` split.** Every `get_*` and `check_*` tool is marked read-only so the agent knows which actions need confirmation.
 - **Composition is checked, not just values.** `check_governance` catches two primary actions in one view, a card nested inside itself, and a card missing its required label — rules about arrangement that no value-level linter can see.
 - **Every violation is citable.** Each carries a stable rule id (`off-token-color`, `banned-gradient`, `contract-max`).
-- **Fourteen tools, not fifteen.** The remote MCP server exposes fifteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow.
+- **Thirteen tools in the page, not sixteen.** The remote MCP server exposes sixteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow.
 - **The tool surface is live.** `check_component`'s schema carries an enum of the active system's components. Switching design systems re-registers the tools and fires `toolchange`, so the agent's options change with the rules — it cannot name a component the current system doesn't have.
 - **Auto-fix stops where judgement starts.** `fix_violations` applies every mechanical repair and returns what it refused to touch: colours with no close token, and rules like "no gradients" whose fix changes the composition rather than a value.
 

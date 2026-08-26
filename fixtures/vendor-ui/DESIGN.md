@@ -8,9 +8,9 @@ Minimal vendor design notes for BlockSmith scan verification.
 
 ## Button
 
-**Role:** Handshake acceptance writeback role
+**Role:** Primary action
 
-Written by verify-handshake-acceptance.
+Do not include inactive links or old dates in button copy. Keep labels current.
 
 <!-- blocksmith-end-button -->
 

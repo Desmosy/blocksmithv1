@@ -94,12 +94,15 @@ const FEATURES = [
   },
 ];
 
-const CLI_SNIPPET = `# Install & watch your workspace
+const CLI_SNIPPET = `# Scan your workspace into a governed design system
 npm install -g @block-smith/cli
-blocksmith watch --workspace .
+blocksmith scan .
 
 # Pull promoted design truth into the repo
 blocksmith pull --doc scan-your-app.md
+
+# Check changed files before they land
+blocksmith check --staged
 
 # CI gate — fail on off-token UI
 npm run validate:ui`;

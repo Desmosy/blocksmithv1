@@ -12,11 +12,15 @@
  *
  * Run: npm run verify:webmcp
  */
+import { readFileSync } from "fs";
 import {
   WEBMCP_LIMITS,
+  WEBMCP_PAGE_TOOL_NAMES,
+  WEBMCP_REGISTERED_TOOL_COUNT,
   WEBMCP_TOOLS,
   clampOutput,
 } from "../src/lib/webmcp/registry";
+import { BLOCKSMITH_MCP_TOOL_NAMES } from "../src/lib/mcp/blocksmith-server";
 import { loadDesignSystem, readDocMarkdown } from "../src/lib/clients/registry";
 import { resolveCapability } from "../src/lib/governance/capability";
 import { findContractViolations } from "../src/lib/governance/contract-lint";
@@ -31,7 +35,11 @@ import {
 
 const failures: string[] = [];
 const fail = (msg: string) => failures.push(msg);
-const ok = (msg: string) => console.log(`  ok   ${msg}`);
+let checksRun = 0;
+const ok = (msg: string) => {
+  checksRun += 1;
+  console.log(`  ok   ${msg}`);
+};
 
 /** Total violations of every class, which is what check_governance reports. */
 function violationCount(code: string, doc: string): number {
@@ -169,6 +177,25 @@ const PRESETS: PresetCase[] = [
   );
 }`,
   },
+  // Apollo is in middleware's PUBLIC_DOC_PARAMS, so a judge can open it with no
+  // session. Anything reachable that way has to be asserted like the rest.
+  {
+    doc: "apollo.md",
+    compliant: `export function Panel() {
+  return (
+    <div style={{ padding: 24, borderRadius: 8, background: "#f7f5f2", color: "#000000" }}>
+      <p style={{ fontSize: 18 }}>Grounded efficiency.</p>
+    </div>
+  );
+}`,
+    offending: `export function Panel() {
+  return (
+    <div className="shadow-lg rounded-xl bg-gradient-to-r from-purple-500 to-pink-500" style={{ padding: 18, borderRadius: 10 }}>
+      <p style={{ color: "#7c3aed", fontSize: 42 }}>Grounded efficiency.</p>
+    </div>
+  );
+}`,
+  },
 ];
 
 console.log("\nGovernance per preset");
@@ -269,7 +296,8 @@ console.log("\nLive tool output");
 </div>`;
 
   const tool = WEBMCP_TOOLS.find((t) => t.name === "check_governance")!;
-  for (const doc of ["portfolio.md", "docs.md", "saas.md"]) {
+  // Every preset a judge can reach, not a subset — see PRESETS above.
+  for (const doc of PRESETS.map((p) => p.doc)) {
     const text = String(tool.run({ code: worst }, { doc }));
     if (text.length > WEBMCP_LIMITS.output) {
       fail(
@@ -355,6 +383,90 @@ console.log("\nComponent contracts");
   }
 }
 
+/* -------------------------------------------------- documentation drift */
+
+/**
+ * Four judge-facing documents state how many tools the page offers. They have
+ * disagreed before — README said fourteen, JUDGING said twelve, TESTING said
+ * eleven and SUBMISSION said eleven, while the page actually registered
+ * thirteen. A judge who reads two of them finds the contradiction in a minute,
+ * and then has reason to doubt every other number in the submission.
+ *
+ * So the counts are asserted against the registry rather than trusted. Any
+ * integer standing next to the word "tool" in these files must be one the code
+ * can justify.
+ */
+console.log("\nDocumentation drift");
+{
+  const WORDS: Record<string, number> = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8,
+    nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
+    fifteen: 15, sixteen: 16,
+  };
+
+  // The page tools are declared in a client component, which a node script
+  // cannot import. Read the source and compare names, so moving a tool without
+  // updating the shared list is caught here rather than by a judge.
+  const tsxPath = "src/components/wiki/WikiAgentTools.tsx";
+  const declaredInPage = [...readFileSync(tsxPath, "utf8").matchAll(/^\s{8}name: "([a-z_]+)",$/gm)]
+    .map((m) => m[1]);
+  const expectedPageTools = [...WEBMCP_PAGE_TOOL_NAMES];
+  if (declaredInPage.join(",") !== expectedPageTools.join(",")) {
+    fail(
+      `${tsxPath} registers [${declaredInPage.join(", ")}] but ` +
+        `WEBMCP_PAGE_TOOL_NAMES says [${expectedPageTools.join(", ")}]`,
+    );
+  } else {
+    ok(`${expectedPageTools.length} page tools match the shared list`);
+  }
+
+  // Numbers a document is allowed to put next to "tool(s)".
+  const justified = new Map<number, string>([
+    [WEBMCP_TOOLS.length, "server tools"],
+    [WEBMCP_PAGE_TOOL_NAMES.length, "page tools"],
+    [WEBMCP_REGISTERED_TOOL_COUNT, "tools registered in the page"],
+    [BLOCKSMITH_MCP_TOOL_NAMES.length, "remote MCP tools"],
+  ]);
+
+  const DOCS = ["README.md", "JUDGING.md", "TESTING.md", "docs/SUBMISSION.md"];
+  let drift = 0;
+  for (const doc of DOCS) {
+    const text = readFileSync(doc, "utf8");
+    // "13 agent tools", "Ten server tools", "Three page tools" — a count word
+    // or digit, optional qualifiers, then tool/tools.
+    const re = /\b([A-Za-z]+|\d+)\s+(?:(?:agent|server|page|remote|in-page)\s+)*tools?\b/gi;
+    for (const m of text.matchAll(re)) {
+      const raw = m[1].toLowerCase();
+      const n = /^\d+$/.test(raw) ? Number(raw) : WORDS[raw];
+      if (n === undefined) continue; // "the tools", "these tools" — not a count
+      if (!justified.has(n)) {
+        drift += 1;
+        fail(
+          `${doc}: says "${m[0].trim()}" — no such count. ` +
+            `Justified: ${[...justified].map(([v, l]) => `${v} ${l}`).join(", ")}`,
+        );
+      }
+    }
+  }
+  if (!drift) ok(`tool counts in ${DOCS.length} documents agree with the registry`);
+
+  // TESTING.md quotes how many checks this script runs. It said 28 while the
+  // script ran 25. A number a reader can falsify in one command should be true.
+  const testing = readFileSync("TESTING.md", "utf8");
+  const claimed = testing.match(/^(\d+) checks:/m);
+  if (!claimed) {
+    fail("TESTING.md no longer states how many checks verify:webmcp runs");
+  } else {
+    // +1 for the assertion this block is about to log.
+    const actual = checksRun + 1;
+    if (Number(claimed[1]) !== actual) {
+      fail(`TESTING.md claims ${claimed[1]} checks; this run performs ${actual}`);
+    } else {
+      ok(`TESTING.md's stated check count (${actual}) is accurate`);
+    }
+  }
+}
+
 /* ----------------------------------------------------------------- result */
 
 console.log("");
@@ -363,4 +475,4 @@ if (failures.length) {
   for (const f of failures) console.error(`  ✗ ${f}`);
   process.exit(1);
 }
-console.log("verify:webmcp — all checks passed\n");
+console.log(`verify:webmcp — all ${checksRun} checks passed\n`);
