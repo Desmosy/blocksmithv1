@@ -12,7 +12,6 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { footerNavLinks, navGroups } from "@/components/app-shared";
-import { LatestChange } from "@/components/latest-change";
 import { NavGroup } from "@/components/nav-group";
 
 export function AppSidebar() {
@@ -30,7 +29,7 @@ export function AppSidebar() {
 				<SidebarMenuButton asChild>
 					<a href="#link">
 						<LogoIcon />
-						<span className="font-medium text-foreground!">Efferd</span>
+						<span className="font-medium text-foreground!">BlockSmith</span>
 					</a>
 				</SidebarMenuButton>
 			</SidebarHeader>
@@ -40,8 +39,7 @@ export function AppSidebar() {
 				))}
 			</SidebarContent>
 			<SidebarFooter className="gap-0 p-0">
-				<LatestChange />
-				<SidebarMenu className="border-t p-2">
+								<SidebarMenu className="border-t p-2">
 					{footerNavLinks.map((item) => (
 						<SidebarMenuItem key={item.title}>
 							<SidebarMenuButton
@@ -60,7 +58,7 @@ export function AppSidebar() {
 				</SidebarMenu>
 				<div className="px-4 pt-4 pb-2 transition-opacity group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0">
 					<p className="text-nowrap text-[9px] text-muted-foreground">
-						© {new Date().getFullYear()} Efferd LLC
+						© {new Date().getFullYear()} BlockSmith
 					</p>
 				</div>
 			</SidebarFooter>
