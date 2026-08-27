@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getShare } from "@/lib/public-share/store";
 import { loadPublicBlock } from "@/lib/public-share/load-block";
-import { loadDesignSystem } from "@/lib/clients/registry";
+import { loadDesignSystem, prepareDesignSystemDoc } from "@/lib/clients/registry";
 import { PublicBlockPreview } from "@/components/share/PublicBlockPreview";
 import { OpinionPanel } from "@/components/share/OpinionPanel";
 import { ApolloThemeStyles } from "@/components/wiki/ApolloThemeStyles";
@@ -15,6 +15,11 @@ export default async function PublicSharePage({ params }: PageProps) {
   const { shareId } = await params;
   const share = await getShare(shareId);
   if (!share || !share.enabled) notFound();
+
+  // A shared block usually belongs to a captured or uploaded system, which
+  // lives in storage rather than in this process. loadDesignSystem is
+  // synchronous, so without this the page 404s for a document that exists.
+  await prepareDesignSystemDoc(share.docFileName).catch(() => {});
 
   let system;
   try {

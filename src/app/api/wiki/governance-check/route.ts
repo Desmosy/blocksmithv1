@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { governanceReport, resolveDocRef } from "@/lib/webmcp/registry";
+import { prepareDesignSystemDoc } from "@/lib/clients/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const doc = resolveDocRef(typeof body.doc === "string" ? body.doc : undefined);
+    // Uploaded and captured docs live in storage; the reader below is
+    // synchronous and only sees what is already in this process.
+    await prepareDesignSystemDoc(doc).catch(() => {});
     const report = governanceReport(code, { doc });
     return NextResponse.json(
       { total: report.total, systemName: report.systemName, detail: report.detail },

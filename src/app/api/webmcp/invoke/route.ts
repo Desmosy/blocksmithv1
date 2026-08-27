@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prepareDesignSystemDoc } from "@/lib/clients/registry";
 import {
   WEBMCP_TOOLS,
   WEBMCP_TOOLS_BY_NAME,
@@ -71,6 +72,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    /**
+     * Hydrate the document before running anything against it.
+     *
+     * `loadDesignSystem` is synchronous and reads from an in-process cache, so
+     * a captured or uploaded doc has to be pulled out of Supabase first. On a
+     * single long-lived server the capture that created it did that already;
+     * on serverless the next request is a different instance with an empty
+     * cache, and every tool answered "not loaded — call prepareDesignSystemDoc
+     * first" for a document that was sitting in storage the whole time.
+     */
+    if (body.doc) {
+      try {
+        await prepareDesignSystemDoc(body.doc);
+      } catch {
+        // A doc that cannot be hydrated will fail in the tool with a message
+        // written for the caller; failing here would lose that.
+      }
+    }
+
     const text = await tool.run(body.args ?? {}, {
       doc: body.doc,
       // Session-local only: overrides arrive per request and are never
