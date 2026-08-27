@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
   if (!isUploadDocRef(doc)) {
     return NextResponse.json({ error: "Only stored (upload:) documents can be rewritten." }, { status: 400 });
   }
-  const access = await requireDocumentAccess(request, doc, "write");
+  // Read access, deliberately. The capture route creates an unowned document
+  // anonymously and runs this same pass on it; running it again on a
+  // document you can read is no more privileged than that, and an unowned
+  // document has nobody who could satisfy a write check.
+  const access = await requireDocumentAccess(request, doc, "read");
   if (!access.ok) return access.response;
   if (!isRationaleEnabled()) {
     return NextResponse.json({ applied: false, reason: "not configured", model: null });
