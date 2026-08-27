@@ -94,15 +94,20 @@ async function capture(request: NextRequest, progress: Record<string, number>): 
       );
     }
 
+    onPhase("extract:done");
     const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
+    onPhase("synthesize:done");
     // Judgement on top of measurement, when a model is configured. Never
     // blocks a capture: a timeout or a bad answer leaves the measured
     // document exactly as it was.
     const tR = Date.now();
     const rationale = await addRationale(measured, facts, undefined, { timeoutMs: left() - 4_000 });
     const rationaleMs = Date.now() - tR;
+    onPhase("rationale:done");
     const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
+    onPhase("save:done");
     await prepareDesignSystemDoc(saved.docRef);
+    onPhase("prepare:done");
 
     return NextResponse.json({
       title,
