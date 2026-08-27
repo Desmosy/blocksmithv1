@@ -261,9 +261,16 @@ export function mergeRationale(markdown: string, draft: Draft, provenance?: stri
     }
   }
 
+  // Provenance rides in the intro, the one part of the document every
+  // renderer keeps; a trailing line under a section is lost the moment the
+  // doc is rebuilt from its parsed structure.
   if (changed && provenance) {
-    const re = /(^## Similar Brands\n[\s\S]*?)(?=^## |(?![\s\S]))/m;
-    md = re.test(md) ? md.replace(re, `$1_${provenance}_\n\n`) : md + `\n_${provenance}_\n`;
+    md = md.replace(/\n_Rationale drafted by [^\n]*_\n/g, "\n");
+    const firstSection = md.search(/^## /m);
+    const line = `_${provenance}_\n\n`;
+    md = firstSection > 0
+      ? md.slice(0, firstSection).replace(/\s*$/, "\n\n") + line + md.slice(firstSection)
+      : md + `\n${line}`;
   }
   return { markdown: md, changed };
 }

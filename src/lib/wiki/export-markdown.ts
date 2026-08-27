@@ -115,6 +115,12 @@ export function generateDesignSystemMarkdown(
     }
   }
 
+  if (system.similarBrands?.length) {
+    lines.push(`## Similar Brands\n`);
+    for (const b of system.similarBrands) lines.push(`- **${b.name}** — ${b.note}`);
+    lines.push("");
+  }
+
   if (system.agentGuide) {
     lines.push(`## Agent Guide\n`);
     lines.push(system.agentGuide);

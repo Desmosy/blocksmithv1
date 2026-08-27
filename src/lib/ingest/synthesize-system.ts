@@ -593,7 +593,9 @@ export function synthesizeDesignSystem(found: Extracted): {
     "",
     "- This system was captured, not authored. If a value looks wrong, say so rather than building on it.",
     "- Every colour, size, space and radius must come from a table above. If the value you want is not there, ask.",
-    "- There are no components defined yet, so do not claim one exists. Ask before introducing a new pattern.",
+    found.components.length
+      ? `- ${found.components.length} components were measured from the page and are listed above. Compose from those before introducing a new pattern.`
+      : "- There are no components defined yet, so do not claim one exists. Ask before introducing a new pattern.",
     found.shadows.length
       ? "- Elevation is listed in order of use. Reach for level 1; anything deeper needs a reason."
       : "- No shadows were observed. Separate surfaces with borders and space.",
