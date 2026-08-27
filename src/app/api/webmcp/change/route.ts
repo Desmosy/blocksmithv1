@@ -30,6 +30,8 @@ export type ProposedChange = {
   summary: string;
   /** Why the agent thinks it is right. */
   rationale?: string;
+  /** True when this adds a block rather than changing an existing one. */
+  create?: boolean;
   at: number;
 };
 
@@ -126,6 +128,7 @@ export async function POST(request: NextRequest) {
       typeof body.rationale === "string" && body.rationale.trim()
         ? body.rationale.trim().slice(0, MAX_RATIONALE)
         : undefined,
+    create: body.create === true,
     at: Date.now(),
   };
 

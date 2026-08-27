@@ -23,6 +23,7 @@ type ProposedChange = {
   updatedData: unknown;
   summary: string;
   rationale?: string;
+  create?: boolean;
   at: number;
 };
 
@@ -90,6 +91,9 @@ export function ProposedChanges({ docFileName }: { docFileName?: string }) {
           doc: docFileName,
           blockId: change.blockId,
           updatedData: change.updatedData,
+          // Adding a block is a different intent from editing one, and the
+          // route will not infer it — so the proposal has to say so.
+          create: change.create === true,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -140,6 +144,7 @@ export function ProposedChanges({ docFileName }: { docFileName?: string }) {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-[var(--wiki-text)]">{c.summary}</p>
                   <p className="mt-1 text-[11px] uppercase tracking-[0.06em] text-[var(--wiki-muted)]">
+                    {c.create ? "New · " : ""}
                     {describeTarget(c.blockId)}
                   </p>
                   {c.rationale ? (

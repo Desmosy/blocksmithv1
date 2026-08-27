@@ -52,7 +52,7 @@ function resolveDocFile(docRef: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { doc, blockId, updatedData, baseContentHash, force, promote } =
+    const { doc, blockId, updatedData, baseContentHash, force, promote, create } =
       await request.json();
 
     if (typeof doc !== "string" || !doc.trim()) {
@@ -117,7 +117,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Apply the changes to the markdown content
-    const modifiedMd = modifyMarkdownBlock(currentMd, blockId, updatedData);
+    // `create` is explicit: adding a block is a different intent from editing
+    // one, and inferring it from a missing slug would turn a typo into a
+    // near-duplicate component.
+    const modifiedMd = modifyMarkdownBlock(currentMd, blockId, updatedData, {
+      create: create === true,
+    });
 
     if (upload && fileName) {
       await persistUploadMarkdown(fileName, modifiedMd);

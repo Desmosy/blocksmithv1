@@ -75,6 +75,39 @@ function editTableRowInSection(
 }
 
 /**
+ * Append a row to the end of a section's table.
+ *
+ * Used when a token is being added rather than changed. Finds the last table
+ * row in the section and inserts after it, so the new row lands inside the
+ * table rather than after whatever prose follows it.
+ */
+function appendTableRowInSection(
+  md: string,
+  matchHeading: (headingText: string) => boolean,
+  cells: string[],
+): string | null {
+  const lines = md.split("\n");
+  let inSection = false;
+  let lastRow = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^##\s/.test(line)) {
+      // Stop at the next section so a later table cannot absorb the row.
+      if (inSection) break;
+      inSection = matchHeading(line.replace(/^##\s+/, "").trim());
+      continue;
+    }
+    if (!inSection) continue;
+    if (line.trim().startsWith("|")) lastRow = i;
+  }
+
+  if (lastRow === -1) return null;
+  lines.splice(lastRow + 1, 0, `| ${cells.join(" | ")} |`);
+  return lines.join("\n");
+}
+
+/**
  * Modifies a specific section of a markdown file and returns the updated markdown.
  * Throws an error if the target section/block cannot be found.
  *
@@ -91,7 +124,17 @@ export function modifyMarkdownBlock(
   md: string,
   blockId: string,
   updatedData: any,
+  /**
+   * Append the block when it does not exist yet.
+   *
+   * Off by default, and deliberately not inferred. Creating silently whenever
+   * a slug misses would turn a typo into a second, near-duplicate component —
+   * editing "buton" would quietly add one rather than telling you the name is
+   * wrong. The caller says which it meant.
+   */
+  opts?: { create?: boolean },
 ): string {
+  const create = opts?.create === true;
   if (blockId === "agent-guide") {
     const regex = /(##\s*Agent\s+(?:Prompt\s+)?Guide\s*\n)([\s\S]*?)(?=\n##\s*|$)/i;
     const match = md.match(regex);
@@ -152,6 +195,27 @@ export function modifyMarkdownBlock(
         (role ?? cells[3] ?? "").trim(),
       ],
     );
+    if (!out && create) {
+      const added = appendTableRowInSection(
+        md,
+        (h) => /^Tokens\s*[—-]\s*Colors/i.test(h),
+        [
+          (name ?? slug.replace(/-/g, " ").replace(/\b[a-z]/g, (m) => m.toUpperCase())).trim(),
+          wrapTick(value ?? "#000000"),
+          // Match the convention already in the table: every colour token is
+          // `--color-<name>`. Emitting a bare `--warning` beside `--color-ink`
+          // would leave the doc inconsistent and the CSS export wrong.
+          wrapTick(
+            slug.startsWith("--")
+              ? slug
+              : `--${slug.startsWith("color-") ? slug : `color-${slug}`}`,
+          ),
+          (role ?? "").trim(),
+        ],
+      );
+      if (added) return added;
+    }
+
     if (!out) {
       throw new Error(
         `Color token '${slug}' not found in Tokens — Colors section`,
@@ -369,6 +433,24 @@ export function modifyMarkdownBlock(
       }
       return part;
     });
+
+    if (!found && create) {
+      const title =
+        typeof updatedData.title === "string" && updatedData.title.trim()
+          ? updatedData.title.trim()
+          : targetSlug.replace(/-/g, " ").replace(/\b[a-z]/g, (m: string) => m.toUpperCase());
+      const role = typeof updatedData.role === "string" ? updatedData.role.trim() : "";
+      const description =
+        typeof updatedData.description === "string" ? updatedData.description.trim() : "";
+      const block = [
+        `### ${title}`,
+        "",
+        ...(role ? [`**Role:** ${role}`, ""] : []),
+        ...(description ? [description, ""] : []),
+      ].join("\n");
+      const section = `${group2.replace(/\s+$/, "")}\n\n${block}\n`;
+      return md.replace(compSectionRegex, `$1${section}`);
+    }
 
     if (!found) {
       throw new Error(
