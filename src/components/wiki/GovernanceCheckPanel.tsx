@@ -127,8 +127,11 @@ export function GovernanceCheckPanel({
           : "Ask an agent for a component and it appears here. You can also paste one."}
       </p>
 
+      {/* Stacked, each band full width. Side by side, the preview was squeezed
+          into half a column and every violation wrapped to four lines in the
+          other half — the rule text is a sentence and needs the measure. */}
       {code ? (
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 space-y-4">
           <div className="space-y-2">
             <ProposalPreview code={code} system={system} />
             {/* Say what the frame can and cannot show. It renders inline styles
@@ -141,7 +144,7 @@ export function GovernanceCheckPanel({
               accurate account of what the markup actually does.
             </p>
             {showCode ? (
-              <pre className="max-h-64 overflow-auto rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[11px] leading-relaxed text-[var(--wiki-text)]">
+              <pre className="max-h-72 overflow-auto rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[11px] leading-relaxed text-[var(--wiki-text)]">
                 {code}
               </pre>
             ) : null}
@@ -154,7 +157,7 @@ export function GovernanceCheckPanel({
           />
         </div>
       ) : (
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 space-y-4">
           <div>
             <label
               htmlFor={id}

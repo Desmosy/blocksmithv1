@@ -441,119 +441,7 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
     run: (args, ctx) => {
       const code = str(args.code);
       if (!code) return "No code supplied. Pass the component source as `code`.";
-
-      // All four linters read the same system, so a token the agent just
-      // changed governs this check rather than the shipped value.
-      const system = systemFor(ctx);
-      const palette = system.colors
-        .filter((c) => c.value.startsWith("#"))
-        .map((c) => ({ name: c.name, value: c.value.toLowerCase(), cssVar: c.cssVar }));
-
-      const colorViolations = findOffTokenColors(code, paletteFromColors(system.colors));
-      const scaleViolations = findScaleViolations(code, system);
-      const ruleViolations = findRuleViolations(code, system);
-      const twViolations = findTailwindViolations(code, system);
-      // Composition rules — how components are arranged, not what values they
-      // use. The only class here that a value-level linter cannot see.
-      const contractViolations = findContractViolations(
-        code,
-        system,
-        readDocMarkdown(resolveDocRef(ctx.doc)),
-      );
-      const total =
-        colorViolations.length +
-        scaleViolations.length +
-        ruleViolations.length +
-        twViolations.length +
-        contractViolations.length;
-
-      if (total === 0) {
-        return (
-          `PASS — no design system violations. Checked colors against ` +
-          `${palette.length} tokens, plus spacing, type size, radius, ` +
-          `composition, and ${system.name}'s stated rules.`
-        );
-      }
-
-      const rules = { systemName: system.name, palette };
-
-      // Several linters can legitimately flag the same token on the same line
-      // — `to-black` is both a banned pure color and an off-palette Tailwind
-      // class. Report each (line, subject) once: duplicates burn the output
-      // budget and push genuine violations into the "and N more" remainder.
-      const seen = new Set<string>();
-      const detail: string[] = [];
-      // Every violation carries a stable rule id, following the convention
-      // already in the engine (off-token-color, stale-date). An id is what
-      // makes a violation citable — in a report, in a suppression, or in a
-      // conversation about whether the rule itself is right.
-      const add = (
-        line: number,
-        subject: string,
-        ruleId: string,
-        text: string,
-      ) => {
-        const key = `${line}|${subject.toLowerCase()}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        detail.push(`- Line ${line} \`${ruleId}\` — ${text}`);
-      };
-
-      for (const v of colorViolations) {
-        const near = nearestTokenMatch(v.hex, rules.palette);
-        const fix = !near
-          ? ""
-          : near.close
-            ? ` Use \`${near.name}\` (${tokenFix(near)}) instead.`
-            : ` No token is close to this color — it doesn't belong to ${rules.systemName}.` +
-              ` Call get_governance_rules and pick a token, or ask the user to add one.`;
-        add(v.line, v.hex, "off-token-color", `\`${v.hex}\` is not a design token.${fix}`);
-      }
-
-      for (const v of scaleViolations) {
-        add(
-          v.line,
-          `${v.property}:${v.value}`,
-          `off-scale-${v.kind === "fontSize" ? "type" : v.kind}`,
-          describeScaleViolation(v),
-        );
-      }
-
-      // Rule violations quote the design system's own words back, so the
-      // rejection teaches the rule rather than just reporting a failure.
-      for (const v of ruleViolations) {
-        add(v.line, v.matched, `banned-${v.kind === "pureColor" ? "pure-color" : v.kind === "fontFamily" ? "undeclared-font" : v.kind}`, describeRuleViolation(v));
-      }
-
-      // Tailwind utilities resolve to px before being judged, so a class and
-      // an inline style that mean the same thing get the same verdict.
-      for (const v of twViolations) {
-        add(
-          v.line,
-          v.utility,
-          v.kind === "color" ? "off-token-utility" : `off-scale-utility`,
-          describeTailwindViolation(v),
-        );
-      }
-
-      for (const v of contractViolations) {
-        add(v.line, `${v.kind}:${v.component}`, `contract-${v.kind}`, describeContractViolation(v));
-      }
-
-      // Cap deliberately rather than letting clampOutput cut a line in half.
-      // A truncated fix instruction is worse than a stated remainder: the
-      // agent fixes this batch, re-checks, and gets the rest.
-      const shown = detail.slice(0, MAX_VIOLATIONS_SHOWN);
-      const hidden = detail.length - shown.length;
-
-      return [
-        `REJECTED — ${detail.length} violation(s) in ${system.name}.`,
-        "",
-        ...shown,
-        ...(hidden > 0
-          ? ["", `…and ${hidden} more. Fix these first, then re-check.`]
-          : ["", "Fix these and call check_governance again."]),
-      ].join("\n");
+      return governanceReport(code, ctx).text;
     },
   },
 
@@ -690,6 +578,148 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
     },
   },
 ];
+
+/**
+ * The governance verdict for a block of code.
+ *
+ * `text` is what an agent gets: capped at MAX_VIOLATIONS_SHOWN so it fits the
+ * WebMCP output budget. `detail` is every violation, uncapped — a person
+ * reading a screen has no 1500-character limit, and truncating their list to
+ * an agent's budget is what produced "…and 3 more" with nowhere to see them.
+ */
+export type GovernanceReport = {
+  total: number;
+  systemName: string;
+  /** Every violation, one markdown line each, carrying its rule id. */
+  detail: string[];
+  /** Agent-facing text, capped for the tool output budget. */
+  text: string;
+};
+
+export function governanceReport(code: string, ctx: ToolContext): GovernanceReport {
+      // All four linters read the same system, so a token the agent just
+      // changed governs this check rather than the shipped value.
+      const system = systemFor(ctx);
+      const palette = system.colors
+        .filter((c) => c.value.startsWith("#"))
+        .map((c) => ({ name: c.name, value: c.value.toLowerCase(), cssVar: c.cssVar }));
+
+      const colorViolations = findOffTokenColors(code, paletteFromColors(system.colors));
+      const scaleViolations = findScaleViolations(code, system);
+      const ruleViolations = findRuleViolations(code, system);
+      const twViolations = findTailwindViolations(code, system);
+      // Composition rules — how components are arranged, not what values they
+      // use. The only class here that a value-level linter cannot see.
+      const contractViolations = findContractViolations(
+        code,
+        system,
+        readDocMarkdown(resolveDocRef(ctx.doc)),
+      );
+      const total =
+        colorViolations.length +
+        scaleViolations.length +
+        ruleViolations.length +
+        twViolations.length +
+        contractViolations.length;
+
+      if (total === 0) {
+        return {
+          total: 0,
+          systemName: system.name,
+          detail: [],
+          text:
+            `PASS — no design system violations. Checked colors against ` +
+            `${palette.length} tokens, plus spacing, type size, radius, ` +
+            `composition, and ${system.name}'s stated rules.`,
+        };
+      }
+
+      const rules = { systemName: system.name, palette };
+
+      // Several linters can legitimately flag the same token on the same line
+      // — `to-black` is both a banned pure color and an off-palette Tailwind
+      // class. Report each (line, subject) once: duplicates burn the output
+      // budget and push genuine violations into the "and N more" remainder.
+      const seen = new Set<string>();
+      const detail: string[] = [];
+      // Every violation carries a stable rule id, following the convention
+      // already in the engine (off-token-color, stale-date). An id is what
+      // makes a violation citable — in a report, in a suppression, or in a
+      // conversation about whether the rule itself is right.
+      const add = (
+        line: number,
+        subject: string,
+        ruleId: string,
+        text: string,
+      ) => {
+        const key = `${line}|${subject.toLowerCase()}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        detail.push(`- Line ${line} \`${ruleId}\` — ${text}`);
+      };
+
+      for (const v of colorViolations) {
+        const near = nearestTokenMatch(v.hex, rules.palette);
+        const fix = !near
+          ? ""
+          : near.close
+            ? ` Use \`${near.name}\` (${tokenFix(near)}) instead.`
+            : ` No token is close to this color — it doesn't belong to ${rules.systemName}.` +
+              ` Call get_governance_rules and pick a token, or ask the user to add one.`;
+        add(v.line, v.hex, "off-token-color", `\`${v.hex}\` is not a design token.${fix}`);
+      }
+
+      for (const v of scaleViolations) {
+        add(
+          v.line,
+          `${v.property}:${v.value}`,
+          `off-scale-${v.kind === "fontSize" ? "type" : v.kind}`,
+          describeScaleViolation(v),
+        );
+      }
+
+      // Rule violations quote the design system's own words back, so the
+      // rejection teaches the rule rather than just reporting a failure.
+      for (const v of ruleViolations) {
+        add(v.line, v.matched, `banned-${v.kind === "pureColor" ? "pure-color" : v.kind === "fontFamily" ? "undeclared-font" : v.kind}`, describeRuleViolation(v));
+      }
+
+      // Tailwind utilities resolve to px before being judged, so a class and
+      // an inline style that mean the same thing get the same verdict.
+      for (const v of twViolations) {
+        add(
+          v.line,
+          v.utility,
+          v.kind === "color" ? "off-token-utility" : `off-scale-utility`,
+          describeTailwindViolation(v),
+        );
+      }
+
+      for (const v of contractViolations) {
+        add(v.line, `${v.kind}:${v.component}`, `contract-${v.kind}`, describeContractViolation(v));
+      }
+
+      // Cap deliberately rather than letting clampOutput cut a line in half.
+      // A truncated fix instruction is worse than a stated remainder: the
+      // agent fixes this batch, re-checks, and gets the rest.
+      const shown = detail.slice(0, MAX_VIOLATIONS_SHOWN);
+      const hidden = detail.length - shown.length;
+
+      return {
+        total: detail.length,
+        systemName: system.name,
+        detail,
+        text: [
+          `REJECTED — ${detail.length} violation(s) in ${system.name}.`,
+          "",
+          ...shown,
+          ...(hidden > 0
+            ? ["", `…and ${hidden} more. Fix these first, then re-check.`]
+            : ["", "Fix these and call check_governance again."]),
+        ].join("\n"),
+      };
+
+}
 
 export const WEBMCP_TOOLS_BY_NAME = new Map(WEBMCP_TOOLS.map((t) => [t.name, t]));
 

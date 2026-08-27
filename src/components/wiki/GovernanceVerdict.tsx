@@ -107,15 +107,33 @@ export function GovernanceVerdict({
       setVerdict((v) => ({ state: "checking", text: "text" in v ? v.text : undefined }));
 
       try {
-        const res = await fetch("/api/webmcp/invoke", {
+        // The wiki's own route, not the agent tool: same engine and rule ids,
+        // without the 1500-character cap a tool output has to fit.
+        const res = await fetch("/api/wiki/governance-check", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ tool: "check_governance", args: { code: source }, doc }),
+          body: JSON.stringify({ code: source, doc }),
           signal: controller.signal,
         });
-        const data = (await res.json()) as { text?: string; error?: string };
-        const text = data.text ?? data.error ?? "";
-        setVerdict({ state: text.startsWith("PASS") ? "pass" : "fail", text });
+        const data = (await res.json()) as {
+          total?: number;
+          systemName?: string;
+          detail?: string[];
+          error?: string;
+        };
+        if (data.error) {
+          setVerdict({ state: "error", text: data.error });
+          return;
+        }
+        const total = data.total ?? 0;
+        const text = total
+          ? [
+              `REJECTED — ${total} violation(s) in ${data.systemName ?? "this system"}.`,
+              "",
+              ...(data.detail ?? []),
+            ].join("\n")
+          : `PASS — no design system violations in ${data.systemName ?? "this system"}.`;
+        setVerdict({ state: total ? "fail" : "pass", text });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         setVerdict({
