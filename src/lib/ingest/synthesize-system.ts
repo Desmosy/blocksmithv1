@@ -286,7 +286,14 @@ export function synthesizeDesignSystem(found: Extracted): {
     }
   })();
 
-  const title = found.title?.split(/[|·—–-]/)[0].trim() || host;
+  // A page's <title> is often a sentence ("Enterprise AI: Private, Secure,
+  // Customizable"), not a name. Prefer the short segment that names the host;
+  // otherwise the host itself, which is at least the brand.
+  const brand = host.replace(/^www\./, "").split(".")[0];
+  const segments = (found.title ?? "").split(/[|·—–:]/).map((s) => s.trim()).filter(Boolean);
+  const named = segments.find((s) => s.split(/\s+/).length <= 3 && s.toLowerCase().includes(brand.toLowerCase()));
+  const short = segments.find((s) => s.split(/\s+/).length <= 3);
+  const title = named ?? short ?? (brand ? brand[0].toUpperCase() + brand.slice(1) : host);
   const colors = nameColors(found.colors);
   const spacing = scale(found.spacing, 9);
   const sizes = scale(found.fontSizes, 9);

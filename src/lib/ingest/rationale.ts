@@ -188,10 +188,13 @@ function validate(draft: Draft, facts: CaptureFacts): Draft {
     const s = String(v).trim();
     if (names.has(k) && s.length >= 20 && s.length <= 320) notes[k] = s;
   }
+  // A site is not similar to itself, however the model phrases it.
+  const self = [facts.host.replace(/^www\./, "").split(".")[0], facts.title].map((s) => s.toLowerCase()).filter((s) => s.length >= 3);
   const brands = (draft.similarBrands ?? [])
     .filter((b) => b && typeof b.name === "string" && typeof b.note === "string")
     .map((b) => ({ name: b.name.trim().slice(0, 40), note: b.note.trim().slice(0, 200) }))
     .filter((b) => b.name && b.note)
+    .filter((b) => !self.some((s) => b.name.toLowerCase().includes(s)))
     .slice(0, 3);
   const tagline = typeof draft.tagline === "string" && draft.tagline.trim().length <= 90 ? draft.tagline.trim() : undefined;
   const overview =
@@ -220,21 +223,36 @@ export function mergeRationale(markdown: string, draft: Draft, provenance?: stri
     }
   }
 
-  // Overview: last paragraph of the intro, before the first section.
+  // Overview: the intro keeps the H1, the tagline and the measured
+  // paragraph ("This design system was read from ..."); everything after
+  // that paragraph is judgement from an earlier pass and is replaced, so a
+  // second run leaves one overview, not two.
   if (draft.overview) {
     const firstSection = md.search(/^## /m);
     if (firstSection > 0) {
-      md = md.slice(0, firstSection).replace(/\s*$/, "\n\n") + draft.overview + "\n\n" + md.slice(firstSection);
+      const intro = md.slice(0, firstSection);
+      const measured = intro.search(/^This design system was read from /m);
+      let keep = intro;
+      if (measured >= 0) {
+        const paraEnd = intro.indexOf("\n\n", measured);
+        keep = paraEnd > 0 ? intro.slice(0, paraEnd) : intro;
+      }
+      md = keep.replace(/\s*$/, "\n\n") + draft.overview + "\n\n" + md.slice(firstSection);
       changed = true;
     }
   }
 
   // Component notes: one sentence after each component's spec.
+  // The block keeps its heading, role line and measured spec paragraph;
+  // any further paragraphs are a previous pass's note and are replaced.
   for (const [name, note] of Object.entries(draft.componentNotes ?? {})) {
     const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(`(^### ${esc}\\n(?:\\*\\*Role:\\*\\* [^\\n]*\\n)?\\n?[^\\n]+\\n)`, "m");
+    const re = new RegExp(
+      `(^### ${esc}\\n(?:\\*\\*Role:\\*\\* [^\\n]*\\n)?\\n?[^\\n]+\\n)([\\s\\S]*?)(?=^##+ |(?![\\s\\S]))`,
+      "m",
+    );
     if (re.test(md)) {
-      md = md.replace(re, `$1\n${note}\n`);
+      md = md.replace(re, `$1\n${note}\n\n`);
       changed = true;
     }
   }
