@@ -4,7 +4,8 @@ import { resolveDocRef } from "@/lib/webmcp/registry";
 import { requireDocumentAccess } from "@/lib/cloud/access";
 import { readUploadMarkdownContent, persistUploadMarkdown } from "@/lib/uploads/persist";
 import { isUploadDocRef, uploadFileNameFromRef } from "@/lib/uploads/store";
-import { addRationale, factsFromSystem, isRationaleEnabled, rationaleModel } from "@/lib/ingest/rationale";
+import { addRationale, factsFromSystem, isRationaleEnabled, rationaleModel, rationaleModels } from "@/lib/ingest/rationale";
+import { createNvidiaClient } from "@/ai-lab/shared/nvidia-profiles";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -21,11 +22,24 @@ export const maxDuration = 60;
  * key was set, or one that was never captured, gets its prose here.
  */
 export async function POST(request: NextRequest) {
-  let body: { doc?: unknown; timeoutMs?: unknown };
+  let body: { doc?: unknown; timeoutMs?: unknown; listModels?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Body must be JSON." }, { status: 400 });
+  }
+  // Which models this deployment's key can actually reach. Catalogues move,
+  // and the only authority on what is available today is the endpoint.
+  if (body.listModels === true) {
+    const key = process.env.NVIDIA_API_KEY?.trim() || process.env.NVIDIA_API_KEY_FALLBACK?.trim();
+    if (!key) return NextResponse.json({ error: "not configured" }, { status: 400 });
+    try {
+      const list = await createNvidiaClient(key).models.list();
+      const ids = list.data.map((m) => m.id).filter((id) => /instruct|nemotron|gpt-oss|mistral|qwen|llama/i.test(id)).sort();
+      return NextResponse.json({ chain: rationaleModels(), available: ids.slice(0, 80), total: list.data.length });
+    } catch (err) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : "list failed" }, { status: 500 });
+    }
   }
   const doc = resolveDocRef(typeof body.doc === "string" ? body.doc : undefined);
   if (!isUploadDocRef(doc)) {

@@ -73,12 +73,31 @@ function apiKey(): string | null {
   return process.env.NVIDIA_API_KEY?.trim() || process.env.NVIDIA_API_KEY_FALLBACK?.trim() || null;
 }
 
+/**
+ * Models to try, in order.
+ *
+ * Instruct models, not reasoning ones: gpt-oss-120b thinks before it writes
+ * and timed out at twenty-five seconds for a page of JSON. Catalogues move —
+ * a 70B that worked one month answers 410 Gone the next — so this is a
+ * chain, and a retired entry costs under a second before the next is tried.
+ * NVIDIA_MODEL_RATIONALE puts one model at the front; comma-separate to
+ * replace the whole chain.
+ */
+export function rationaleModels(): string[] {
+  const env = (process.env.NVIDIA_MODEL_RATIONALE ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const defaults = [
+    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    "meta/llama-3.3-70b-instruct",
+    "meta/llama-3.1-70b-instruct",
+    "mistralai/mistral-small-3.1-24b-instruct",
+    "nvidia/llama-3.1-nemotron-nano-8b-v1",
+    "openai/gpt-oss-120b",
+  ];
+  return env.length > 1 ? env : [...env, ...defaults.filter((d) => !env.includes(d))];
+}
+
 export function rationaleModel(): string {
-  // An instruct model, not a reasoning one. gpt-oss-120b thinks before it
-  // writes and timed out at twenty-five seconds on the deployment for a page
-  // of JSON; a 70B instruct model answers the same prompt in a few. Override
-  // per deployment without touching code.
-  return process.env.NVIDIA_MODEL_RATIONALE?.trim() || "meta/llama-3.3-70b-instruct";
+  return rationaleModels()[0];
 }
 
 export function isRationaleEnabled(): boolean {
@@ -256,42 +275,61 @@ export async function addRationale(
   opts: { timeoutMs?: number } = {},
 ): Promise<RationaleResult> {
   const timeoutMs = Math.min(TIMEOUT_MS, opts.timeoutMs ?? TIMEOUT_MS);
+  let usedModel = isRationaleEnabled() ? rationaleModel() : "injected";
   if (!complete) {
     if (!isRationaleEnabled()) return { markdown, applied: false, model: null, reason: "not configured" };
     // Not worth starting a model call that cannot finish.
     if (timeoutMs < 6_000) return { markdown, applied: false, model: null, reason: "no time left" };
     const key = apiKey()!;
-    const model = rationaleModel();
     const client = createNvidiaClient(key);
     complete = async (system, user) => {
-      // The SDK retries a timed-out request twice by default, turning a
-      // twenty-second budget into sixty; and a socket that hangs can outlast
-      // the SDK's own timer. No retries, and a race the network cannot
-      // slip past.
-      const call = client.chat.completions.create(
-        {
-          model,
-          temperature: 0.3,
-          top_p: 0.9,
-          max_tokens: 1400,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-        },
-        { timeout: timeoutMs, maxRetries: 0 },
-      );
-      const res = await Promise.race([
-        call,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`model did not answer within ${timeoutMs}ms`)), timeoutMs + 500)),
-      ]);
-      return res.choices[0]?.message?.content ?? "";
+      const deadline = Date.now() + timeoutMs;
+      let lastErr: unknown = null;
+      for (const model of rationaleModels()) {
+        const remaining = deadline - Date.now();
+        if (remaining < 3_000) break;
+        try {
+          // The SDK retries a timed-out request twice by default, turning a
+          // twenty-second budget into sixty; and a socket that hangs can
+          // outlast the SDK's own timer. No retries, and a race the network
+          // cannot slip past.
+          const call = client.chat.completions.create(
+            {
+              model,
+              temperature: 0.3,
+              top_p: 0.9,
+              max_tokens: 1400,
+              messages: [
+                { role: "system", content: system },
+                { role: "user", content: user },
+              ],
+              // Nemotron models reason unless told not to; JSON does not need it.
+              ...(/nemotron/i.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+            } as never,
+            { timeout: remaining, maxRetries: 0 },
+          );
+          const res = await Promise.race([
+            call,
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`model did not answer within ${remaining}ms`)), remaining + 500)),
+          ]);
+          usedModel = model;
+          return res.choices[0]?.message?.content ?? "";
+        } catch (err) {
+          lastErr = err;
+          const status = (err as { status?: number }).status;
+          // Gone, not found, or not permitted: try the next. Anything else
+          // (a timeout, a malformed answer) is this model's failure to keep.
+          if (status === 404 || status === 410 || status === 403 || status === 400) continue;
+          throw err;
+        }
+      }
+      throw lastErr instanceof Error ? lastErr : new Error("no model in the chain answered");
     };
   }
 
-  const model = process.env.NVIDIA_MODEL_RATIONALE?.trim() || (isRationaleEnabled() ? rationaleModel() : "injected");
   try {
     const raw = await complete(SYSTEM, `Facts:\n${factSheet(facts)}\n\nReturn the JSON.`);
+    const model = usedModel;
     const draft = parseDraft(raw);
     if (!draft) return { markdown, applied: false, model, reason: "unparseable response" };
     const safe = validate(draft, facts);
@@ -304,6 +342,6 @@ export async function addRationale(
       ? { markdown: out, applied: true, model }
       : { markdown, applied: false, model, reason: "nothing grounded to add" };
   } catch (err) {
-    return { markdown, applied: false, model, reason: err instanceof Error ? err.message : "failed" };
+    return { markdown, applied: false, model: usedModel, reason: err instanceof Error ? err.message : "failed" };
   }
 }
