@@ -187,6 +187,61 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
     out.push("## Don't", "", ...system.donts.map((d) => `- ${d}`), "");
   }
 
+  /**
+   * How to build a graphic in this system.
+   *
+   * The rest of this file says what the system *is*. An agent asked for a
+   * hero visual or an illustration has nothing to go on and reaches for a
+   * stock gradient, which is the fastest way to make compliant tokens look
+   * nothing like the brand. Capture already identifies a page's visuals —
+   * gradient orbs, icons, imagery — so the system knows what kind of graphics
+   * it has; this turns that into instructions.
+   */
+  const visuals = system.components.filter((c) =>
+    /gradient|orb|image|icon|illustration|visual|panel/i.test(`${c.title} ${c.role}`),
+  );
+  const graphicTokens = system.colors.filter((c) =>
+    /decorative|artwork/i.test(c.role || ""),
+  );
+
+  out.push(
+    "## Building graphics",
+    "",
+    "Graphics follow the same system as the interface. Build them as code you",
+    "can re-run with different parameters, not as one-off artwork:",
+    "",
+    "1. **Geometry first.** State the shapes and their relationships before",
+    "   choosing how to draw them — a circle at 40% of the container, three",
+    "   stops on a diagonal — so the graphic can be resized and re-coloured.",
+    "2. **Then rendering.** Inline SVG for anything flat or iconographic, canvas",
+    "   or WebGL only when there are more elements than the DOM should hold.",
+    "3. **Colour from the tokens above.** A graphic that invents its own palette",
+    "   is the one thing that will make everything else look wrong.",
+    "4. **Expose the parameters.** Size, colours and density as props or CSS",
+    "   variables, so the graphic is a component rather than a picture.",
+    "",
+  );
+
+  if (graphicTokens.length) {
+    out.push(
+      "This system reserves colours for artwork that it does not use in UI",
+      "chrome. Graphics are where they belong:",
+      "",
+      ...graphicTokens.map((c) => `- \`${c.value}\` — ${c.name}`),
+      "",
+    );
+  }
+
+  if (visuals.length) {
+    out.push(
+      "Visuals already in this system — match them rather than inventing a",
+      "different style:",
+      "",
+      ...visuals.slice(0, 6).map((c) => `- **${c.title}** — ${c.role}`),
+      "",
+    );
+  }
+
   out.push(
     "## Before you finish",
     "",

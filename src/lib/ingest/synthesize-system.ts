@@ -74,6 +74,87 @@ type Named = { name: string; value: string; role: string };
  * sites. Everything else becomes a numbered neutral rather than being given a
  * role it may not have.
  */
+/**
+ * Warm, cool, or neutral — by which channel leads.
+ *
+ * A palette's character lives here. #f5f3f1 and #f1f3f5 are the same distance
+ * from white and read completely differently: one is paper, the other is ice.
+ * Naming both "Neutral 3" throws that away, and it is the part a designer
+ * notices first.
+ */
+function temperature(hex: string): "warm" | "cool" | "neutral" {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const spread = Math.max(r, g, b) - Math.min(r, g, b);
+  // Under a few units apart it is a true grey; naming it warm would be a lie.
+  if (spread < 4) return "neutral";
+  if (r >= b + 3) return "warm";
+  if (b >= r + 3) return "cool";
+  return "neutral";
+}
+
+/**
+ * The hue family a colour belongs to.
+ *
+ * Not every leftover is a neutral. A page's brand orange can miss the accent
+ * bar on usage and still be vividly orange, and running it through the grey
+ * vocabulary named #ff4704 "Smoke" — worse than the numbering it replaced,
+ * because it reads as considered and is wrong.
+ */
+function hueName(hex: string): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max === min) return "Grey";
+  const d = max - min;
+  let h: number;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h = Math.round(h * 60);
+  if (h < 0) h += 360;
+
+  if (h < 15 || h >= 345) return "Red";
+  if (h < 40) return "Orange";
+  if (h < 65) return "Amber";
+  if (h < 80) return "Yellow";
+  if (h < 150) return "Green";
+  if (h < 190) return "Teal";
+  if (h < 210) return "Cyan";
+  if (h < 250) return "Blue";
+  if (h < 275) return "Indigo";
+  if (h < 300) return "Violet";
+  if (h < 330) return "Magenta";
+  return "Pink";
+}
+
+/**
+ * A name for a neutral, from how light it is and which way it leans.
+ *
+ * Bands are set from measured values rather than an even split, because
+ * relative luminance bunches light colours together: a page's near-whites sit
+ * at .97, .90 and .81 and are three distinct surfaces to a designer.
+ *
+ * Temperature only picks the word at the light end, where it is visible.
+ * Below roughly a third brightness nobody calls a grey "warm" — #777169 is
+ * Smoke and #44403b is Graphite whichever way they lean — so the last two
+ * bands use one vocabulary and stop pretending to a distinction the eye
+ * cannot make.
+ */
+function neutralName(hex: string): string {
+  const l = luminance(hex);
+  const band =
+    l >= 0.93 ? 0 : l >= 0.85 ? 1 : l >= 0.7 ? 2 : l >= 0.3 ? 3 : l >= 0.1 ? 4 : 5;
+
+  if (band >= 4) return band === 4 ? "Smoke" : "Graphite";
+
+  const words: Record<"warm" | "cool" | "neutral", string[]> = {
+    warm: ["Eggshell", "Linen", "Taupe", "Clay"],
+    cool: ["Frost", "Mist", "Stone", "Slate"],
+    neutral: ["Paper", "Chalk", "Silver", "Ash"],
+  };
+  return words[temperature(hex)][band];
+}
+
 function nameColors(colors: { value: string; count: number }[]): Named[] {
   const usable = colors.filter((c) => /^#[0-9a-f]{6}$/.test(c.value));
   if (!usable.length) return [];
@@ -146,11 +227,25 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
     .filter((c) => !claimed.has(c.value))
     .slice(0, 7);
 
-  rest.forEach((c, i) => {
+  // Name each neutral for what it is. Two colours can legitimately land on the
+  // same word — a page often carries several near-whites — so a repeat is
+  // numbered rather than renamed, which keeps the first one's name stable.
+  const usedNames = new Map<string, number>();
+  rest.forEach((c) => {
+    // A colour that is plainly a colour gets a colour's name and a role that
+    // says where it belongs. These are the ones a page uses in artwork and
+    // illustration — they missed the accent bar on usage, which is the
+    // evidence that they are not carrying interaction.
+    const chromatic = chroma(c.value) >= ACCENT_MIN_CHROMA;
+    const base = chromatic ? hueName(c.value) : neutralName(c.value);
+    const seen = usedNames.get(base) ?? 0;
+    usedNames.set(base, seen + 1);
     out.push({
-      name: `Neutral ${i + 1}`,
+      name: seen ? `${base} ${seen + 1}` : base,
       value: c.value,
-      role: `Observed on the page ${c.count} time(s)`,
+      role: chromatic
+        ? `Decorative — seen ${c.count} time(s), in artwork rather than UI chrome`
+        : `Observed on the page ${c.count} time(s)`,
     });
   });
   return out;
@@ -499,6 +594,73 @@ export function synthesizeDesignSystem(found: Extracted): {
     "",
     `Read as ${host} reads. The palette, type scale and spacing above are that`,
     "site's; the composition and voice are not recorded in CSS and remain yours.",
+    "",
+  );
+
+  /**
+   * The tokens as something you can paste.
+   *
+   * Everything above is a table for a person to read. This is the same values
+   * in a form a stylesheet accepts, so the step between "here is the system"
+   * and "my project uses it" is a copy rather than an afternoon of transcribing
+   * hexes — which is where a captured system usually dies.
+   */
+  const varLines: string[] = [];
+  varLines.push("  /* Colours */");
+  for (const c of colors) varLines.push(`  --color-${slug(c.name)}: ${c.value};`);
+  if (found.fonts.length) {
+    varLines.push("", "  /* Typefaces */");
+    // The substitute is the fallback: a reader without the licensed face still
+    // gets the right shape rather than the browser default. It is dropped when
+    // it merely repeats the name, and the generic at the end has to match the
+    // face — a mono falling back to sans-serif is a worse stack than none.
+    for (const f of found.fonts.slice(0, 3)) {
+      const generic = /mono/i.test(f.name)
+        ? "monospace"
+        : /serif/i.test(f.name) && !/sans/i.test(f.name)
+          ? "serif"
+          : "sans-serif";
+      const stack = [`"${f.name}"`];
+      if (f.substitute && f.substitute.toLowerCase() !== f.name.toLowerCase()) {
+        stack.push(`"${f.substitute}"`);
+      }
+      stack.push(generic);
+      varLines.push(`  --font-${slug(f.name)}: ${stack.join(", ")};`);
+    }
+  }
+  if (spacing.length) {
+    varLines.push("", "  /* Spacing */");
+    spacing.forEach((n, i) => varLines.push(`  --space-${SPACING_NAMES[i] ?? `s${i}`}: ${n}px;`));
+  }
+  if (radii.length) {
+    varLines.push("", "  /* Radii */");
+    radii.forEach((n, i) =>
+      varLines.push(`  --radius-${(["sm", "control", "card", "panel", "pill"][i] ?? `r${i + 1}`)}: ${n}px;`),
+    );
+  }
+
+  const block = varLines.join("\n");
+  lines.push(
+    "## Quick Start",
+    "",
+    "### CSS Custom Properties",
+    "",
+    "```css",
+    ":root {",
+    block,
+    "}",
+    "```",
+    "",
+    "### Tailwind v4",
+    "",
+    "Tailwind v4 reads the same custom properties, so the block is identical —",
+    "`@theme` registers them as utilities (`bg-color-ground`, `p-space-md`).",
+    "",
+    "```css",
+    "@theme {",
+    block,
+    "}",
+    "```",
     "",
   );
 
