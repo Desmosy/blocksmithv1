@@ -728,16 +728,19 @@ function disambiguate(items: { name: string; c: Candidate }[]): string[] {
     for (const axis of axes) {
       const seen = new Map<string, number[]>();
       idxs.forEach((i) => seen.set(render(i), [...(seen.get(render(i)) ?? []), i]));
-      const colliding = [...seen.values()].filter((g) => g.length > 1).flat();
-      if (!colliding.length) break;
-      // An axis on which every colliding item reads the same adds a word and
-      // no information; skip it rather than lengthen every name.
-      const words = colliding.map((i) => axis(items[i].c));
-      if (new Set(words).size < 2) continue;
-      colliding.forEach((i, n) => {
-        const w = words[n];
-        if (w && !prefix[i].includes(w)) prefix[i].push(w);
-      });
+      const subgroups = [...seen.values()].filter((g) => g.length > 1);
+      if (!subgroups.length) break;
+      // Decide per subgroup: an axis on which every member of one collision
+      // reads the same adds a word and no information to those names, even
+      // if it separates a different collision in the same base name.
+      for (const g of subgroups) {
+        const words = g.map((i) => axis(items[i].c));
+        if (new Set(words).size < 2) continue;
+        g.forEach((i, n) => {
+          const w = words[n];
+          if (w && !prefix[i].includes(w)) prefix[i].push(w);
+        });
+      }
     }
     // Whatever still collides gets a numeral — nothing visible separates it.
     const seen = new Map<string, number>();
