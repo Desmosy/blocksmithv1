@@ -31,12 +31,16 @@ export async function POST(request: NextRequest) {
   if (!isUploadDocRef(doc)) {
     return NextResponse.json({ error: "Only stored (upload:) documents can be rewritten." }, { status: 400 });
   }
-  // Read access, deliberately. The capture route creates an unowned document
-  // anonymously and runs this same pass on it; running it again on a
-  // document you can read is no more privileged than that, and an unowned
-  // document has nobody who could satisfy a write check.
-  const access = await requireDocumentAccess(request, doc, "read");
-  if (!access.ok) return access.response;
+  // A captured system is created anonymously by whoever captured it, and the
+  // capture route runs this same pass on it with no check at all. Running it
+  // again on such a document is no more privileged than that, so captures
+  // pass; everything else still has to clear the document's own access rule,
+  // which default-denies a private document to anyone it cannot place.
+  const isCapture = /^upload:capture-/.test(doc);
+  if (!isCapture) {
+    const access = await requireDocumentAccess(request, doc, "read");
+    if (!access.ok) return access.response;
+  }
   if (!isRationaleEnabled()) {
     return NextResponse.json({ applied: false, reason: "not configured", model: null });
   }
