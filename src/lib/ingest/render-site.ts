@@ -239,6 +239,8 @@ function nameFor(
   c: Candidate,
   index: number,
   palette?: { accent?: string; ink?: string; ground?: string },
+  /** No saturated fill anywhere on the page — dark is the primary treatment. */
+  monochrome = false,
 ): { name: string; role: string } {
   if (c.kind === "field") {
     return { name: "Text Input Field", role: "Single-line entry in forms and search" };
@@ -288,7 +290,12 @@ function nameFor(
     return { name: `Primary ${shape}`, role: "The primary conversion action" };
   }
   if (luminance < 0.25) {
-    return { name: `Secondary ${shape}`, role: "A committing action that is not the primary" };
+    // On a page with no accent to be secondary to, the black button is the
+    // primary action — calling it "Secondary" describes a hierarchy the page
+    // does not have.
+    return monochrome
+      ? { name: `Filled ${shape}`, role: "The primary action" }
+      : { name: `Secondary ${shape}`, role: "A committing action that is not the primary" };
   }
   if (luminance > 0.85) {
     return { name: `Inverse ${shape}`, role: "An action sitting on a dark surface" };
@@ -326,23 +333,55 @@ function cluster(
     else groups.set(key, { c, count: 1 });
   }
 
-  const ordered = [...groups.values()]
+  const measured = [...groups.values()]
     .filter((g) => g.count >= 2 || g.c.kind !== "card")
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 12);
+    .sort((a, b) => b.count - a.count);
 
-  const used = new Map<string, number>();
-  return ordered.map((g, i) => {
-    const { name, role } = nameFor(g.c, i, palette);
-    const seen = used.get(name) ?? 0;
-    used.set(name, seen + 1);
-    return {
-      name: seen ? `${name} ${seen + 1}` : name,
-      role,
+  /**
+   * A page whose buttons are all black has no saturated accent to find, and
+   * hunting for one lands on whatever stray colour happens to be most vivid.
+   * When nothing here is saturated, dark *is* the primary treatment — which is
+   * how a reader sees it — rather than "secondary because it isn't the accent".
+   */
+  const monochrome = !measured.some((g) => {
+    const f = g.c.bg?.toLowerCase();
+    if (!f || f.length < 7) return false;
+    const ch = [1, 3, 5].map((i) => parseInt(f.slice(i, i + 2), 16));
+    return Math.max(...ch) - Math.min(...ch) >= 60;
+  });
+
+  /**
+   * Merge by the component each measurement describes, not by the pixels.
+   *
+   * Grouping on exact values treats a nav link at 16px and the same link at
+   * 17px as two components, so one link rendered at nine sizes came out as
+   * "Text Link" through "Text Link 9" — nine entries for one thing, filling
+   * the list and crowding out everything real. Classify first, then merge what
+   * lands on the same name, keeping the most-used variant as the spec and
+   * summing what they were seen doing.
+   */
+  const byRole = new Map<string, { name: string; role: string; c: Candidate; count: number }>();
+  for (const [i, g] of measured.entries()) {
+    const { name, role } = nameFor(g.c, i, palette, monochrome);
+    const found = byRole.get(name);
+    if (found) {
+      // `measured` is sorted by count, so the variant already held is the
+      // most-used one and stays as the spec; this one only adds to the tally.
+      found.count += g.count;
+    } else {
+      byRole.set(name, { name, role, c: g.c, count: g.count });
+    }
+  }
+
+  return [...byRole.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12)
+    .map((g) => ({
+      name: g.name,
+      role: g.role,
       spec: specFor(g.c),
       count: g.count,
-    };
-  });
+    }));
 }
 
 export async function renderSiteDesign(url: string): Promise<Rendered | null> {

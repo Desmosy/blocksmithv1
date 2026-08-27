@@ -41,6 +41,20 @@ function chroma(hex: string): number {
  * qualify, while its #533afd indigo at 195 must.
  */
 const ACCENT_MIN_CHROMA = 100;
+/**
+ * How much a colour must be used before it can be called the accent.
+ *
+ * Chroma alone is not enough. elevenlabs.io's most chromatic colour appears 8
+ * times in 10,105 swatch hits — 0.12% — and was being published as
+ * "Interactive elements: links and primary actions" on a site whose buttons
+ * are black. Stripe's real indigo sits at 35 hits (0.55%) and Linear's at 112
+ * (1.58%), so a floor between them keeps genuine accents and drops noise.
+ *
+ * Both bars must clear: the ratio handles pages of any size, the absolute
+ * count stops a nearly-empty page promoting a single stray pixel.
+ */
+const ACCENT_MIN_SHARE = 0.0025;
+const ACCENT_MIN_COUNT = 10;
 
 function contrast(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
@@ -97,20 +111,21 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
   // orange used 8 times over Stripe's indigo used 20. Usage separates the two
   // because a brand colour appears on every button and link, while a gradient
   // stop appears once.
+  const mostUsed = Math.max(1, ...usable.map((c) => c.count));
+  const usedEnough = (c: { count: number }) =>
+    c.count >= ACCENT_MIN_COUNT && c.count / mostUsed >= ACCENT_MIN_SHARE;
+
   const accentCandidates = usable
     .filter((c) => c.value !== ground.value && c.value !== ink.value)
     .filter((c) => chroma(c.value) >= ACCENT_MIN_CHROMA)
-    .filter((c) => contrast(c.value, ground.value) >= 3);
+    .filter((c) => contrast(c.value, ground.value) >= 3)
+    .filter(usedEnough);
 
-  const accent =
-    [...accentCandidates].sort((a, b) => b.count - a.count)[0] ??
-    // Nothing clearly chromatic: fall back to the most saturated thing there
-    // is, rather than claiming the system has no accent at all.
-    [...usable]
-      .filter((c) => c.value !== ground.value && c.value !== ink.value)
-      .filter((c) => chroma(c.value) > 40)
-      .sort((a, b) => chroma(b.value) - chroma(a.value))
-      .find((c) => contrast(c.value, ground.value) >= 3);
+  // No fallback to "most saturated thing there is". A page can genuinely have
+  // no accent — a monochrome system carries interaction on its ink — and
+  // saying so is more useful than nominating the most colourful stray pixel
+  // and telling an agent to build links out of it.
+  const accent = [...accentCandidates].sort((a, b) => b.count - a.count)[0];
 
   const out: Named[] = [
     { name: "Ground", value: ground.value, role: "Primary page background" },
