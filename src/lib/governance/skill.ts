@@ -255,8 +255,33 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
     "",
   );
   for (const s of kit.snippets) {
-    out.push(`**${s.title}** — ${s.purpose}`, "", "```html", s.code, "```", "");
+    out.push(
+      `**${s.title}** — ${s.purpose}`,
+      ...(s.install ? ["", `Install first: \\`${s.install}\\``] : []),
+      "",
+      "```" + (s.language === "tsx" ? "tsx" : "html"),
+      s.code,
+      "```",
+      "",
+    );
   }
+
+  out.push(
+    "### Libraries to compose from",
+    "",
+    "Do not draw what a maintained library already does well. Reach for these,",
+    "and pass this system's colours in — the rule is the same for every one:",
+    "tokens go in as props, and no decorative element is an image file.",
+    "",
+    "- **@paper-design/shaders-react** — thirty tuned WebGL shaders (MeshGradient, GrainGradient, Dithering, Metaballs, Water…) that take `colors` as strings. The mesh above is built on it.",
+    "- **shadcn/ui blocks** (ui.shadcn.com/blocks) — page-level sections; restyle through the CSS variables in Quick Start, not by editing markup.",
+    "- **Magic UI** and **Aceternity UI** — animated backgrounds and effects as React components; every colour prop takes a token.",
+    "- **react-bits** (reactbits.dev) — OGL/WebGL backgrounds such as Aurora, Silk and Iridescence, with colour props.",
+    "- **three / @react-three/fiber** — when the graphic is genuinely 3D. Materials take the same hex values.",
+    "",
+    "A block from any of these is a starting point, not a finish: after placing it, run `check_governance` on the result like any other component.",
+    "",
+  );
 
   out.push(
     "## Before you finish",

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     await prepareDesignSystemDoc(doc).catch(() => {});
     const system = loadDesignSystem(doc);
     const kit = graphicsKit(system);
-    const snippet = kit.snippets.find((s) => s.id === id);
+    const snippet = kit.snippets.find((s) => s.id === id && s.runnable);
     if (!snippet) {
       return new NextResponse("Unknown snippet", { status: 404 });
     }

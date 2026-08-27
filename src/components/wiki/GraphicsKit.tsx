@@ -39,16 +39,26 @@ export function GraphicsKit({ system, docFileName }: { system: DesignSystem; doc
           <article key={s.id}>
             <h3 className="text-sm font-semibold text-[var(--wiki-text)]">{s.title}</h3>
             <p className="mt-1 text-xs text-[var(--wiki-muted)]">{s.purpose}</p>
-            <iframe
-              title={s.title}
-              // Scripts only: a shader cannot run without them, and nothing
-              // else in the sandbox is granted.
-              sandbox="allow-scripts"
-              src={frameSrc(s.id)}
-              className="mt-3 h-[360px] w-full rounded-lg border border-[var(--wiki-border)]"
-            />
+            {s.runnable ? (
+              <iframe
+                title={s.title}
+                // Scripts only: a shader cannot run without them, and nothing
+                // else in the sandbox is granted.
+                sandbox="allow-scripts"
+                src={frameSrc(s.id)}
+                className="mt-3 h-[360px] w-full rounded-lg border border-[var(--wiki-border)]"
+              />
+            ) : s.install ? (
+              <p className="mt-2 font-mono text-[11px] text-[var(--wiki-muted)]">{s.install}</p>
+            ) : null}
             <div className="mt-3">
-              <CodeBlock code={s.code} language="html" filename={`${s.id}.html`} scrollable maxHeight={320} />
+              <CodeBlock
+                code={s.code}
+                language={s.language === "tsx" ? "tsx" : "html"}
+                filename={s.language === "tsx" ? "components/ui/mesh-background.tsx" : `${s.id}.html`}
+                scrollable
+                maxHeight={320}
+              />
             </div>
           </article>
         ))}

@@ -23,12 +23,19 @@ export type GraphicsPalette = {
 };
 
 export type Snippet = {
-  id: "svg-orb" | "canvas-field" | "shader-gradient";
+  id: "svg-orb" | "canvas-field" | "shader-gradient" | "paper-mesh";
   title: string;
-  language: "html" | "javascript";
+  language: "html" | "javascript" | "tsx";
   /** What it is for, in one line. */
   purpose: string;
   code: string;
+  /**
+   * Whether the snippet is a complete page that a sandboxed frame can run.
+   * A React component is not; it is shown as code for the reader's project.
+   */
+  runnable: boolean;
+  /** Shell line to run first, when the snippet depends on a package. */
+  install?: string;
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -117,6 +124,7 @@ export function svgOrb(p: GraphicsPalette, size = 320): Snippet {
     language: "html",
     purpose: "Hero and card artwork. Resizes without loss; change a stop-color to re-theme.",
     code,
+    runnable: true,
   };
 }
 
@@ -166,6 +174,7 @@ export function canvasField(p: GraphicsPalette): Snippet {
     language: "html",
     purpose: "Ambient section background. COUNT and SPEED are the parameters; colours come from the palette.",
     code,
+    runnable: true,
   };
 }
 
@@ -323,10 +332,76 @@ if (!(await webgpu())) webgl2();
     language: "html",
     purpose: "Full-bleed hero or CTA band. Four colour points drift; change the vec3 literals to re-theme.",
     code,
+    runnable: true,
+  };
+}
+
+/**
+ * The same graphic as a shadcn-style component over a maintained shader
+ * library.
+ *
+ * Hand-written shaders are the right teaching material and the right
+ * fallback; a project that already uses React should reach for a library
+ * that ships thirty tuned shaders and keeps them working across GPUs. Paper
+ * Shaders takes colours as strings, so the palette drops straight in and
+ * nothing about the graphic is a file. The component follows shadcn's
+ * conventions — a `cn()` class merge, props spread to the root — so it sits
+ * beside the rest of a shadcn/ui project without ceremony.
+ */
+export function paperMesh(p: GraphicsPalette): Snippet {
+  const colours = JSON.stringify([p.ground, p.accent, ...p.sparks].slice(0, 5));
+  const code = `// components/ui/mesh-background.tsx
+// Install: npm i @paper-design/shaders-react
+"use client";
+
+import { MeshGradient, type MeshGradientProps } from "@paper-design/shaders-react";
+import { cn } from "@/lib/utils";
+
+/** Design-system colours; edit here, never inline. */
+export const MESH_COLORS = ${colours};
+
+type MeshBackgroundProps = Omit<MeshGradientProps, "colors"> & {
+  /** Override only when a section needs a different mood; defaults to the system palette. */
+  colors?: string[];
+};
+
+/**
+ * A full-bleed animated mesh gradient for hero and CTA bands.
+ * Distortion and swirl are the two knobs that change its character;
+ * keep speed low so type stays readable over it.
+ */
+export function MeshBackground({ className, colors = MESH_COLORS, ...props }: MeshBackgroundProps) {
+  return (
+    <MeshGradient
+      className={cn("absolute inset-0 -z-10 h-full w-full", className)}
+      colors={colors}
+      distortion={0.8}
+      swirl={0.35}
+      grainMixer={0.15}
+      grainOverlay={0.05}
+      speed={0.25}
+      {...props}
+    />
+  );
+}
+
+// Usage — a hero band:
+// <section className="relative isolate min-h-[60vh]">
+//   <MeshBackground />
+//   <h1 className="relative z-10 …">Ready to put it to work?</h1>
+// </section>`;
+  return {
+    id: "paper-mesh",
+    title: "Mesh gradient (React · @paper-design/shaders-react)",
+    language: "tsx",
+    purpose: "The same band as a shadcn-style component over a maintained shader library. Use this in a React project; the hand-written shader is the fallback and the reference.",
+    code,
+    runnable: false,
+    install: "npm i @paper-design/shaders-react",
   };
 }
 
 export function graphicsKit(system: DesignSystem): { palette: GraphicsPalette; snippets: Snippet[] } {
   const palette = paletteForGraphics(system);
-  return { palette, snippets: [svgOrb(palette), canvasField(palette), shaderGradient(palette)] };
+  return { palette, snippets: [svgOrb(palette), canvasField(palette), shaderGradient(palette), paperMesh(palette)] };
 }
