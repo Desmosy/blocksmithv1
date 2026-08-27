@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { extractSiteDesign, CaptureError } from "@/lib/ingest/extract-site";
 import { synthesizeDesignSystem } from "@/lib/ingest/synthesize-system";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
 import { prepareDesignSystemDoc } from "@/lib/clients/registry";
-import { addRationale } from "@/lib/ingest/rationale";
+import { addRationale, isRationaleEnabled } from "@/lib/ingest/rationale";
+import { persistUploadMarkdown } from "@/lib/uploads/persist";
+import { clearDesignSystemCache } from "@/lib/clients/registry";
+import { uploadFileNameFromRef } from "@/lib/uploads/store";
 
 export const dynamic = "force-dynamic";
 /** Rendering a page through a remote browser can exceed the default budget. */
@@ -97,20 +100,29 @@ async function capture(request: NextRequest, progress: Record<string, number>): 
     onPhase("extract:done");
     const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
     onPhase("synthesize:done");
-    // Judgement on top of measurement, when a model is configured. Never
-    // blocks a capture: a timeout or a bad answer leaves the measured
-    // document exactly as it was.
-    const tR = Date.now();
-    // The model pass gets what is left minus room for the save and the
-    // document preparation that follow it; a slow model must not be the
-    // reason a finished capture never answers.
-    const rationale = await addRationale(measured, facts, undefined, { timeoutMs: Math.min(20_000, left() - 12_000) });
-    const rationaleMs = Date.now() - tR;
-    onPhase("rationale:done");
-    const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
+    // The measured document is saved and answered first. Judgement from a
+    // model is added after the response: on the deployment, the model pass
+    // was the phase that ran out the clock every time, and a person waiting
+    // on a capture should get the measurements now and the prose when it
+    // arrives. The wiki shows whichever version is on disk when it loads.
+    const saved = await saveMarkdownUpload(measured, `capture-${title}`);
     onPhase("save:done");
     await prepareDesignSystemDoc(saved.docRef);
     onPhase("prepare:done");
+    const rationalePending = isRationaleEnabled();
+    if (rationalePending) {
+      after(async () => {
+        try {
+          const rationale = await addRationale(measured, facts, undefined, { timeoutMs: 25_000 });
+          if (rationale.applied) {
+            await persistUploadMarkdown(uploadFileNameFromRef(saved.docRef), rationale.markdown);
+            clearDesignSystemCache();
+          }
+        } catch {
+          // The measured document is already saved; judgement was a bonus.
+        }
+      });
+    }
 
     return NextResponse.json({
       title,
@@ -124,10 +136,10 @@ async function capture(request: NextRequest, progress: Record<string, number>): 
       },
       /** Whether a browser rendered the page, or it was read from CSS alone. */
       readFrom: found.readFrom ?? "css",
-      /** Whether a model added rationale, and which one. */
-      rationale: rationale.applied ? rationale.model : null,
+      /** "pending" when a model will add judgement after this response lands. */
+      rationale: rationalePending ? "pending" : null,
       /** Phase timings in ms — the answer to "why was that slow". */
-      timings: { ...(found.timings ?? {}), rationale: rationaleMs, total: Date.now() - started, rationaleSkipped: rationale.reason ?? null, progress },
+      timings: { ...(found.timings ?? {}), total: Date.now() - started, progress },
     });
   } catch (err) {
     if (err instanceof CaptureError) {
