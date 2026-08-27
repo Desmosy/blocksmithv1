@@ -18,6 +18,7 @@
  */
 
 import { createNvidiaClient, getNvidiaProfile } from "@/ai-lab/shared/nvidia-profiles";
+import type { DesignSystem } from "@/lib/blocks/types";
 
 export type CaptureFacts = {
   title: string;
@@ -28,6 +29,26 @@ export type CaptureFacts = {
   radii: number[];
   components: { name: string; role: string; spec: string; count: number }[];
 };
+
+/**
+ * The fact sheet, rebuilt from a parsed document.
+ *
+ * A capture has the facts in hand; a document opened later does not, and the
+ * judgement pass must be runnable on any stored system — after a capture whose
+ * model call did not land, or on a system that was never captured at all.
+ */
+export function factsFromSystem(system: DesignSystem, host = ""): CaptureFacts {
+  const px = (v: string) => parseInt(String(v).replace(/[^\d]/g, ""), 10);
+  return {
+    title: system.name,
+    host,
+    colors: system.colors.map((c) => ({ name: c.name, value: c.value, role: c.role ?? "" })),
+    typefaces: system.typography.map((t) => ({ name: t.name, substitute: t.substitute || t.name })),
+    spacing: system.spacing.map((s) => px(s.value)).filter((n) => Number.isFinite(n)),
+    radii: system.borderRadius.map((r) => px(r.value)).filter((n) => Number.isFinite(n)),
+    components: system.components.map((c) => ({ name: c.title, role: c.role ?? "", spec: c.description ?? "", count: 1 })),
+  };
+}
 
 export type RationaleResult = {
   markdown: string;
