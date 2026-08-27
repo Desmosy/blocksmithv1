@@ -101,7 +101,10 @@ async function capture(request: NextRequest, progress: Record<string, number>): 
     // blocks a capture: a timeout or a bad answer leaves the measured
     // document exactly as it was.
     const tR = Date.now();
-    const rationale = await addRationale(measured, facts, undefined, { timeoutMs: left() - 4_000 });
+    // The model pass gets what is left minus room for the save and the
+    // document preparation that follow it; a slow model must not be the
+    // reason a finished capture never answers.
+    const rationale = await addRationale(measured, facts, undefined, { timeoutMs: Math.min(20_000, left() - 12_000) });
     const rationaleMs = Date.now() - tR;
     onPhase("rationale:done");
     const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);

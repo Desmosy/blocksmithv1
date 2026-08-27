@@ -7,6 +7,12 @@ import { isWorkspaceScanMarkdown } from "@/lib/scan/parse";
 /** True when deterministic structured parser cannot run but doc looks design-related. */
 export function needsParserAssist(markdown: string): boolean {
   if (!markdown.trim() || markdown.length < 120) return false;
+  // A captured system is written by this codebase in the parser's own shape;
+  // "Tokens — Colors" is its signature. Sending it to a model to be
+  // normalised would rewrite a document that needs no rewriting — and once
+  // a key was set on the deployment, it did, inside every capture, with no
+  // short timeout, until the platform limit cut the response off.
+  if (/^## Tokens — Colors\s*$/m.test(markdown)) return false;
   if (isApolloStructuredMarkdown(markdown)) return false;
   /** Wiki docs keep their own TOC — never squash into Apollo skeleton. */
   if (isWorkspaceScanMarkdown(markdown)) return false;
