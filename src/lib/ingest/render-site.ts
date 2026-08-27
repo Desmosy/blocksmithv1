@@ -363,7 +363,7 @@ const COLLECT_IN_PAGE = `(() => {
       fontFamily: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
       weight: cs.fontWeight, transform: cs.textTransform,
       shadow: shadow ? shadow.slice(0, 80) : "",
-      media: (tag === "img" || tag === "svg" || tag === "canvas" || tag === "video") ? tag : bgImage ? bgImage.slice(0, 80) : "",
+      media: (tag === "img" || tag === "svg" || tag === "canvas" || tag === "video") ? tag : bgImage ? bgImage.slice(0, 400) : "",
       label: text.slice(0, 28),
       children: children,
       hasImg: hasImgChild,
@@ -769,7 +769,19 @@ function specFor(c: Candidate, hover?: HoverState): string {
   if (c.kind === "visual" || c.kind === "avatar") {
     const shape = c.radius >= c.height / 2 - 1 ? "circular" : c.radius > 0 ? `${c.radius}px radius` : "square-cornered";
     const paint = /gradient/i.test(c.media) ? "gradient fill" : c.media === "svg" ? "inline SVG" : c.media === "img" ? "raster image" : c.media === "canvas" ? "canvas" : c.media === "video" ? "video" : c.bg ? `${c.bg} fill` : "image fill";
-    return `${paint}, ${shape}, ${c.width}×${c.height}px.`;
+    let out = `${paint}, ${shape}, ${c.width}×${c.height}px.`;
+    if (/gradient/i.test(c.media)) {
+      // The gradient as it can be rebuilt: rgb() stops converted to hex so the
+      // recipe reads like the rest of the document and lands in a stylesheet
+      // as-is. This is the programmable form of the graphic; nothing about it
+      // needs an image file.
+      const recipe = c.media.replace(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/g, (_m, r, g, b) =>
+        "#" + [r, g, b].map((n: string) => Number(n).toString(16).padStart(2, "0")).join(""));
+      out += ` Recipe: \`background: ${recipe.length >= 400 ? recipe + "…" : recipe}\`.`;
+    } else if (c.media === "img" && c.kind === "visual") {
+      out += " Content imagery — photography or a product screenshot, not a system asset; do not recreate it as a raster in new work.";
+    }
+    return out;
   }
   if (c.kind === "table") return `${c.width}px wide${c.border ? `, ${c.border} border` : ""}${c.bg ? `, ${c.bg} fill` : ""}.`;
   if (c.kind === "progress") return `${c.width}×${c.height}px${c.bg ? `, ${c.bg} track` : ""}, ${c.radius}px radius.`;

@@ -13,6 +13,7 @@
  */
 
 import type { DesignSystem } from "@/lib/blocks/types";
+import { graphicsKit } from "@/lib/graphics/kit";
 import { capabilitySurface, summarizeCapability } from "./capability";
 
 /** YAML-safe single-line string for frontmatter. */
@@ -242,6 +243,21 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
     );
   }
 
+  // The kit, with this system's colours already in it. An agent that has the
+  // working code reaches for it; one that has only advice reaches for a PNG.
+  const kit = graphicsKit(system);
+  out.push(
+    "### Graphics kit — this system's colours, as code",
+    "",
+    "Decorative graphics are code, never image files. Raster images are for",
+    "photography and screenshots only. Start from these; change a colour or a",
+    "parameter rather than drawing something new.",
+    "",
+  );
+  for (const s of kit.snippets) {
+    out.push(`**${s.title}** — ${s.purpose}`, "", "```html", s.code, "```", "");
+  }
+
   out.push(
     "## Before you finish",
     "",
@@ -250,6 +266,7 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
     "3. Every padding, margin and gap appears in the spacing scale.",
     "4. Every radius appears in the radii list.",
     "5. You used an existing component rather than inventing one.",
+    "6. Decorative graphics are SVG, Canvas or shader code built from the tokens — not PNG, JPEG or generated images.",
     "",
     "If this project is connected to BlockSmith, `check_governance` verifies all",
     "five mechanically. Run it before showing the user generated UI.",

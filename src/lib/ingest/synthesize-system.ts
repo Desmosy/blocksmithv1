@@ -559,10 +559,16 @@ export function synthesizeDesignSystem(found: Extracted): {
     );
   }
 
+  dos.push(
+    "Build decorative graphics — orbs, gradients, ambient motion — as SVG, Canvas or shader code from the tokens above, so they re-theme and resize with the system.",
+  );
   const donts: string[] = [
     "Do not treat this as a finished design system. It records what one page does, not what your team has decided.",
     "Do not add colours outside the palette without deciding what they are for first.",
   ];
+  donts.push(
+    "Do not ship decorative artwork as PNG, JPEG or a generated image; raster files are for photography and screenshots only.",
+  );
   if (sizes.length) {
     donts.push(
       `Do not use type sizes outside the scale. Intermediate sizes flatten the hierarchy the scale exists to create.`,

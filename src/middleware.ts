@@ -74,6 +74,15 @@ function securedNext(request: NextRequest): NextResponse {
 }
 
 export function middleware(request: NextRequest): NextResponse {
+  // The graphics-kit frame is a standalone document that runs an inline
+  // script and sets its own, tighter policy: no network, no navigation,
+  // embeddable from this origin only. The page CSP's script nonce cannot
+  // reach into it, so applying the page CSP here would only blank the canvas.
+  // Checked before anything else, because outside strict mode every other
+  // path returns the secured response immediately.
+  if (request.nextUrl.pathname === "/api/graphics/frame") {
+    return NextResponse.next();
+  }
   if (!strictMode()) return securedNext(request);
 
   const { pathname, search, searchParams } = request.nextUrl;
