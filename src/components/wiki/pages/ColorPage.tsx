@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { colorBlockId as publicShareColorBlockId } from "@/lib/public-share/block-ids";
+import { ShareBlockPanel } from "@/components/share/ShareBlockPanel";
 import type { ColorToken, DesignSystem } from "@/lib/blocks/types";
 import { groupColorsByCategory } from "@/lib/parser/apollo";
 import type { DocLifecycle } from "@/lib/wiki/doc-lifecycle";
@@ -14,6 +16,15 @@ import { BlockReleaseStrip } from "../BlockReleaseStrip";
 import { PageHeader, type SectionEditProps } from "./PageHeader";
 
 /** Mirror of extract.ts slugFromCssVar so the strip targets the right block. */
+/**
+ * The share system resolves a colour by `block-ids.ts`'s id, which is not the
+ * same string as the editor's block id below — sharing with the editor's id
+ * mints a link that resolves to nothing.
+ */
+function shareBlockIdFor(cssVar: string): string {
+  return publicShareColorBlockId(cssVar);
+}
+
 function colorBlockId(cssVar: string): string {
   return `token:color:${cssVar.replace(/^--/, "").replace(/^color-/, "")}`;
 }
@@ -133,6 +144,17 @@ export function ColorPage({
 
       {policy.canPromote && docFileName && selected ? (
         <BlockReleaseStrip docFileName={docFileName} blockId={blockId} />
+      ) : null}
+
+      {/* A captured palette is the thing people have an opinion about, and a
+          share link is the only way to ask someone who has no account. */}
+      {docFileName && selected ? (
+        <ShareBlockPanel
+          docFileName={docFileName}
+          blockKind="color"
+          blockId={shareBlockIdFor(selected.cssVar)}
+          blockTitle={selected.name}
+        />
       ) : null}
 
       {error && (

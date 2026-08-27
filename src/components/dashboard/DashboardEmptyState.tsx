@@ -10,6 +10,7 @@ import {
   IconUpload,
 } from "@/components/icons";
 import ImportFigmaDialog from "@/components/shadcn-studio/dialog/dialog-09";
+import { CaptureSiteCard } from "./CaptureSiteCard";
 
 const EXAMPLES = [
   "A modern fintech dashboard, calm blues",
@@ -54,14 +55,18 @@ export function DashboardEmptyState({ aiEnabled }: { aiEnabled?: boolean }) {
           Create your first design system
         </h2>
         <p className="mt-2 text-[15px] text-[var(--dash-muted-fg)]">
-          Describe one above and generate it, bring one in from Figma or your
+          Point it at a site you like, bring one in from Figma or your
           codebase, or upload a <code className="text-[13px]">design.md</code>.
           Everything becomes a governed, editable wiki.
         </p>
       </div>
 
+      <div className="mx-auto mt-7 max-w-2xl">
+        <CaptureSiteCard />
+      </div>
+
       {aiEnabled && (
-        <div className="mx-auto mt-7 max-w-2xl">
+        <div className="mx-auto mt-4 max-w-2xl">
           <p className="mb-2 text-center font-gtstandardmono text-[10px] uppercase tracking-wider text-[var(--dash-subtle-fg)]">
             Or try an example
           </p>
