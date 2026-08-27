@@ -58,7 +58,24 @@ function looksLikeMarkdown(text: string): boolean {
   return t.includes("\n") || /^#{1,6}\s/.test(t) || t.startsWith("---");
 }
 
-type Pending = null | "ai" | "plain" | "import" | "upload" | "image";
+/**
+ * One line, no spaces, and a dot with a plausible TLD after it.
+ *
+ * Checked before the markdown test so a bare "linear.app" is read as an
+ * address rather than a design system called "linear.app". A name with a space
+ * in it ("Acme Web") can never match, which is the common case to protect.
+ */
+function looksLikeSiteAddress(text: string): boolean {
+  const t = text.trim();
+  if (!t || /\s/.test(t)) return false;
+  if (/^https?:\/\//i.test(t)) return true;
+  // "design.md" is a filename people genuinely type here, and it parses as a
+  // domain under .md (Moldova). File extensions win over the domain reading.
+  if (/\.(md|markdown|json|ya?ml|txt|tsx?|jsx?|css|zip)$/i.test(t)) return false;
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/\S*)?$/i.test(t);
+}
+
+type Pending = null | "ai" | "plain" | "import" | "upload" | "image" | "capture";
 
 export function PromptBar({ aiEnabled = false, greetingName }: { aiEnabled?: boolean; greetingName?: string | null }) {
   const router = useRouter();
@@ -76,6 +93,7 @@ export function PromptBar({ aiEnabled = false, greetingName }: { aiEnabled?: boo
 
   const busy = pending !== null;
   const isMarkdown = looksLikeMarkdown(value);
+  const isSite = looksLikeSiteAddress(value);
 
   const goToWiki = (wikiUrl: string) => {
     router.push(wikiUrl.replace(/^https?:\/\/[^/]+/, "") || "/dashboard");
@@ -120,8 +138,37 @@ export function PromptBar({ aiEnabled = false, greetingName }: { aiEnabled?: boo
     }
   };
 
+  /**
+   * Read a site into a design system.
+   *
+   * This lives here rather than in its own card because the bar is already the
+   * one place you start from — it takes a name, a design.md, or now an address,
+   * and works out which. A second panel underneath offering the same things was
+   * just the same screen twice.
+   */
+  const captureSite = async () => {
+    const text = value.trim();
+    if (!text || busy) return;
+    setPending("capture");
+    setError(null);
+    try {
+      const res = await fetch("/api/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: text }),
+      });
+      const data = (await res.json()) as { wikiPath?: string; error?: string };
+      if (!res.ok || !data.wikiPath) throw new Error(data.error || "Could not read that site");
+      goToWiki(data.wikiPath);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read that site");
+      setPending(null);
+    }
+  };
+
   const submitDefault = () => {
-    if (isMarkdown) void importMarkdown();
+    if (isSite) void captureSite();
+    else if (isMarkdown) void importMarkdown();
     else if (aiEnabled) void create(true);
     else void create(false);
   };
@@ -215,10 +262,11 @@ export function PromptBar({ aiEnabled = false, greetingName }: { aiEnabled?: boo
                 }}
                 placeholder={
                   aiEnabled
-                    ? "Describe a design system — e.g. “a modern fintech dashboard, calm blues” — or paste a design.md…"
-                    : "Name a new design system — e.g. “Acme Web” — or paste your full design.md here…"
+                    ? "Name a site to read — e.g. “linear.app” — describe a system, or paste a design.md…"
+                    : "Name a site to read — e.g. “linear.app” — name a new system, or paste a design.md…"
                 }
                 ref={textareaRef}
+                data-prompt-bar-input=""
                 value={value}
                 disabled={busy}
               />

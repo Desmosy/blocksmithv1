@@ -27,10 +27,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Body must be JSON." }, { status: 400 });
   }
 
-  const url = typeof body.url === "string" ? body.url.trim() : "";
-  if (!url) {
+  const raw = typeof body.url === "string" ? body.url.trim() : "";
+  if (!raw) {
     return NextResponse.json({ error: "Enter the address of a site to read." }, { status: 400 });
   }
+
+  // People type "linear.app", not "https://linear.app" — and the prompt bar
+  // invites exactly that. Assume https rather than rejecting a bare host.
+  const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 
   try {
     const found = await extractSiteDesign(url);
