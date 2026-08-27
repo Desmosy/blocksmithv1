@@ -210,14 +210,21 @@ const COLLECT_IN_PAGE = `(() => {
     const type = (el.getAttribute("type") || "").toLowerCase();
     const radius = px(cs.borderTopLeftRadius);
     const bw = [px(cs.borderTopWidth), px(cs.borderRightWidth), px(cs.borderBottomWidth), px(cs.borderLeftWidth)];
-    const sides = bw.filter((w) => w > 0).length;
-    const bordered = sides > 0;
+    const sidesRaw = bw.filter((w) => w > 0).length;
     const parent = parentEl;
     const grand = parent ? parent.parentElement : null;
     const great = grand ? grand.parentElement : null;
     const pcs = parent ? getComputedStyle(parent) : null;
     const parentBg = parentBgRaw;
     const over = bg || parentBg || "#ffffff";
+    // Sites leave a 2px transparent border on buttons as a hover slot.
+    // A border you cannot see is not a border: it must have a colour once
+    // composited, or the element is unbordered.
+    const firstSide = bw.findIndex((w) => w > 0);
+    const borderColEarly = firstSide >= 0
+      ? rgbToHexOver([cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor][firstSide], over) : null;
+    const sides = borderColEarly ? sidesRaw : 0;
+    const bordered = sides > 0;
     const bgImage = cs.backgroundImage && cs.backgroundImage !== "none" ? cs.backgroundImage : "";
     // A shadow whose every layer is fully transparent is a shadow in name
     // only; sites leave these in place as a hover slot. Counting it as
@@ -281,7 +288,7 @@ const COLLECT_IN_PAGE = `(() => {
       kind = "progress";
     } else if (
       tag === "button" || role === "button" || (tag === "input" && (type === "submit" || type === "button")) ||
-      (tag === "a" && shortLabel && controlSized) ||
+      (tag === "a" && shortLabel && rect.height >= 16 && rect.height <= 90 && rect.width >= 24 && rect.width <= 460) ||
       (shortLabel && controlSized && looksClickable && children <= 4)
     ) {
       if (rect.height <= 90) kind = "control";
@@ -312,7 +319,7 @@ const COLLECT_IN_PAGE = `(() => {
       rect.width >= 180 && rect.height >= 90 && rect.height <= vh * 1.5 &&
       !(rect.width >= vw * 0.95 && rect.height >= vh * 0.6) &&
       (children >= 2 || hasImgChild) &&
-      (bordered || shadow || surface) &&
+      (bordered || shadow || surface || ring) &&
       (px(cs.paddingTop) >= 8 || px(cs.paddingLeft) >= 8 || radius >= 8)
     ) {
       kind = "card";
@@ -337,9 +344,7 @@ const COLLECT_IN_PAGE = `(() => {
       const pc = pushed.get(parent);
       if (pc.kind === kind && Math.abs(pc.width - rect.width) <= 4 && Math.abs(pc.height - rect.height) <= 4) continue;
     }
-    const sideIdxB = bw.findIndex((w) => w > 0);
-    const borderCol = sideIdxB >= 0
-      ? rgbToHexOver([cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor][sideIdxB], over) : null;
+    const borderCol = borderColEarly;
     const rec = {
       idx: i,
       parent: parent ? (index.get(parent) ?? -1) : -1,
