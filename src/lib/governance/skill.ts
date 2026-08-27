@@ -257,7 +257,7 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
   for (const s of kit.snippets) {
     out.push(
       `**${s.title}** — ${s.purpose}`,
-      ...(s.install ? ["", `Install first: \\`${s.install}\\``] : []),
+      ...(s.install ? ["", "Install first: `" + s.install + "`"] : []),
       "",
       "```" + (s.language === "tsx" ? "tsx" : "html"),
       s.code,
