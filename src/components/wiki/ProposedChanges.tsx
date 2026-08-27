@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { CodeBlock } from "@/components/ui/code-block";
 
 type ProposedChange = {
   id: string;
@@ -176,9 +177,15 @@ export function ProposedChanges({ docFileName }: { docFileName?: string }) {
               </div>
 
               {isOpen ? (
-                <pre className="mt-3 max-h-56 overflow-auto rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[11px] leading-relaxed text-[var(--wiki-text)]">
-                  {JSON.stringify(c.updatedData, null, 2)}
-                </pre>
+                <div className="mt-3">
+                  <CodeBlock
+                    code={JSON.stringify(c.updatedData, null, 2)}
+                    language="json"
+                    filename={describeTarget(c.blockId)}
+                    scrollable
+                    maxHeight={224}
+                  />
+                </div>
               ) : null}
 
               {result?.state === "failed" ? (

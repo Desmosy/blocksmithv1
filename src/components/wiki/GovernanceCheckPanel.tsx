@@ -16,6 +16,7 @@ import { useEffect, useId, useState } from "react";
 import type { DesignSystem } from "@/lib/blocks/types";
 import { GovernanceVerdict } from "./GovernanceVerdict";
 import { ProposalPreview } from "./ProposalPreview";
+import { CodeBlock } from "@/components/ui/code-block";
 import {
   getProposal,
   subscribeToProposals,
@@ -144,9 +145,14 @@ export function GovernanceCheckPanel({
               accurate account of what the markup actually does.
             </p>
             {showCode ? (
-              <pre className="max-h-72 overflow-auto rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[11px] leading-relaxed text-[var(--wiki-text)]">
-                {code}
-              </pre>
+              <CodeBlock
+                code={code}
+                language="html"
+                filename="proposed component"
+                showLineNumbers
+                scrollable
+                maxHeight={288}
+              />
             ) : null}
           </div>
           <GovernanceVerdict
