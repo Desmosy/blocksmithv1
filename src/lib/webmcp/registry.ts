@@ -326,7 +326,8 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       if (!url) return "Pass the page to read as `url`.";
 
       try {
-        const found = await extractSiteDesign(url);
+        const started = Date.now();
+        const found = await extractSiteDesign(url, { renderBudgetMs: 30_000 });
         if (!found.colors.length) {
           return (
             `Read ${found.url}, but found no colours stated in its CSS. ` +
@@ -338,7 +339,7 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         // Turn the reading into a system that can actually be governed against.
         // A list of hexes is a report; this is something to build with.
         const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
-        const rationale = await addRationale(measured, facts);
+        const rationale = await addRationale(measured, facts, undefined, { timeoutMs: 45_000 - (Date.now() - started) });
         const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
         await prepareDesignSystemDoc(saved.docRef);
 

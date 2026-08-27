@@ -10,6 +10,39 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
+ * The whole request has to answer inside the platform's limit, in JSON.
+ *
+ * A capture that ran past sixty seconds on Vercel was answered by the
+ * platform with a plain-text error page, and the client — expecting JSON —
+ * failed on "Unexpected token 'A'". The budget below is shared out: the
+ * browser render gets most of it and degrades to fit, the model pass gets
+ * what is left and is skipped when that is too little, and a final race
+ * turns anything still running into a JSON 504 with a message a person can
+ * act on.
+ */
+const TOTAL_BUDGET_MS = Number(process.env.BLOCKSMITH_CAPTURE_BUDGET_MS ?? 52_000);
+const RENDER_SHARE = 0.65;
+
+function timeoutJson(ms: number): Promise<NextResponse> {
+  return new Promise((resolve) =>
+    setTimeout(
+      () =>
+        resolve(
+          NextResponse.json(
+            {
+              error:
+                "That page took longer to read than this deployment allows. Try a lighter page on the same site, " +
+                "or run it again — a second attempt is usually faster.",
+            },
+            { status: 504 },
+          ),
+        ),
+      ms,
+    ),
+  );
+}
+
+/**
  * Capture a public site's design system, for a person rather than an agent.
  *
  * `capture_site_design` did this already, but only over the WebMCP tool
@@ -21,6 +54,12 @@ export const maxDuration = 60;
  * Same engine; this one answers in JSON so the UI can navigate to the result.
  */
 export async function POST(request: NextRequest) {
+  return Promise.race([capture(request), timeoutJson(TOTAL_BUDGET_MS)]);
+}
+
+async function capture(request: NextRequest): Promise<NextResponse> {
+  const started = Date.now();
+  const left = () => TOTAL_BUDGET_MS - (Date.now() - started);
   let body: { url?: unknown };
   try {
     body = await request.json();
@@ -38,7 +77,7 @@ export async function POST(request: NextRequest) {
   const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 
   try {
-    const found = await extractSiteDesign(url);
+    const found = await extractSiteDesign(url, { renderBudgetMs: Math.floor(TOTAL_BUDGET_MS * RENDER_SHARE) });
     if (!found.colors.length) {
       return NextResponse.json(
         {
@@ -54,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Judgement on top of measurement, when a model is configured. Never
     // blocks a capture: a timeout or a bad answer leaves the measured
     // document exactly as it was.
-    const rationale = await addRationale(measured, facts);
+    const rationale = await addRationale(measured, facts, undefined, { timeoutMs: left() - 4_000 });
     const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
     await prepareDesignSystemDoc(saved.docRef);
 

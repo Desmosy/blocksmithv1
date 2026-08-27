@@ -386,16 +386,23 @@ const COLLECT_IN_PAGE = `(() => {
   };
 })()`;
 
-/** Scrolls through the page so lazily mounted sections exist before measuring. */
-const SCROLL_THROUGH = `(async () => {
-  const step = Math.max(400, window.innerHeight - 100);
+/**
+ * Scrolls through the page so lazily mounted sections exist before measuring.
+ *
+ * Bounded by a step count rather than the page height: on a remote browser
+ * every step is a round-trip, and a 9,000px page at 500px a step is what
+ * pushed a capture past a serverless function's limit.
+ */
+const scrollThrough = (maxSteps: number) => `(async () => {
+  const step = Math.max(500, window.innerHeight - 100);
   const max = Math.min(document.documentElement.scrollHeight, 30000);
-  for (let y = 0; y < max; y += step) {
+  let n = 0;
+  for (let y = 0; y < max && n < ${maxSteps}; y += step, n++) {
     window.scrollTo(0, y);
-    await new Promise((r) => setTimeout(r, 180));
+    await new Promise((r) => setTimeout(r, 120));
   }
   window.scrollTo(0, 0);
-  await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => setTimeout(r, 300));
 })()`;
 
 type Kind =
@@ -1012,10 +1019,14 @@ function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState
 async function readHoverStates(
   page: import("playwright-core").Page,
   raw: RawPage,
+  /** How many controls to hover; each costs three round-trips. */
+  limit: number,
+  deadline: number,
 ): Promise<Map<number, HoverState>> {
   const out = new Map<number, HoverState>();
-  const clusters = clusterAll(raw.candidates).filter((k) => k.kind === "control").sort((a, b) => b.count - a.count).slice(0, 10);
+  const clusters = clusterAll(raw.candidates).filter((k) => k.kind === "control").sort((a, b) => b.count - a.count).slice(0, limit);
   for (const k of clusters) {
+    if (Date.now() > deadline) break;
     const idx = k.rep.idx;
     try {
       const centre = (await page.evaluate(`(() => {
@@ -1045,10 +1056,23 @@ async function readHoverStates(
   return out;
 }
 
-export async function renderSiteDesign(url: string): Promise<Rendered | null> {
+export type RenderOptions = {
+  /**
+   * Wall-clock the render may spend, in ms. Every phase is sized to what is
+   * left — fewer scroll steps, fewer hovers, then none — so a heavy page on a
+   * slow remote browser degrades to a thinner capture instead of a timeout.
+   */
+  budgetMs?: number;
+};
+
+export async function renderSiteDesign(url: string, opts: RenderOptions = {}): Promise<Rendered | null> {
   const remote = remoteEndpoint();
   const executablePath = remote ? null : findBrowser();
   if (!remote && !executablePath) return null;
+  const started = Date.now();
+  const budget = Math.max(5_000, opts.budgetMs ?? 40_000);
+  const deadline = started + budget;
+  const left = () => deadline - Date.now();
 
   let browser: import("playwright-core").Browser | null = null;
   try {
@@ -1068,11 +1092,14 @@ export async function renderSiteDesign(url: string): Promise<Rendered | null> {
         "(KHTML, like Gecko) Chrome/120.0 Safari/537.36 BlockSmith-Capture/1.0",
       locale: "en-US",
     });
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: NAV_TIMEOUT_MS });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: Math.min(NAV_TIMEOUT_MS, Math.max(5_000, budget * 0.5)) });
     // Let webfonts land and above-the-fold animation settle before measuring.
-    await page.waitForTimeout(SETTLE_MS);
-    // Sections that mount on scroll are part of the page too.
-    await page.evaluate(SCROLL_THROUGH).catch(() => {});
+    await page.waitForTimeout(Math.min(SETTLE_MS, Math.max(300, left() * 0.05)));
+    // Sections that mount on scroll are part of the page too — as many
+    // steps as a quarter of the remaining budget allows at ~0.4s each on a
+    // remote browser, capped at fourteen.
+    const steps = Math.max(2, Math.min(14, Math.floor((left() * 0.25) / 400)));
+    await page.evaluate(scrollThrough(steps)).catch(() => {});
 
     const raw = (await page.evaluate(COLLECT_IN_PAGE)) as RawPage;
     // Tuning the detector means looking at what it saw before grouping. Set
@@ -1093,7 +1120,13 @@ export async function renderSiteDesign(url: string): Promise<Rendered | null> {
       .filter((c) => chroma(c.value) >= 60)
       .sort((a, b) => b.weight - a.weight)[0]?.value;
 
-    const hovers = await readHoverStates(page, raw);
+    // Hover states are the most expensive thing here and the least essential;
+    // they get whatever time is left, and none if there is little.
+    const hoverBudget = left();
+    const hovers =
+      hoverBudget > 6_000
+        ? await readHoverStates(page, raw, Math.min(10, Math.floor(hoverBudget / 1_200)), deadline - 1_000)
+        : new Map<number, HoverState>();
 
     return {
       colors,

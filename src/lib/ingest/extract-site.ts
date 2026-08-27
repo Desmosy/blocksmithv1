@@ -474,7 +474,12 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
   };
 }
 
-export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
+export type ExtractOptions = {
+  /** Wall-clock budget for the browser render, in ms. See RenderOptions. */
+  renderBudgetMs?: number;
+};
+
+export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {}): Promise<Extracted> {
   const url = assertPublicUrl(rawUrl);
   const html = await fetchText(url.href);
 
@@ -498,7 +503,7 @@ export async function extractSiteDesign(rawUrl: string): Promise<Extracted> {
   );
   css += "\n" + sheets.join("\n");
 
-  const rendered = await renderSiteDesign(url.href);
+  const rendered = await renderSiteDesign(url.href, { budgetMs: opts.renderBudgetMs });
   const colorCounts = collectColors(css);
   const colors = [...colorCounts.entries()]
     .sort((a, b) => b[1] - a[1])

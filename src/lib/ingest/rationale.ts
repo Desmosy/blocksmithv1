@@ -230,9 +230,13 @@ export async function addRationale(
   markdown: string,
   facts: CaptureFacts,
   complete?: (system: string, user: string) => Promise<string>,
+  opts: { timeoutMs?: number } = {},
 ): Promise<RationaleResult> {
+  const timeoutMs = Math.min(TIMEOUT_MS, opts.timeoutMs ?? TIMEOUT_MS);
   if (!complete) {
     if (!isRationaleEnabled()) return { markdown, applied: false, model: null, reason: "not configured" };
+    // Not worth starting a model call that cannot finish.
+    if (timeoutMs < 6_000) return { markdown, applied: false, model: null, reason: "no time left" };
     const key = apiKey()!;
     const model = rationaleModel();
     const client = createNvidiaClient(key);
@@ -248,7 +252,7 @@ export async function addRationale(
             { role: "user", content: user },
           ],
         },
-        { timeout: TIMEOUT_MS },
+        { timeout: timeoutMs },
       );
       return res.choices[0]?.message?.content ?? "";
     };

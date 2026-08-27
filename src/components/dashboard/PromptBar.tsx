@@ -157,7 +157,21 @@ export function PromptBar({ aiEnabled = false, greetingName }: { aiEnabled?: boo
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: text }),
       });
-      const data = (await res.json()) as { wikiPath?: string; error?: string };
+      // A platform timeout answers with a text page, not JSON. Read the body
+      // as text first so the failure is reported in words rather than as
+      // "Unexpected token 'A'".
+      const raw = await res.text();
+      let data: { wikiPath?: string; error?: string } = {};
+      try {
+        data = JSON.parse(raw) as typeof data;
+      } catch {
+        data = {
+          error:
+            res.status === 504 || /timeout/i.test(raw)
+              ? "That page took too long to read. Try a lighter page on the same site, or run it again."
+              : `The server answered with something unexpected (${res.status}).`,
+        };
+      }
       if (!res.ok || !data.wikiPath) throw new Error(data.error || "Could not read that site");
       goToWiki(data.wikiPath);
     } catch (err) {
