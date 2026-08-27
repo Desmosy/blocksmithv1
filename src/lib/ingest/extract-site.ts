@@ -473,7 +473,6 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
     components: rendered.components,
     readFrom: "rendered",
-    timings,
   };
 }
 
@@ -482,9 +481,8 @@ export type ExtractOptions = {
   renderBudgetMs?: number;
 };
 
-export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {}): Promise<Extracted> {
+async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timings: NonNullable<Extracted["timings"]>): Promise<Extracted> {
   const t0 = Date.now();
-  const timings = { text: 0, render: 0, renderTimedOut: false };
   const url = assertPublicUrl(rawUrl);
   const html = await fetchText(url.href);
 
@@ -588,8 +586,14 @@ export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {
     ),
     components: [],
     readFrom: "css",
-    timings,
   };
 
   return rendered ? mergeRendered(textPass, rendered) : textPass;
+}
+
+
+export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {}): Promise<Extracted> {
+  const timings = { text: 0, render: 0, renderTimedOut: false };
+  const out = await extractSiteDesignInner(rawUrl, opts, timings);
+  return { ...out, timings };
 }
