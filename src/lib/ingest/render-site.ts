@@ -176,10 +176,38 @@ const COLLECT_IN_PAGE = `(() => {
       rect.width >= 180 && rect.height >= 90 && el.children.length >= 2 &&
       (px(cs.borderTopWidth) > 0 || cs.boxShadow !== "none" || bg !== null) &&
       px(cs.paddingTop) >= 8;
-    if (!isControl && !looksLikeCard) continue;
+
+    // A graphic carries no text and often no children, so every test above
+    // rejects it — which is why an illustration-led page came back as nothing
+    // but links. Images, inline SVG, canvas, and the gradient blobs modern
+    // marketing pages are built from are all real parts of a design system.
+    const bgImage = cs.backgroundImage && cs.backgroundImage !== "none" ? cs.backgroundImage : "";
+    const isMedia = tag === "img" || tag === "svg" || tag === "canvas" || tag === "video";
+    const looksLikeVisual =
+      (isMedia || bgImage.length > 0) &&
+      rect.width >= 48 && rect.height >= 48 &&
+      text.length <= 8;
+
+    // A rule is a line: wide, and one or two pixels tall. It has no text, no
+    // padding and no children, so nothing else here can see it either.
+    // A rule is drawn as often with border-bottom as border-top, and an <hr>
+    // may carry neither. Checking only the top edge missed most of them.
+    const anyBorder =
+      px(cs.borderTopWidth) > 0 || px(cs.borderBottomWidth) > 0 ||
+      px(cs.borderLeftWidth) > 0 || px(cs.borderRightWidth) > 0;
+    const looksLikeDivider =
+      rect.width >= 80 && rect.height <= 4 &&
+      text.length === 0 &&
+      (tag === "hr" || bg !== null || anyBorder);
+
+    if (!isControl && !looksLikeCard && !looksLikeVisual && !looksLikeDivider) continue;
 
     candidates.push({
-      kind: isControl ? ((tag === "input" || tag === "textarea" || tag === "select") ? "field" : "control") : "card",
+      kind: isControl
+        ? ((tag === "input" || tag === "textarea" || tag === "select") ? "field" : "control")
+        : looksLikeDivider ? "divider"
+        : looksLikeVisual ? "visual"
+        : "card",
       tag: tag,
       bg: bg,
       fg: rgbToHex(cs.color),
@@ -193,6 +221,7 @@ const COLLECT_IN_PAGE = `(() => {
       weight: cs.fontWeight,
       transform: cs.textTransform,
       shadow: cs.boxShadow === "none" ? "" : cs.boxShadow.slice(0, 60),
+      media: isMedia ? tag : bgImage ? bgImage.slice(0, 80) : "",
       label: (function () {
         const half = text.slice(0, Math.floor(text.length / 2));
         // "LoginLogin" is one label rendered twice by a hover-state span.
@@ -210,7 +239,7 @@ const COLLECT_IN_PAGE = `(() => {
 })()`;
 
 type Candidate = {
-  kind: "control" | "field" | "card";
+  kind: "control" | "field" | "card" | "visual" | "divider";
   tag: string;
   bg: string | null;
   fg: string | null;
@@ -225,6 +254,8 @@ type Candidate = {
   transform: string;
   shadow: string;
   label: string;
+  /** For a visual: the tag, or the background-image it is painted with. */
+  media?: string;
 };
 
 /**
@@ -250,6 +281,20 @@ function nameFor(
       ? { name: "Elevated Card", role: "Raised content block" }
       : { name: "Card", role: "Content block separated by a border" };
   }
+  if (c.kind === "divider") {
+    return { name: "Hairline Divider", role: "Section separation" };
+  }
+  if (c.kind === "visual") {
+    const gradient = /gradient/i.test(c.media ?? "");
+    const round = c.radius >= 999 || c.radius >= c.height / 2;
+    if (gradient && round) {
+      return { name: "Gradient Orb", role: "Decorative product visual" };
+    }
+    if (gradient) return { name: "Gradient Panel", role: "Decorative surface" };
+    if (c.tag === "svg") return { name: "Icon", role: "Inline pictogram" };
+    return { name: "Image", role: "Photography or illustration" };
+  }
+
   const pill = c.radius >= 40;
   const shape = pill ? "Pill Button" : "Button";
   const fill = c.bg?.toLowerCase();
@@ -305,6 +350,33 @@ function nameFor(
 
 /** Prose spec in the same voice the authored systems use. */
 function specFor(c: Candidate): string {
+  // A rule and a graphic are not described by type size and padding. Running
+  // them through the control spec produced lines like "Transparent fill, at
+  // 16px weight 400, 0px radius, 0px 0px padding" — true of nothing worth
+  // knowing.
+  if (c.kind === "divider") {
+    const line = c.border || (c.bg ? `${c.bg} rule` : "hairline rule");
+    return `${line}, ${c.height}px tall.`;
+  }
+  if (c.kind === "visual") {
+    const shape =
+      c.radius >= 999 || c.radius >= c.height / 2
+        ? "circular"
+        : c.radius > 0
+          ? `${c.radius}px radius`
+          : "square-cornered";
+    const paint = /gradient/i.test(c.media ?? "")
+      ? "gradient fill"
+      : c.tag === "svg"
+        ? "inline SVG"
+        : c.tag === "img"
+          ? "raster image"
+          : c.bg
+            ? `${c.bg} fill`
+            : "image fill";
+    return `${paint}, ${shape}, roughly ${c.height}px tall.`;
+  }
+
   const parts: string[] = [];
   parts.push(c.bg ? `${c.bg} fill` : "Transparent fill");
   if (c.border) parts.push(`${c.border} border`);

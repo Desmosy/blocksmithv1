@@ -145,18 +145,6 @@ export function ColorPage({
       {policy.canPromote && docFileName && selected ? (
         <BlockReleaseStrip docFileName={docFileName} blockId={blockId} />
       ) : null}
-
-      {/* A captured palette is the thing people have an opinion about, and a
-          share link is the only way to ask someone who has no account. */}
-      {docFileName && selected ? (
-        <ShareBlockPanel
-          docFileName={docFileName}
-          blockKind="color"
-          blockId={shareBlockIdFor(selected.cssVar)}
-          blockTitle={selected.name}
-        />
-      ) : null}
-
       {error && (
         <div className="mb-4 text-xs font-semibold text-red-600 dark:text-red-400">
           {error}
@@ -342,6 +330,20 @@ export function ColorPage({
           ))}
         </div>
       </section>
+
+      {/* Last, not first. Sharing a token is something you do after looking at
+          it — above the palette it pushed the actual colours below the fold and
+          asked for opinions on something the reader had not seen yet. */}
+      {docFileName && selected ? (
+        <section className="mt-8">
+          <ShareBlockPanel
+            docFileName={docFileName}
+            blockKind="color"
+            blockId={shareBlockIdFor(selected.cssVar)}
+            blockTitle={selected.name}
+          />
+        </section>
+      ) : null}
     </article>
   );
 }
