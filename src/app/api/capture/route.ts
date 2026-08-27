@@ -93,7 +93,9 @@ async function capture(request: NextRequest): Promise<NextResponse> {
     // Judgement on top of measurement, when a model is configured. Never
     // blocks a capture: a timeout or a bad answer leaves the measured
     // document exactly as it was.
+    const tR = Date.now();
     const rationale = await addRationale(measured, facts, undefined, { timeoutMs: left() - 4_000 });
+    const rationaleMs = Date.now() - tR;
     const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
     await prepareDesignSystemDoc(saved.docRef);
 
@@ -111,6 +113,8 @@ async function capture(request: NextRequest): Promise<NextResponse> {
       readFrom: found.readFrom ?? "css",
       /** Whether a model added rationale, and which one. */
       rationale: rationale.applied ? rationale.model : null,
+      /** Phase timings in ms — the answer to "why was that slow". */
+      timings: { ...(found.timings ?? {}), rationale: rationaleMs, total: Date.now() - started, rationaleSkipped: rationale.reason ?? null },
     });
   } catch (err) {
     if (err instanceof CaptureError) {

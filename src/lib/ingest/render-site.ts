@@ -1080,7 +1080,7 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
     browser = remote
       ? // Attaching costs nothing at deploy time, which is the point: the
         // function stays small and the browser lives with whoever hosts it.
-        await chromium.connectOverCDP(remote, { timeout: NAV_TIMEOUT_MS })
+        await chromium.connectOverCDP(remote, { timeout: Math.min(NAV_TIMEOUT_MS, Math.max(4_000, budget * 0.3)) })
       : await chromium.launch({
           executablePath: executablePath as string,
           args: ["--no-sandbox"],

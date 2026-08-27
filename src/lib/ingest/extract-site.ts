@@ -57,6 +57,8 @@ export type Extracted = {
    * is deciding how much to trust the result.
    */
   readFrom: "rendered" | "css";
+  /** Where the time went, in ms, so a slow capture can be diagnosed from its response. */
+  timings?: { text: number; render: number; renderTimedOut: boolean };
 };
 
 /** Values ordered by how often the page uses them, capped. */
@@ -471,6 +473,7 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
     components: rendered.components,
     readFrom: "rendered",
+    timings,
   };
 }
 
@@ -480,6 +483,8 @@ export type ExtractOptions = {
 };
 
 export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {}): Promise<Extracted> {
+  const t0 = Date.now();
+  const timings = { text: 0, render: 0, renderTimedOut: false };
   const url = assertPublicUrl(rawUrl);
   const html = await fetchText(url.href);
 
@@ -503,7 +508,17 @@ export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {
   );
   css += "\n" + sheets.join("\n");
 
-  const rendered = await renderSiteDesign(url.href, { budgetMs: opts.renderBudgetMs });
+  timings.text = Date.now() - t0;
+  // The render sizes its phases to the budget, but a remote browser that
+  // stalls on connect or navigation can still overrun it. Racing here means
+  // an overrun degrades to the CSS-only reading rather than to no reading.
+  const t1 = Date.now();
+  const renderBudget = opts.renderBudgetMs ?? 40_000;
+  const rendered = await Promise.race<Rendered | null>([
+    renderSiteDesign(url.href, { budgetMs: renderBudget }),
+    new Promise<null>((resolve) => setTimeout(() => { timings.renderTimedOut = true; resolve(null); }, renderBudget + 4_000)),
+  ]);
+  timings.render = Date.now() - t1;
   const colorCounts = collectColors(css);
   const colors = [...colorCounts.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -573,6 +588,7 @@ export async function extractSiteDesign(rawUrl: string, opts: ExtractOptions = {
     ),
     components: [],
     readFrom: "css",
+    timings,
   };
 
   return rendered ? mergeRendered(textPass, rendered) : textPass;
