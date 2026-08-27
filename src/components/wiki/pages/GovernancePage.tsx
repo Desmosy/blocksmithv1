@@ -8,7 +8,7 @@ import type {
 } from "@/ai-lab/08-governance";
 import type { ActivityEntry } from "@/lib/activity/store";
 import type { DesignSystem } from "@/lib/blocks/types";
-import { IconCheck, IconDelete } from "@/components/icons/streamline";
+import { IconCheck, IconDelete } from "@/components/icons";
 import { ComponentActivityPanel } from "../ComponentActivityPanel";
 import { GovernanceViolationsPanel } from "../GovernanceViolationsPanel";
 import { GovernanceCheckPanel } from "../GovernanceCheckPanel";

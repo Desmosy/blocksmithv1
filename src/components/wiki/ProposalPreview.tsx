@@ -79,7 +79,7 @@ export function ProposalPreview({
     return `<!doctype html><html><head><meta charset="utf-8">
 <style>
   ${tokenCss(system)}
-  html,body { margin:0; padding:24px; background:${ground}; color:${ink};
+  html,body { margin:0; padding:24px; overflow:hidden; background:${ground}; color:${ink};
     font-family:"${family}", ui-sans-serif, system-ui, sans-serif; }
   * { box-sizing:border-box; }
 </style></head><body>${body}</body></html>`;
@@ -93,16 +93,38 @@ export function ProposalPreview({
     const measure = () => {
       try {
         const h = frame.contentDocument?.body?.scrollHeight;
-        if (h) setHeight(Math.min(Math.max(h + 8, 96), 520));
+        // Size to the content. There was a 520px ceiling here, so anything
+        // taller grew its own scrollbar inside the frame — a component you
+        // could only see part of, which is the one thing a preview must not
+        // do. The floor stays so an empty proposal is not a sliver.
+        if (h) setHeight(Math.max(h + 8, 96));
       } catch {
         /* cross-origin is impossible here, but never let measuring throw */
       }
     };
     frame.addEventListener("load", measure);
     const t = setTimeout(measure, 120);
+
+    // Keep following the content: a web font arriving or an image decoding
+    // changes the height after load, and a frame measured once would be left
+    // either clipped or padded with dead space.
+    let observer: ResizeObserver | null = null;
+    const attach = () => {
+      const body = frame.contentDocument?.body;
+      if (!body || typeof ResizeObserver === "undefined") return;
+      observer?.disconnect();
+      observer = new ResizeObserver(measure);
+      observer.observe(body);
+    };
+    frame.addEventListener("load", attach);
+    const t2 = setTimeout(attach, 140);
+
     return () => {
       frame.removeEventListener("load", measure);
+      frame.removeEventListener("load", attach);
+      observer?.disconnect();
       clearTimeout(t);
+      clearTimeout(t2);
     };
   }, [doc]);
 
@@ -110,8 +132,21 @@ export function ProposalPreview({
     <iframe
       ref={ref}
       title="Proposed component"
-      // No allow-scripts: a proposal is third-party output and must not run.
-      sandbox=""
+      /**
+       * `allow-same-origin` without `allow-scripts`.
+       *
+       * The frame must stay script-free — a proposal is third-party output and
+       * must never execute. But with a fully opaque sandbox the parent cannot
+       * read `contentDocument`, so the height measurement below silently
+       * returned null and the frame sat at its initial 160px, growing its own
+       * scrollbar around anything taller.
+       *
+       * Granting same-origin alone restores measurement without granting
+       * execution: with no `allow-scripts` there is no script in the frame to
+       * take advantage of the shared origin.
+       */
+      sandbox="allow-same-origin"
+      scrolling="no"
       srcDoc={doc}
       style={{ height }}
       className="w-full rounded-lg border border-[var(--wiki-border)] bg-white"

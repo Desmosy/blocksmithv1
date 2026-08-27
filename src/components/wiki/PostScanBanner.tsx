@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { IconCheck } from "@/components/icons/streamline";
+import { IconCheck } from "@/components/icons";
 
 function PostScanBannerInner() {
   const router = useRouter();

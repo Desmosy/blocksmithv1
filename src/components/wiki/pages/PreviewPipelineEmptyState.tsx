@@ -7,7 +7,7 @@
  * scan. The full PipelinePage (team's work) renders untouched once connected.
  */
 import Link from "next/link";
-import { IconLock } from "@/components/icons/streamline";
+import { IconLock } from "@/components/icons";
 
 export function PreviewPipelineEmptyState({
   route,

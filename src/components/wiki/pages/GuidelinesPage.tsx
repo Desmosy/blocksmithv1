@@ -6,7 +6,7 @@ import type { DocLifecycle } from "@/lib/wiki/doc-lifecycle";
 import { canEditDoc } from "@/lib/wiki/edit-policy";
 import { PageHeader, type SectionEditProps } from "./PageHeader";
 import { useEditableBlock } from "@/hooks/useEditableBlock";
-import { IconCheck, IconDelete } from "@/components/icons/streamline";
+import { IconCheck, IconDelete } from "@/components/icons";
 import { BlockReleaseStrip } from "../BlockReleaseStrip";
 
 export function GuidelinesPage({

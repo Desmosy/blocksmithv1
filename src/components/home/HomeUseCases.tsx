@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { IconArrowRight } from "@/components/icons/streamline";
+import { IconArrowRight } from "@/components/icons";
 import { motion } from "framer-motion";
 
 const USE_CASES = [

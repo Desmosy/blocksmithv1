@@ -10,7 +10,7 @@ import {
   IconLayout,
   IconCheck,
   IconSearch,
-} from "@/components/icons/streamline";
+} from "@/components/icons";
 import {
   CutoutCard,
   CutoutCardAction,

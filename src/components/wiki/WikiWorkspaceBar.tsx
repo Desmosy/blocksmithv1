@@ -3,7 +3,7 @@
 import type { DocLifecycle } from "@/lib/wiki/doc-lifecycle";
 import { SourceSwitcher } from "./SourceSwitcher";
 import type { DocSource } from "@/lib/clients/registry";
-import { IconSearch } from "@/components/icons/streamline";
+import { IconSearch } from "@/components/icons";
 
 const LIFECYCLE_COPY: Record<
   DocLifecycle,
@@ -81,7 +81,7 @@ export function WikiWorkspaceBar({
         <span className="sr-only">Search design system</span>
         <IconSearch
           size={15}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2"
           style={{ color: "var(--wiki-muted)" }}
         />
         <input
@@ -89,7 +89,7 @@ export function WikiWorkspaceBar({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search this system…"
-          className="h-8 w-full rounded-lg border pl-8 pr-3 text-sm outline-none transition focus:ring-1"
+          className="h-8 w-full rounded-lg border pl-9 pr-3 text-sm outline-none transition focus:ring-1"
           style={{
             borderColor: "var(--wiki-border)",
             backgroundColor: "var(--wiki-bg)",

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { ArrowRight, Check, ChevronDown, Paperclip, Sparkles } from "lucide-react";
-import { IconLink, IconModuleAlt, IconUpload, IconColorPalette } from "@/components/icons/streamline";
+import { IconLink, IconModuleAlt, IconUpload, IconColorPalette } from "@/components/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { Button } from "@/components/ui/button";

@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { IconCheck, IconLock } from "@/components/icons/streamline";
+import { IconCheck, IconLock } from "@/components/icons";
 import { BlockStatusBadge } from "../BlockStatusBadge";
 import type { ReleaseRow, ReleaseTable } from "@/lib/ir/releases";
 import { useCopyToClipboard } from "usehooks-ts";

@@ -22,9 +22,9 @@ import {
   IconColorPalette,
   IconDarkMode,
   IconDownload,
-  IconModule,
+  IconHome,
   IconUpload,
-} from "@/components/icons/streamline";
+} from "@/components/icons";
 
 type RailItem = {
   id: string;
@@ -36,7 +36,7 @@ type RailItem = {
 };
 
 const ITEMS: RailItem[] = [
-  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: <IconModule size={18} /> },
+  { id: "dashboard", label: "Dashboard", path: "/dashboard", icon: <IconHome size={18} /> },
   { id: "design", label: "Design", path: "/wiki", icon: <IconColorPalette size={18} />, keepsDoc: true },
   { id: "releases", label: "Releases", path: "/wiki/pipeline", icon: <IconUpload size={18} />, keepsDoc: true },
   { id: "setup", label: "Setup", path: "/wiki/sync", icon: <IconCog size={18} />, keepsDoc: true },

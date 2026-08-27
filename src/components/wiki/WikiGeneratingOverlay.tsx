@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IconArrowRight, IconCheck } from "@/components/icons/streamline";
+import { IconArrowRight, IconCheck } from "@/components/icons";
 
 const STEPS = [
   "Saving your design document",

@@ -6,7 +6,7 @@ import { ApolloButtonSamples, ButtonPreview } from "../ButtonPreview";
 import { ComponentLivePreview } from "../visual/ComponentLivePreview";
 import { PageHeader } from "./PageHeader";
 import { BlockStatusBadge } from "../BlockStatusBadge";
-import { IconCheck } from "@/components/icons/streamline";
+import { IconCheck } from "@/components/icons";
 import { useEditableBlock } from "@/hooks/useEditableBlock";
 
 function buttonTips(system: DesignSystem): string[] {

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { IconLink } from "@/components/icons/streamline";
+import { IconLink } from "@/components/icons";
 import { markWikiBuilding } from "@/components/wiki/WikiBuildGate";
 import { createBrowserSupabase, supabaseAuthEnabled } from "@/lib/supabase/browser";
 

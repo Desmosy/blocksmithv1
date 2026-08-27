@@ -1,6 +1,6 @@
 "use client";
 
-import { IconExpand } from "@/components/icons/streamline";
+import { IconExpand } from "@/components/icons";
 import { InspectablePreview } from "./visual/InspectablePreview";
 
 interface ButtonPreviewProps {

@@ -8,7 +8,7 @@ import {
   IconLink,
   IconModuleAlt,
   IconUpload,
-} from "@/components/icons/streamline";
+} from "@/components/icons";
 import ImportFigmaDialog from "@/components/shadcn-studio/dialog/dialog-09";
 
 const EXAMPLES = [

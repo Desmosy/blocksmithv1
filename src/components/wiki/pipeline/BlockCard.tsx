@@ -4,7 +4,7 @@
  * BlockCard — one block in a staging or production queue.
  */
 import type { ReleaseRow } from "@/lib/ir/releases";
-import { IconBlockType } from "@/components/icons/streamline";
+import { IconBlockType } from "@/components/icons";
 
 function tone(row: ReleaseRow): { label: string; modifier: string } {
   if (row.conflict) return { label: "conflict", modifier: "conflict" };

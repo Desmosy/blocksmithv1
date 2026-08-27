@@ -8,7 +8,7 @@ import {
   IconModule,
   IconPaperclip,
   IconUpload,
-} from "@/components/icons/streamline";
+} from "@/components/icons";
 
 const TABS = [
   { id: "wiki", label: "Wiki" },

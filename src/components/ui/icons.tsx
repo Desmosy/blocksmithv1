@@ -1,4 +1,4 @@
-/** @deprecated Import from `@/components/icons/streamline` */
+/** @deprecated Import from `@/components/icons` */
 export {
   IconArrowRight,
   IconArrowUp,
@@ -22,4 +22,4 @@ export {
   IconBlockType,
   BLOCK_TYPE_ICON,
   type StreamlineIconProps,
-} from "@/components/icons/streamline";
+} from "@/components/icons";

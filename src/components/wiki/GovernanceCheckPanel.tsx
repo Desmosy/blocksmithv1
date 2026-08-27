@@ -40,6 +40,15 @@ export function GovernanceCheckPanel({
   const [proposal, setLocal] = useState<Proposal | null>(null);
   const [manual, setManual] = useState("");
   const [showCode, setShowCode] = useState(false);
+  /**
+   * Edits made here, on top of whatever the agent proposed.
+   *
+   * Null means "showing what arrived". Once someone types, this holds the
+   * working copy — so a rejected component can be corrected in place and the
+   * preview and verdict follow along, instead of being a read-only artifact
+   * you can only accept or discard.
+   */
+  const [draft, setDraft] = useState<string | null>(null);
   const id = useId();
 
   // An agent proposing a component is the primary path in.
@@ -65,6 +74,9 @@ export function GovernanceCheckPanel({
         if (next && next.at > lastSeen) {
           lastSeen = next.at;
           setLocal(next);
+          // A newly arrived proposal is the thing to look at; keeping an edit
+          // from the previous one on screen would hide it.
+          setDraft(null);
         }
       } catch {
         /* a dropped poll is not worth surfacing; the next one will land */
@@ -79,12 +91,15 @@ export function GovernanceCheckPanel({
     };
   }, [docFileName]);
 
-  const code = proposal?.code ?? manual;
+  const arrived = proposal?.code ?? manual;
+  const code = draft ?? arrived;
   const fromAgent = Boolean(proposal);
+  const edited = draft !== null && draft !== arrived;
 
   const clear = () => {
     setProposal(null);
     setManual("");
+    setDraft(null);
     setShowCode(false);
     // Clear it for every viewer, not just this tab.
     void fetch("/api/webmcp/proposal", {
@@ -107,7 +122,7 @@ export function GovernanceCheckPanel({
               className="text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
               onClick={() => setShowCode((v) => !v)}
             >
-              {showCode ? "Hide code" : "Show code"}
+              {showCode ? "Hide code" : "Edit code"}
             </button>
           ) : null}
           <button
@@ -145,14 +160,37 @@ export function GovernanceCheckPanel({
               accurate account of what the markup actually does.
             </p>
             {showCode ? (
-              <CodeBlock
-                code={code}
-                language="html"
-                filename="proposed component"
-                showLineNumbers
-                scrollable
-                maxHeight={288}
-              />
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <label
+                    htmlFor={`${id}-edit`}
+                    className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wiki-muted)]"
+                  >
+                    {fromAgent ? "Agent's component — editable" : "Component"}
+                  </label>
+                  {edited ? (
+                    <button
+                      type="button"
+                      onClick={() => setDraft(null)}
+                      className="text-[11px] text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
+                    >
+                      Revert to what the agent sent
+                    </button>
+                  ) : null}
+                </div>
+                <textarea
+                  id={`${id}-edit`}
+                  value={code}
+                  onChange={(e) => setDraft(e.target.value)}
+                  spellCheck={false}
+                  rows={10}
+                  className="w-full resize-y rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--wiki-text)] outline-none focus:border-[var(--wiki-text)]"
+                />
+                <p className="text-[11px] leading-relaxed text-[var(--wiki-muted)]">
+                  Edit and the preview and verdict follow. Fixing a violation
+                  here is the fastest way to see the rule you just satisfied.
+                </p>
+              </div>
             ) : null}
           </div>
           <GovernanceVerdict

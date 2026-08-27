@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isApolloStructuredMarkdown } from "@/lib/parser/generic";
 import { WikiGeneratingOverlay } from "@/components/wiki/WikiGeneratingOverlay";
 import { markWikiBuilding } from "@/components/wiki/WikiBuildGate";
-import { IconArrowRight } from "@/components/icons/streamline";
+import { IconArrowRight } from "@/components/icons";
 import { AuthChrome } from "@/components/auth/AuthChrome";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AnimatedLightBoard } from "@/components/ui/AnimatedLightBoard";

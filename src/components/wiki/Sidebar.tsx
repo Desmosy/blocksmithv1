@@ -11,7 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { NavItem, NavSection } from "@/lib/blocks/types";
 import { hrefWithDoc } from "@/lib/wiki/doc-param";
-import { IconArrowUp, IconLock } from "@/components/icons/streamline";
+import { IconArrowUp, IconLock } from "@/components/icons";
 
 /** v2 — prior version accumulated `open: true` for every visited section */
 const STORAGE_KEY = "blocksmith-wiki-sidebar-v2";
