@@ -34,14 +34,6 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
-function sectionHasActive(pathname: string, section: NavSection): boolean {
-  return section.items.some(
-    (item) =>
-      isActive(pathname, item.href) ||
-      item.children?.some((c) => isActive(pathname, c.href)),
-  );
-}
-
 function itemBranchActive(pathname: string, item: NavItem): boolean {
   return (
     isActive(pathname, item.href) ||
@@ -59,7 +51,11 @@ function sectionOpen(
   const pref = prefs.sections[section.id];
   if (pref === false) return false;
   if (pref === true) return true;
-  return sectionHasActive(pathname, section);
+  // Open by default. Opening only the section containing the current route
+  // meant every section collapsed on the introduction page — the first screen
+  // of a design system showed a sidebar with nothing in it. A reader who wants
+  // it quiet can collapse a section, and that preference is remembered.
+  return true;
 }
 
 function itemOpen(

@@ -3,6 +3,7 @@
 import type { DocLifecycle } from "@/lib/wiki/doc-lifecycle";
 import { SourceSwitcher } from "./SourceSwitcher";
 import type { DocSource } from "@/lib/clients/registry";
+import { IconSearch } from "@/components/icons/streamline";
 
 const LIFECYCLE_COPY: Record<
   DocLifecycle,
@@ -31,6 +32,8 @@ export function WikiWorkspaceBar({
   visualizeControl,
   styleApplied,
   summary,
+  searchQuery,
+  onSearchChange,
 }: {
   systemName: string;
   lifecycle: DocLifecycle;
@@ -40,12 +43,14 @@ export function WikiWorkspaceBar({
   visualizeControl?: React.ReactNode;
   styleApplied?: boolean;
   summary?: string | null;
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
 }) {
   const status = LIFECYCLE_COPY[lifecycle];
 
   return (
     <div
-      className="flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center"
+      className="flex h-14 shrink-0 items-center gap-4 border-b px-5"
       style={{
         borderColor: "var(--wiki-border)",
         backgroundColor: "var(--wiki-sidebar)",
@@ -62,6 +67,7 @@ export function WikiWorkspaceBar({
               borderColor: "var(--wiki-border)",
               color: "var(--wiki-muted)",
             }}
+            title={status.detail}
           >
             {status.label}
           </span>
@@ -69,10 +75,30 @@ export function WikiWorkspaceBar({
             <span className="text-xs text-[var(--wiki-muted)]">{summary}</span>
           ) : null}
         </div>
-        <p className="mt-0.5 text-xs text-[var(--wiki-muted)]">{status.detail}</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <label className="relative hidden min-w-0 max-w-xs flex-1 md:block">
+        <span className="sr-only">Search design system</span>
+        <IconSearch
+          size={15}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+          style={{ color: "var(--wiki-muted)" }}
+        />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search this system…"
+          className="h-8 w-full rounded-lg border pl-8 pr-3 text-sm outline-none transition focus:ring-1"
+          style={{
+            borderColor: "var(--wiki-border)",
+            backgroundColor: "var(--wiki-bg)",
+            color: "var(--wiki-text)",
+          }}
+        />
+      </label>
+
+      <div className="flex shrink-0 flex-wrap items-center gap-3">
         <SourceSwitcher
           sources={sources}
           currentFileName={currentFileName}

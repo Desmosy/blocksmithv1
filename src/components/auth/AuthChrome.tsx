@@ -5,7 +5,7 @@ import { useAuth } from "./AuthProvider";
 
 /**
  * Global sign-in chrome (S3 of SECURITY-RELEASE-GATE.md). Renders on the
- * homepage header and the wiki TopNav so identity is visible on every surface
+ * homepage header and the wiki rail so identity is visible on every surface
  * that touches customer design data.
  *
  * variant "home" reuses the marketing button classes; "wiki" uses neutral

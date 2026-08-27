@@ -6,7 +6,7 @@ import type { DocSource } from "@/lib/clients/registry";
 import { useVisualizeStyle } from "@/hooks/useVisualizeStyle";
 import { useSyncEvents } from "@/hooks/useSyncEvents";
 import type { DocLifecycle } from "@/lib/wiki/doc-lifecycle";
-import { TopNav } from "./TopNav";
+import { WikiRail } from "./WikiRail";
 import { Sidebar } from "./Sidebar";
 import { WikiWorkspaceBar } from "./WikiWorkspaceBar";
 import { VisualizeStyleButton } from "./VisualizeStyleButton";
@@ -94,15 +94,17 @@ function WikiShellInner({
   }, [system.nav, debouncedSearch]);
 
   return (
-    <div className="apollo-tokens-root flex h-screen flex-col overflow-hidden">
-      <TopNav
+    <div className="apollo-tokens-root flex h-screen overflow-hidden">
+      <WikiRail
+        currentFileName={currentFileName}
         isDark={isDark}
         onToggleTheme={() => setIsDark((d) => !d)}
+        canToggleTheme={applied}
+      />
+      <div className="flex min-w-0 flex-1 flex-col">
+      <WikiWorkspaceBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        currentFileName={currentFileName}
-      />
-      <WikiWorkspaceBar
         systemName={system.name}
         lifecycle={lifecycle}
         sources={sources}
@@ -182,6 +184,7 @@ function WikiShellInner({
         </main>
       </div>
       <SyncToast message={sync.message} />
+      </div>
     </div>
   );
 }
