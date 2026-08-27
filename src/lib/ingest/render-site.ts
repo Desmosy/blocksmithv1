@@ -1160,6 +1160,20 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
     }
     return null;
   } finally {
-    await browser?.close().catch(() => {});
+    // Closing a CDP-connected browser can hang: the provider may hold the
+    // session open past our disconnect, and an awaited hang here held the
+    // whole capture for the rest of the function's life — every phase done
+    // in five seconds, then forty-seven of nothing. Bound it. A session we
+    // walk away from ends when the provider times it out; a capture that
+    // never answers is the worse outcome.
+    mark("close:start");
+    if (browser) {
+      const b = browser;
+      await Promise.race([
+        b.close().catch(() => {}),
+        new Promise<void>((resolve) => setTimeout(resolve, 1_500)),
+      ]);
+    }
+    mark("close:done");
   }
 }
