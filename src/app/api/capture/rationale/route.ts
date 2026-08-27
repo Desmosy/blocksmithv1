@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       reason: result.reason ?? null,
       model: result.model ?? rationaleModel(),
       ms: Date.now() - started,
+      raw: result.raw ?? null,
     });
   } catch (err) {
     return NextResponse.json(

@@ -56,6 +56,8 @@ export type RationaleResult = {
   model: string | null;
   /** Why nothing was applied, for the caller's diagnostics. */
   reason?: string;
+  /** The model's raw answer, head and tail, when it could not be used. */
+  raw?: { head: string; tail: string; length: number; finishReason?: string };
 };
 
 type Draft = {
@@ -279,6 +281,7 @@ export async function addRationale(
 ): Promise<RationaleResult> {
   const timeoutMs = Math.min(TIMEOUT_MS, opts.timeoutMs ?? TIMEOUT_MS);
   let usedModel = isRationaleEnabled() ? rationaleModel() : "injected";
+  let lastFinish: string | undefined;
   if (!complete) {
     if (!isRationaleEnabled()) return { markdown, applied: false, model: null, reason: "not configured" };
     // Not worth starting a model call that cannot finish.
@@ -301,7 +304,7 @@ export async function addRationale(
               model,
               temperature: 0.3,
               top_p: 0.9,
-              max_tokens: 1400,
+              max_tokens: 2400,
               messages: [
                 { role: "system", content: system },
                 { role: "user", content: user },
@@ -316,6 +319,7 @@ export async function addRationale(
             new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`model did not answer within ${remaining}ms`)), remaining + 500)),
           ]);
           usedModel = model;
+          lastFinish = res.choices[0]?.finish_reason ?? undefined;
           return res.choices[0]?.message?.content ?? "";
         } catch (err) {
           lastErr = err;
@@ -334,7 +338,8 @@ export async function addRationale(
     const raw = await complete(SYSTEM, `Facts:\n${factSheet(facts)}\n\nReturn the JSON.`);
     const model = usedModel;
     const draft = parseDraft(raw);
-    if (!draft) return { markdown, applied: false, model, reason: "unparseable response" };
+    const rawInfo = { head: raw.slice(0, 400), tail: raw.slice(-300), length: raw.length, finishReason: lastFinish };
+    if (!draft) return { markdown, applied: false, model, reason: "unparseable response", raw: rawInfo };
     const safe = validate(draft, facts);
     const { markdown: out, changed } = mergeRationale(
       markdown,
@@ -343,7 +348,7 @@ export async function addRationale(
     );
     return changed
       ? { markdown: out, applied: true, model }
-      : { markdown, applied: false, model, reason: "nothing grounded to add" };
+      : { markdown, applied: false, model, reason: "nothing grounded to add", raw: rawInfo };
   } catch (err) {
     return { markdown, applied: false, model: usedModel, reason: err instanceof Error ? err.message : "failed" };
   }
