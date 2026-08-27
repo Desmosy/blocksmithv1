@@ -241,7 +241,11 @@ export async function addRationale(
     const model = rationaleModel();
     const client = createNvidiaClient(key);
     complete = async (system, user) => {
-      const res = await client.chat.completions.create(
+      // The SDK retries a timed-out request twice by default, turning a
+      // twenty-second budget into sixty; and a socket that hangs can outlast
+      // the SDK's own timer. No retries, and a race the network cannot
+      // slip past.
+      const call = client.chat.completions.create(
         {
           model,
           temperature: 0.3,
@@ -252,8 +256,12 @@ export async function addRationale(
             { role: "user", content: user },
           ],
         },
-        { timeout: timeoutMs },
+        { timeout: timeoutMs, maxRetries: 0 },
       );
+      const res = await Promise.race([
+        call,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`model did not answer within ${timeoutMs}ms`)), timeoutMs + 500)),
+      ]);
       return res.choices[0]?.message?.content ?? "";
     };
   }
