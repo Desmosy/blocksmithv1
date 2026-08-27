@@ -1063,6 +1063,12 @@ export type RenderOptions = {
    * slow remote browser degrades to a thinner capture instead of a timeout.
    */
   budgetMs?: number;
+  /**
+   * Called as each phase begins and ends, with elapsed ms. A capture that
+   * runs out the clock on a remote browser cannot be debugged from outside;
+   * this is how it says which phase it was in when time ran out.
+   */
+  onPhase?: (phase: string, elapsedMs: number) => void;
 };
 
 export async function renderSiteDesign(url: string, opts: RenderOptions = {}): Promise<Rendered | null> {
@@ -1073,18 +1079,24 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
   const budget = Math.max(5_000, opts.budgetMs ?? 40_000);
   const deadline = started + budget;
   const left = () => deadline - Date.now();
+  const mark = (phase: string) => opts.onPhase?.(phase, Date.now() - started);
 
   let browser: import("playwright-core").Browser | null = null;
   try {
     const { chromium } = await import("playwright-core");
+    mark("connect:start");
     browser = remote
       ? // Attaching costs nothing at deploy time, which is the point: the
         // function stays small and the browser lives with whoever hosts it.
-        await chromium.connectOverCDP(remote, { timeout: Math.min(NAV_TIMEOUT_MS, Math.max(4_000, budget * 0.3)) })
+        // Eight seconds is generous for a handshake; a provider that cannot
+        // seat a session by then is queued or down, and the CSS-only reading
+        // beats waiting on it.
+        await chromium.connectOverCDP(remote, { timeout: Math.min(8_000, Math.max(4_000, budget * 0.3)) })
       : await chromium.launch({
           executablePath: executablePath as string,
           args: ["--no-sandbox"],
         });
+    mark("connect:done");
     const page = await browser.newPage({
       viewport: VIEWPORT,
       userAgent:
@@ -1092,16 +1104,23 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
         "(KHTML, like Gecko) Chrome/120.0 Safari/537.36 BlockSmith-Capture/1.0",
       locale: "en-US",
     });
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: Math.min(NAV_TIMEOUT_MS, Math.max(5_000, budget * 0.5)) });
+    mark("page:ready");
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: Math.min(NAV_TIMEOUT_MS, Math.max(5_000, budget * 0.45)) });
+    mark("goto:done");
     // Let webfonts land and above-the-fold animation settle before measuring.
     await page.waitForTimeout(Math.min(SETTLE_MS, Math.max(300, left() * 0.05)));
     // Sections that mount on scroll are part of the page too — as many
     // steps as a quarter of the remaining budget allows at ~0.4s each on a
-    // remote browser, capped at fourteen.
-    const steps = Math.max(2, Math.min(14, Math.floor((left() * 0.25) / 400)));
-    await page.evaluate(scrollThrough(steps)).catch(() => {});
+    // remote browser, capped at fourteen. Skipped outright when the clock is
+    // nearly out: a thinner reading now beats none at all.
+    if (left() > 8_000) {
+      const steps = Math.max(2, Math.min(14, Math.floor((left() * 0.25) / 400)));
+      await page.evaluate(scrollThrough(steps)).catch(() => {});
+    }
+    mark("scroll:done");
 
     const raw = (await page.evaluate(COLLECT_IN_PAGE)) as RawPage;
+    mark("collect:done");
     // Tuning the detector means looking at what it saw before grouping. Set
     // BLOCKSMITH_DUMP_CANDIDATES to a path ({host} is replaced) to keep it.
     if (process.env.BLOCKSMITH_DUMP_CANDIDATES) {
@@ -1127,6 +1146,7 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       hoverBudget > 6_000
         ? await readHoverStates(page, raw, Math.min(10, Math.floor(hoverBudget / 1_200)), deadline - 1_000)
         : new Map<number, HoverState>();
+    mark("hover:done");
 
     return {
       colors,

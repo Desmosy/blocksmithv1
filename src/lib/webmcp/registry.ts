@@ -327,7 +327,13 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
 
       try {
         const started = Date.now();
-        const found = await extractSiteDesign(url, { renderBudgetMs: 30_000 });
+        const progress: Record<string, number> = {};
+        // The tool has to answer inside the platform limit too. An overrun
+        // becomes a sentence the agent can act on, with the phase it died in.
+        const found = await Promise.race([
+          extractSiteDesign(url, { renderBudgetMs: 28_000, onPhase: (p) => { progress[p] = Date.now() - started; } }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`timed out; progress ${JSON.stringify(progress)}`)), 46_000)),
+        ]);
         if (!found.colors.length) {
           return (
             `Read ${found.url}, but found no colours stated in its CSS. ` +

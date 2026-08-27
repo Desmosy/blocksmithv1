@@ -479,6 +479,8 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
 export type ExtractOptions = {
   /** Wall-clock budget for the browser render, in ms. See RenderOptions. */
   renderBudgetMs?: number;
+  /** Phase progress, forwarded to the render. */
+  onPhase?: (phase: string, elapsedMs: number) => void;
 };
 
 async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timings: NonNullable<Extracted["timings"]>): Promise<Extracted> {
@@ -507,13 +509,14 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
   css += "\n" + sheets.join("\n");
 
   timings.text = Date.now() - t0;
+  opts.onPhase?.("text:done", timings.text);
   // The render sizes its phases to the budget, but a remote browser that
   // stalls on connect or navigation can still overrun it. Racing here means
   // an overrun degrades to the CSS-only reading rather than to no reading.
   const t1 = Date.now();
   const renderBudget = opts.renderBudgetMs ?? 40_000;
   const rendered = await Promise.race<Rendered | null>([
-    renderSiteDesign(url.href, { budgetMs: renderBudget }),
+    renderSiteDesign(url.href, { budgetMs: renderBudget, onPhase: opts.onPhase }),
     new Promise<null>((resolve) => setTimeout(() => { timings.renderTimedOut = true; resolve(null); }, renderBudget + 4_000)),
   ]);
   timings.render = Date.now() - t1;

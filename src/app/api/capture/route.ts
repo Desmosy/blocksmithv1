@@ -23,7 +23,7 @@ export const maxDuration = 60;
 const TOTAL_BUDGET_MS = Number(process.env.BLOCKSMITH_CAPTURE_BUDGET_MS ?? 52_000);
 const RENDER_SHARE = 0.65;
 
-function timeoutJson(ms: number): Promise<NextResponse> {
+function timeoutJson(ms: number, progress: Record<string, number>): Promise<NextResponse> {
   return new Promise((resolve) =>
     setTimeout(
       () =>
@@ -33,6 +33,9 @@ function timeoutJson(ms: number): Promise<NextResponse> {
               error:
                 "That page took longer to read than this deployment allows. Try a lighter page on the same site, " +
                 "or run it again — a second attempt is usually faster.",
+              // Which phases finished, and when. The last one listed is
+              // where the time went.
+              progress,
             },
             { status: 504 },
           ),
@@ -54,12 +57,14 @@ function timeoutJson(ms: number): Promise<NextResponse> {
  * Same engine; this one answers in JSON so the UI can navigate to the result.
  */
 export async function POST(request: NextRequest) {
-  return Promise.race([capture(request), timeoutJson(TOTAL_BUDGET_MS)]);
+  const progress: Record<string, number> = {};
+  return Promise.race([capture(request, progress), timeoutJson(TOTAL_BUDGET_MS, progress)]);
 }
 
-async function capture(request: NextRequest): Promise<NextResponse> {
+async function capture(request: NextRequest, progress: Record<string, number>): Promise<NextResponse> {
   const started = Date.now();
   const left = () => TOTAL_BUDGET_MS - (Date.now() - started);
+  const onPhase = (phase: string) => { progress[phase] = Date.now() - started; };
   let body: { url?: unknown };
   try {
     body = await request.json();
@@ -77,7 +82,7 @@ async function capture(request: NextRequest): Promise<NextResponse> {
   const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
 
   try {
-    const found = await extractSiteDesign(url, { renderBudgetMs: Math.floor(TOTAL_BUDGET_MS * RENDER_SHARE) });
+    const found = await extractSiteDesign(url, { renderBudgetMs: Math.floor(TOTAL_BUDGET_MS * RENDER_SHARE), onPhase });
     if (!found.colors.length) {
       return NextResponse.json(
         {
@@ -114,7 +119,7 @@ async function capture(request: NextRequest): Promise<NextResponse> {
       /** Whether a model added rationale, and which one. */
       rationale: rationale.applied ? rationale.model : null,
       /** Phase timings in ms — the answer to "why was that slow". */
-      timings: { ...(found.timings ?? {}), rationale: rationaleMs, total: Date.now() - started, rationaleSkipped: rationale.reason ?? null },
+      timings: { ...(found.timings ?? {}), rationale: rationaleMs, total: Date.now() - started, rationaleSkipped: rationale.reason ?? null, progress },
     });
   } catch (err) {
     if (err instanceof CaptureError) {
