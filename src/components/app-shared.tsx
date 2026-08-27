@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import {
-	LayoutGridIcon,
+	LayoutDashboardIcon,
 	BarChart3Icon,
 	PlugIcon,
 	KeyRoundIcon,
@@ -27,7 +27,7 @@ export const navGroups: SidebarNavGroup[] = [
 	{
 		label: "Product",
 		items: [
-			{ title: "Dashboard", path: "/dashboard", icon: <LayoutGridIcon /> },
+			{ title: "Dashboard", path: "/dashboard", icon: <LayoutDashboardIcon /> },
 			{ title: "Analytics", path: "/dashboard/analytics", icon: <BarChart3Icon /> },
 		],
 	},
