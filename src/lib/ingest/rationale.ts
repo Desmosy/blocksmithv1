@@ -85,12 +85,15 @@ function apiKey(): string | null {
  */
 export function rationaleModels(): string[] {
   const env = (process.env.NVIDIA_MODEL_RATIONALE ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  // Taken from the endpoint's own catalogue, not from memory: of a previous
+  // chain of six, one existed. Instruct and MoE models first; the reasoning
+  // model last, as the fallback that is slow but present.
   const defaults = [
-    "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-    "meta/llama-3.3-70b-instruct",
-    "meta/llama-3.1-70b-instruct",
-    "mistralai/mistral-small-3.1-24b-instruct",
-    "nvidia/llama-3.1-nemotron-nano-8b-v1",
+    "nvidia/llama-3.1-nemotron-70b-instruct",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "mistralai/mistral-large-2-instruct",
+    "nvidia/llama-3.1-nemotron-51b-instruct",
+    "openai/gpt-oss-20b",
     "openai/gpt-oss-120b",
   ];
   return env.length > 1 ? env : [...env, ...defaults.filter((d) => !env.includes(d))];
