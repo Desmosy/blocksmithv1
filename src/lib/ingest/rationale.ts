@@ -17,7 +17,7 @@
  * layer existed.
  */
 
-import { createNvidiaClient, getNvidiaProfile } from "@/ai-lab/shared/nvidia-profiles";
+import { createNvidiaClient } from "@/ai-lab/shared/nvidia-profiles";
 import type { DesignSystem } from "@/lib/blocks/types";
 
 export type CaptureFacts = {
@@ -67,16 +67,18 @@ type Draft = {
   similarBrands?: { name: string; note: string }[];
 };
 
-const TIMEOUT_MS = Number(process.env.BLOCKSMITH_RATIONALE_TIMEOUT_MS ?? 25_000);
+const TIMEOUT_MS = Number(process.env.BLOCKSMITH_RATIONALE_TIMEOUT_MS ?? 45_000);
 
 function apiKey(): string | null {
   return process.env.NVIDIA_API_KEY?.trim() || process.env.NVIDIA_API_KEY_FALLBACK?.trim() || null;
 }
 
 export function rationaleModel(): string {
-  // A text model, fast enough to sit inside a capture. The "parser" profile
-  // is that already; override per deployment without touching code.
-  return process.env.NVIDIA_MODEL_RATIONALE?.trim() || getNvidiaProfile("parser").model;
+  // An instruct model, not a reasoning one. gpt-oss-120b thinks before it
+  // writes and timed out at twenty-five seconds on the deployment for a page
+  // of JSON; a 70B instruct model answers the same prompt in a few. Override
+  // per deployment without touching code.
+  return process.env.NVIDIA_MODEL_RATIONALE?.trim() || "meta/llama-3.3-70b-instruct";
 }
 
 export function isRationaleEnabled(): boolean {
@@ -271,7 +273,7 @@ export async function addRationale(
           model,
           temperature: 0.3,
           top_p: 0.9,
-          max_tokens: 1800,
+          max_tokens: 1400,
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },

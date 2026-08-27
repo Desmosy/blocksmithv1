@@ -113,7 +113,8 @@ async function capture(request: NextRequest, progress: Record<string, number>): 
     if (rationalePending) {
       after(async () => {
         try {
-          const rationale = await addRationale(measured, facts, undefined, { timeoutMs: 25_000 });
+          // Off the response's clock, so it can take what a model needs.
+          const rationale = await addRationale(measured, facts, undefined, { timeoutMs: 40_000 });
           if (rationale.applied) {
             await persistUploadMarkdown(uploadFileNameFromRef(saved.docRef), rationale.markdown);
             clearDesignSystemCache();
