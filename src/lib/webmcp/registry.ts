@@ -53,6 +53,7 @@ import {
 import { applyFixes, describeFixResult } from "@/lib/governance/autofix";
 import { extractSiteDesign, CaptureError } from "@/lib/ingest/extract-site";
 import { synthesizeDesignSystem } from "@/lib/ingest/synthesize-system";
+import { addRationale } from "@/lib/ingest/rationale";
 import { renderSource } from "@/lib/ingest/render-site";
 import { buildSkill } from "@/lib/governance/skill";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
@@ -336,8 +337,9 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
 
         // Turn the reading into a system that can actually be governed against.
         // A list of hexes is a report; this is something to build with.
-        const { markdown, title } = synthesizeDesignSystem(found);
-        const saved = await saveMarkdownUpload(markdown, `capture-${title}`);
+        const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
+        const rationale = await addRationale(measured, facts);
+        const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
         await prepareDesignSystemDoc(saved.docRef);
 
         const lines = [

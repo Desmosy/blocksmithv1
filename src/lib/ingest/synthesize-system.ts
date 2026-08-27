@@ -275,6 +275,8 @@ const TYPE_ROLES = [
 export function synthesizeDesignSystem(found: Extracted): {
   markdown: string;
   title: string;
+  /** What was measured, for the judgement pass to reason over. */
+  facts: import("./rationale").CaptureFacts;
 } {
   const host = (() => {
     try {
@@ -664,5 +666,17 @@ export function synthesizeDesignSystem(found: Extracted): {
     "",
   );
 
-  return { markdown: lines.join("\n"), title };
+  return {
+    markdown: lines.join("\n"),
+    title,
+    facts: {
+      title,
+      host,
+      colors: colors.map((c) => ({ name: c.name, value: c.value, role: c.role })),
+      typefaces: found.fonts.slice(0, 3).map((f) => ({ name: f.name, substitute: f.substitute })),
+      spacing,
+      radii,
+      components: found.components.map((c) => ({ name: c.name, role: c.role, spec: c.spec, count: c.count })),
+    },
+  };
 }

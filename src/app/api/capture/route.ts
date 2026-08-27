@@ -3,6 +3,7 @@ import { extractSiteDesign, CaptureError } from "@/lib/ingest/extract-site";
 import { synthesizeDesignSystem } from "@/lib/ingest/synthesize-system";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
 import { prepareDesignSystemDoc } from "@/lib/clients/registry";
+import { addRationale } from "@/lib/ingest/rationale";
 
 export const dynamic = "force-dynamic";
 /** Rendering a page through a remote browser can exceed the default budget. */
@@ -49,8 +50,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { markdown, title } = synthesizeDesignSystem(found);
-    const saved = await saveMarkdownUpload(markdown, `capture-${title}`);
+    const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
+    // Judgement on top of measurement, when a model is configured. Never
+    // blocks a capture: a timeout or a bad answer leaves the measured
+    // document exactly as it was.
+    const rationale = await addRationale(measured, facts);
+    const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
     await prepareDesignSystemDoc(saved.docRef);
 
     return NextResponse.json({
@@ -65,6 +70,8 @@ export async function POST(request: NextRequest) {
       },
       /** Whether a browser rendered the page, or it was read from CSS alone. */
       readFrom: found.readFrom ?? "css",
+      /** Whether a model added rationale, and which one. */
+      rationale: rationale.applied ? rationale.model : null,
     });
   } catch (err) {
     if (err instanceof CaptureError) {
