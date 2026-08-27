@@ -12,7 +12,7 @@
  *
  * Run: npm run verify:webmcp
  */
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import {
   WEBMCP_LIMITS,
   WEBMCP_PAGE_TOOL_NAMES,
@@ -428,7 +428,17 @@ console.log("\nDocumentation drift");
     [BLOCKSMITH_MCP_TOOL_NAMES.length, "remote MCP tools"],
   ]);
 
-  const DOCS = ["README.md", "JUDGING.md", "TESTING.md", "docs/SUBMISSION.md"];
+  // JUDGING.md, TESTING.md and HACKATHON.md are gitignored on purpose — they are
+  // working documents, not part of the public repo. So they are checked when
+  // present and skipped when not: a judge running this from a fresh clone must
+  // not hit an ENOENT, and the maintainer editing them locally must still be
+  // caught. README.md and docs/SUBMISSION.md are tracked and always checked.
+  const ALWAYS = ["README.md", "docs/SUBMISSION.md"];
+  const IF_PRESENT = ["JUDGING.md", "TESTING.md"];
+  const missing = ALWAYS.filter((d) => !existsSync(d));
+  if (missing.length) fail(`missing tracked document(s): ${missing.join(", ")}`);
+
+  const DOCS = [...ALWAYS.filter((d) => existsSync(d)), ...IF_PRESENT.filter((d) => existsSync(d))];
   let drift = 0;
   for (const doc of DOCS) {
     const text = readFileSync(doc, "utf8");
@@ -452,9 +462,12 @@ console.log("\nDocumentation drift");
 
   // TESTING.md quotes how many checks this script runs. It said 28 while the
   // script ran 25. A number a reader can falsify in one command should be true.
-  const testing = readFileSync("TESTING.md", "utf8");
-  const claimed = testing.match(/^(\d+) checks:/m);
-  if (!claimed) {
+  const claimed = existsSync("TESTING.md")
+    ? readFileSync("TESTING.md", "utf8").match(/^(\d+) checks:/m)
+    : null;
+  if (!existsSync("TESTING.md")) {
+    ok("TESTING.md not in this checkout — skipping its check count");
+  } else if (!claimed) {
     fail("TESTING.md no longer states how many checks verify:webmcp runs");
   } else {
     // +1 for the assertion this block is about to log.

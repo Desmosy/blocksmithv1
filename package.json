@@ -72,7 +72,8 @@
     "verify:component-interface": "tsx scripts/verify-component-interface.ts",
     "verify:github-scan": "tsx --conditions=react-server scripts/verify-github-scan.ts",
     "verify:figma-import": "tsx --conditions=react-server scripts/verify-figma-import.ts",
-    "verify:webmcp": "tsx --conditions=react-server scripts/verify-webmcp.ts"
+    "verify:webmcp": "tsx --conditions=react-server scripts/verify-webmcp.ts",
+    "demo:reset": "node scripts/demo-reset.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
