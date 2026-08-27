@@ -11,8 +11,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import {
-  loadDesignSystem,
   getDefaultDocFileName,
+  loadDesignSystem,
+  prepareDesignSystemDoc,
 } from "@/lib/clients/registry";
 import { resolveDocParam } from "@/lib/wiki/doc-param";
 import { generateDesignSystemMarkdown } from "@/lib/wiki/export-markdown";
@@ -20,6 +21,13 @@ import { generateDesignSystemMarkdown } from "@/lib/wiki/export-markdown";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  // Stored documents live in Supabase; the reader below only sees what this
+  // process has already hydrated. Same fix as invoke, governance-check and
+  // share: fetch first, or a document that exists answers "not found".
+  {
+    const ref = request.nextUrl.searchParams.get("doc");
+    if (ref) await prepareDesignSystemDoc(ref).catch(() => {});
+  }
   const docParam = request.nextUrl.searchParams.get("doc");
   const format = request.nextUrl.searchParams.get("format") ?? "md";
 
