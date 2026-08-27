@@ -19,10 +19,18 @@ import { setProposal } from "@/lib/webmcp/proposal-store";
 export function WikiAgentTools({
   docFileName,
   systemName,
+  components = [],
 }: {
   /** The doc the reader is on, so tools answer for what is on screen. */
   docFileName?: string;
   systemName?: string;
+  /**
+   * Component names in the open system, bound into the schemas that take one.
+   * This is what makes the tool surface differ between design systems, so
+   * switching one fires `toolchange` instead of leaving the agent on a stale
+   * enum from the system it was looking at before.
+   */
+  components?: string[];
 }) {
   const [tools, setTools] = useState<ToolDescriptor[]>([]);
 
@@ -205,9 +213,14 @@ export function WikiAgentTools({
     [docFileName, systemName],
   );
 
+  // Join on a stable key: a new array with the same names must not re-register.
+  const componentKey = components.join("\u0000");
   const specs = useMemo<WebMcpToolSpec[]>(
-    () => [...pageTools, ...serverToolSpecs(tools, docFileName, () => {})],
-    [pageTools, tools, docFileName],
+    () => [
+      ...pageTools,
+      ...serverToolSpecs(tools, docFileName, () => {}, componentKey ? componentKey.split("\u0000") : []),
+    ],
+    [pageTools, tools, docFileName, componentKey],
   );
 
   const { supported, registered, error } = useWebMcp(specs);

@@ -153,6 +153,7 @@ function WikiShellInner({
             <WikiAgentTools
               docFileName={currentFileName}
               systemName={system.name}
+              components={system.components.map((c) => c.title)}
             />
             {/* Sits above the page content on every wiki page: a change waiting
                 on you should not be something you have to go find. */}

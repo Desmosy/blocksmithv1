@@ -89,12 +89,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Lets the page (and DevTools) confirm what's exposed without invoking anything. */
+/**
+ * Lets the page (and DevTools) confirm what's exposed without invoking anything.
+ *
+ * `inputSchema` is part of the descriptor: the page registers these tools with
+ * WebMCP, and a tool registered without its schema gives the agent no way to
+ * know what arguments it takes. It is also what `bindComponentEnum` narrows to
+ * the active design system, so leaving it out makes every system's tool surface
+ * identical and `toolchange` never fires.
+ */
 export async function GET() {
   return NextResponse.json({
     tools: WEBMCP_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
+      inputSchema: t.inputSchema,
       annotations: t.annotations,
     })),
   });
