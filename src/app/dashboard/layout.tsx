@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardThemeProvider } from "@/components/dashboard/DashboardThemeProvider";
 import { DashboardBreadcrumb } from "@/components/dashboard/DashboardBreadcrumb";
 import { DashboardThemeToggle } from "@/components/dashboard/DashboardThemeToggle";
+import { DashboardAgentTools } from "@/components/dashboard/DashboardAgentTools";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator"
 import "@/styles/dashboard.css";
@@ -46,6 +47,10 @@ export default function DashboardLayout({
               </header>
               <main className="flex flex-1 flex-col p-4 md:p-6 bg-background">
                 {children}
+                {/* Below the page: the agent surface is a fact about the page, not its content. */}
+                <div className="mt-8">
+                  <DashboardAgentTools />
+                </div>
               </main>
             </SidebarInset>
           </SidebarProvider>

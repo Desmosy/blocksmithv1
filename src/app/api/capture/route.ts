@@ -6,6 +6,7 @@ import { prepareDesignSystemDoc } from "@/lib/clients/registry";
 import { addRationale, isRationaleEnabled } from "@/lib/ingest/rationale";
 import { persistUploadMarkdown } from "@/lib/uploads/persist";
 import { clearDesignSystemCache } from "@/lib/clients/registry";
+import { corsPreflight, withCors } from "@/lib/webmcp/cors";
 import { uploadFileNameFromRef } from "@/lib/uploads/store";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +62,12 @@ function timeoutJson(ms: number, progress: Record<string, number>): Promise<Next
  */
 export async function POST(request: NextRequest) {
   const progress: Record<string, number> = {};
-  return Promise.race([capture(request, progress), timeoutJson(TOTAL_BUDGET_MS, progress)]);
+  // Cross-origin on purpose: the any-site script captures the page it is on.
+  return withCors(await Promise.race([capture(request, progress), timeoutJson(TOTAL_BUDGET_MS, progress)]));
+}
+
+export async function OPTIONS() {
+  return corsPreflight();
 }
 
 async function capture(request: NextRequest, progress: Record<string, number>): Promise<NextResponse> {

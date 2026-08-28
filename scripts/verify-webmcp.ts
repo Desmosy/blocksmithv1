@@ -12,6 +12,7 @@
  *
  * Run: npm run verify:webmcp
  */
+import { ANYWHERE_TOOLS } from "../src/lib/webmcp/anywhere-tools";
 import { existsSync, readFileSync } from "fs";
 import {
   WEBMCP_LIMITS,
@@ -407,8 +408,11 @@ console.log("\nDocumentation drift");
   // The page tools are declared in a client component, which a node script
   // cannot import. Read the source and compare names, so moving a tool without
   // updating the shared list is caught here rather than by a judge.
+  // The wiki spreads each descriptor by name — `pageTool("x")` — so the names
+  // it registers are read from the component, and the descriptors from the
+  // shared file; both must agree with the registry's list.
   const tsxPath = "src/components/wiki/WikiAgentTools.tsx";
-  const declaredInPage = [...readFileSync(tsxPath, "utf8").matchAll(/^\s{8}name: "([a-z_]+)",$/gm)]
+  const declaredInPage = [...readFileSync(tsxPath, "utf8").matchAll(/pageTool\("([a-z_]+)"\)/g)]
     .map((m) => m[1]);
   const expectedPageTools = [...WEBMCP_PAGE_TOOL_NAMES];
   if (declaredInPage.join(",") !== expectedPageTools.join(",")) {
@@ -426,7 +430,25 @@ console.log("\nDocumentation drift");
     [WEBMCP_PAGE_TOOL_NAMES.length, "page tools"],
     [WEBMCP_REGISTERED_TOOL_COUNT, "tools registered in the page"],
     [BLOCKSMITH_MCP_TOOL_NAMES.length, "remote MCP tools"],
+    [ANYWHERE_TOOLS.length, "tools on any site"],
   ]);
+
+  // The any-site script is plain JS the verifier cannot import, so the names
+  // it registers are read from its source and compared with the descriptors.
+  const scriptPath = "public/webmcp/blocksmith.js";
+  const inScript = [...readFileSync(scriptPath, "utf8").matchAll(/^\s{6}name: "([a-z_]+)",$/gm)].map((m) => m[1]);
+  const advertised = ANYWHERE_TOOLS.map((t) => t.name);
+  if (inScript.join(",") !== advertised.join(",")) {
+    fail(`${scriptPath} registers [${inScript.join(", ")}] but anywhere-tools.ts says [${advertised.join(", ")}]`);
+  } else {
+    ok(`${advertised.length} any-site tools match the script`);
+  }
+  const extCopy = "extension/webmcp.js";
+  if (!existsSync(extCopy) || readFileSync(extCopy, "utf8") !== readFileSync(scriptPath, "utf8")) {
+    fail(`${extCopy} is not a copy of ${scriptPath} — run npm run sync:extension`);
+  } else {
+    ok("the extension carries the same any-site script");
+  }
 
   // JUDGING.md, TESTING.md and HACKATHON.md are gitignored on purpose — they are
   // working documents, not part of the public repo. So they are checked when

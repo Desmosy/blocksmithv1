@@ -8,7 +8,7 @@
  * Session captures live in chrome.storage.session (cleared when the browser
  * closes); the server URL persists in chrome.storage.sync.
  */
-const DEFAULT_SERVER = "https://blocksmith-mocha.vercel.app";
+const DEFAULT_SERVER = "https://blocksmithv1.vercel.app";
 const MAX_CAPTURES = 4;
 
 const el = (id) => document.getElementById(id);

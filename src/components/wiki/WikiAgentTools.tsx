@@ -5,16 +5,21 @@
  *
  * This is the point of the whole exercise: an agent looking at the design
  * system a team actually uses gets that system's rules as callable tools,
- * bound to the document the human is currently reading. It renders a single
- * status line so the human can see the surface is live — an agent calling
- * tools invisibly is indistinguishable from one making things up.
+ * bound to the document the human is currently reading. The human sees the
+ * same surface through the tool panel — an agent calling tools invisibly is
+ * indistinguishable from one making things up.
+ *
+ * The page tools' descriptors (name, description, schema) come from
+ * `page-tools.ts`, the one place the manifest and the verifier read them
+ * from; only the implementations live here, because they touch page state.
  */
 
 import { useEffect, useMemo, useState } from "react";
 import { useWebMcp, type WebMcpToolSpec } from "@/hooks/useWebMcp";
 import { serverToolSpecs, type ToolDescriptor } from "@/lib/webmcp/client";
-import { isWebMcpSupported } from "@/lib/webmcp/types";
+import { pageTool, PAGE_TOOLS } from "@/lib/webmcp/page-tools";
 import { setProposal } from "@/lib/webmcp/proposal-store";
+import { AgentToolPanel, type PanelTool } from "@/components/webmcp/AgentToolPanel";
 
 export function WikiAgentTools({
   docFileName,
@@ -34,48 +39,29 @@ export function WikiAgentTools({
 }) {
   const [tools, setTools] = useState<ToolDescriptor[]>([]);
 
-  // Fetch descriptors rather than threading them from the server through every
-  // layer of the shell. Skipped entirely when the browser has no agent surface,
-  // so a normal visitor never pays for a request they cannot use.
+  // Fetched in every browser: the panel lists the surface even where no
+  // agent can use it, so a reader without the flag still sees what exists.
   useEffect(() => {
-    if (!isWebMcpSupported()) return;
     const controller = new AbortController();
     fetch("/api/webmcp/invoke", { signal: controller.signal })
       .then((r) => r.json())
       .then((d: { tools?: ToolDescriptor[] }) => setTools(d.tools ?? []))
       .catch(() => {
-        /* no agent surface is the common case; failing quietly is correct */
+        /* the wiki works without the list */
       });
     return () => controller.abort();
   }, []);
 
   /**
-   * The one tool that can only run in the page: what the reader is actually
-   * looking at. A remote MCP server cannot answer this, which is the clearest
-   * thing WebMCP adds over the transport BlockSmith already had.
+   * The tools that can only run in the page: what the reader is actually
+   * looking at, and putting work on their screen. A remote MCP server cannot
+   * do either, which is the clearest thing WebMCP adds over the transport
+   * BlockSmith already had.
    */
   const pageTools = useMemo<WebMcpToolSpec[]>(
     () => [
       {
-        name: "propose_component",
-        description:
-          "Put a component in front of the user on the page they are reading, rendered in this design system's own tokens, and get back the governance verdict. Use this instead of only printing code in chat — the user should see the thing, not the markup.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            code: {
-              type: "string",
-              description: "The component markup to show.",
-            },
-            intent: {
-              type: "string",
-              description: "One line on what you built, e.g. \"pricing card\".",
-            },
-          },
-          required: ["code"],
-        },
-        // Puts something on the user's screen, so it is not a read.
-        annotations: { readOnlyHint: false },
+        ...pageTool("propose_component"),
         execute: async (args) => {
           const code = String(args.code ?? "").trim();
           if (!code) return "No code supplied. Pass the component markup as `code`.";
@@ -99,11 +85,7 @@ export function WikiAgentTools({
             const res = await fetch("/api/webmcp/invoke", {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                tool: "check_governance",
-                args: { code },
-                doc: docFileName,
-              }),
+              body: JSON.stringify({ tool: "check_governance", args: { code }, doc: docFileName }),
             });
             const data = (await res.json()) as { text?: string };
             return (
@@ -116,41 +98,11 @@ export function WikiAgentTools({
         },
       },
       {
-        name: "propose_design_change",
-        description:
-          "Propose a change to the design system itself — add or edit a colour token, add a do/don't rule, revise a component's guidance. The change is staged for the human to approve; you cannot apply it. Use this when the user wants the system changed, not code written against it.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            blockId: {
-              type: "string",
-              description:
-                'What to change: "guidelines", "token:color:<name>", "component:<id>", "agent-guide".',
-            },
-            summary: {
-              type: "string",
-              description: "One line a human will read, e.g. \"Add a warning colour\".",
-            },
-            updatedData: {
-              type: "string",
-              description:
-                "JSON for that block. guidelines takes {dos:[],donts:[]}; a colour takes {name,value,role}.",
-            },
-            rationale: {
-              type: "string",
-              description: "Why this is the right change, in one or two sentences.",
-            },
-          },
-          required: ["blockId", "summary", "updatedData"],
-        },
-        // Stages something for a human. It cannot reach the design system.
-        annotations: { readOnlyHint: false },
+        ...pageTool("propose_design_change"),
         execute: async (args) => {
           const blockId = String(args.blockId ?? "").trim();
           const summary = String(args.summary ?? "").trim();
-          if (!blockId || !summary) {
-            return "Pass at least `blockId` and `summary`.";
-          }
+          if (!blockId || !summary) return "Pass at least `blockId` and `summary`.";
 
           let updatedData: unknown;
           const raw = args.updatedData;
@@ -191,15 +143,10 @@ export function WikiAgentTools({
         },
       },
       {
-        name: "get_current_context",
-        description:
-          "See what the user is looking at right now: which design system is open in their browser and which page of it. Call this first so your answer applies to their actual screen rather than a guess.",
-        inputSchema: { type: "object", properties: {} },
-        annotations: { readOnlyHint: true },
+        ...pageTool("get_current_context"),
         execute: () => {
           const path = window.location.pathname;
-          const section =
-            path.replace(/^\/wiki\/?/, "").replace(/\/$/, "") || "introduction";
+          const section = path.replace(/^\/wiki\/?/, "").replace(/\/$/, "") || "introduction";
           return [
             `The user has **${systemName ?? docFileName ?? "a design system"}** open`,
             docFileName ? ` (\`${docFileName}\`)` : "",
@@ -225,25 +172,29 @@ export function WikiAgentTools({
 
   const { supported, registered, error } = useWebMcp(specs);
 
-  if (error) {
-    return (
-      <p className="text-[11px] text-[var(--wiki-muted)]">
-        Agent tools failed to register — {error}
-      </p>
-    );
-  }
-  if (!supported) return null;
+  const panel: PanelTool[] = [
+    ...PAGE_TOOLS.map((t) => ({
+      name: t.name,
+      description: t.description,
+      readOnly: t.annotations.readOnlyHint === true,
+      kind: "page" as const,
+    })),
+    ...tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      readOnly: t.annotations?.readOnlyHint === true,
+      kind: "server" as const,
+    })),
+  ];
 
   return (
-    <p
-      className="inline-flex items-center gap-1.5 text-[11px] text-[var(--wiki-muted)]"
-      role="status"
-    >
-      <span
-        aria-hidden="true"
-        className="size-1.5 rounded-full bg-[var(--wiki-text)]"
-      />
-      {registered.length} agent tools live on this page
-    </p>
+    <AgentToolPanel
+      tools={panel}
+      registered={registered}
+      supported={supported}
+      error={error}
+      scope={systemName}
+      tone="wiki"
+    />
   );
 }

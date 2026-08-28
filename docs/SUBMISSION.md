@@ -121,11 +121,16 @@ await document.modelContext.registerTool({
 change to a tool's name, description, schema or annotations, aborts and
 re-registers. That is what makes the surface live rather than static.
 
-**Ten server tools** answer questions about the design system and dispatch over
-HTTP. **Three page tools** can only run in the browser: `propose_component` and
-`propose_design_change`, which put work on the human's screen for approval, and
-`get_current_context`, which reports the design system and page the reader has
-open — the thing a remote MCP server cannot answer. Thirteen in total.
+**Twelve server tools** answer questions about the design system and dispatch over
+HTTP — including `figma_token_drift` (Figma says X, code says Y, with renames and
+near misses told apart from real drift) and `audit_page_styles` (what a live page
+paints, judged against a system). **Three page tools** can only run in the browser:
+`propose_component` and `propose_design_change`, which put work on the human's
+screen for approval, and `get_current_context`, which reports the design system
+and page the reader has open — the thing a remote MCP server cannot answer.
+Fifteen in total. A bookmarklet or the extension registers **four tools on any
+website** (`public/webmcp/blocksmith.js`), and `/.well-known/webmcp.json` is a
+discovery manifest generated from the registry.
 
 ### Decisions worth calling out
 
@@ -161,7 +166,7 @@ identical to one that works. It also asserts auto-fix never increases
 violations, never rewrites clean code, and is idempotent, since a
 non-idempotent repair would loop an agent forever.
 
-`evals/webmcp.evals.json` holds 10 tool-selection cases in Chrome's documented
+`evals/webmcp.evals.json` holds the tool-selection evaluation cases (10 of them) in Chrome's documented
 format, for the evals CLI in `GoogleChromeLabs/webmcp-tools`.
 
 ## Honest limits

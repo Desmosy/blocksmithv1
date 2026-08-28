@@ -15,6 +15,7 @@ const NAV = [
   { href: "/protocol/adapters", label: "Ingest adapters" },
   { href: "/protocol/targets", label: "Compile targets" },
   { href: "/protocol/conformance", label: "Conformance" },
+  { href: "/protocol/webmcp", label: "WebMCP — agent surface" },
 ];
 
 export default function ProtocolLayout({ children }: { children: ReactNode }) {

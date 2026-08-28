@@ -5,6 +5,7 @@ import {
   WEBMCP_TOOLS_BY_NAME,
   clampOutput,
 } from "@/lib/webmcp/registry";
+import { corsPreflight, withCors } from "@/lib/webmcp/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,16 @@ function sanitizeOverrides(
  * Any tool that mutates state must go through the existing promote/lock gates,
  * not through this route.
  */
+export async function OPTIONS() {
+  return corsPreflight();
+}
+
+/** Cross-origin on purpose: the any-site script calls this from other pages. */
 export async function POST(request: NextRequest) {
+  return withCors(await dispatch(request));
+}
+
+async function dispatch(request: NextRequest): Promise<NextResponse> {
   let body: {
     tool?: string;
     args?: Record<string, unknown>;
@@ -119,12 +129,12 @@ export async function POST(request: NextRequest) {
  * identical and `toolchange` never fires.
  */
 export async function GET() {
-  return NextResponse.json({
+  return withCors(NextResponse.json({
     tools: WEBMCP_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
       annotations: t.annotations,
     })),
-  });
+  }));
 }

@@ -58,6 +58,8 @@ import { renderSource } from "@/lib/ingest/render-site";
 import { buildSkill } from "@/lib/governance/skill";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
 import { prepareDesignSystemDoc } from "@/lib/clients/registry";
+import { makeDriftTools } from "./drift-tools";
+import { PAGE_TOOLS } from "./page-tools";
 
 /**
  * How many violations one result lists. Chosen so a full response stays inside
@@ -586,6 +588,9 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       return lines.join("\n");
     },
   },
+  // Figma-vs-code and page-vs-system: defined in their own module, given
+  // what they need from here, so neither module imports the other at load.
+  ...makeDriftTools({ systemFor, clampOutput, nearestToken }),
 ];
 
 /**
@@ -742,11 +747,7 @@ export const WEBMCP_TOOLS_BY_NAME = new Map(WEBMCP_TOOLS.map((t) => [t.name, t])
  * `get_current_context` is the reason this split matters: a remote MCP server
  * cannot answer what the reader is currently looking at.
  */
-export const WEBMCP_PAGE_TOOL_NAMES = [
-  "propose_component",
-  "propose_design_change",
-  "get_current_context",
-] as const;
+export const WEBMCP_PAGE_TOOL_NAMES: readonly string[] = PAGE_TOOLS.map((t) => t.name);
 
 /** What an agent sees on the wiki: dispatched tools plus page-only tools. */
 export const WEBMCP_REGISTERED_TOOL_COUNT =

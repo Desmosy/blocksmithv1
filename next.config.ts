@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  // Discovery lives at the well-known path; the handler is an ordinary route.
+  async rewrites() {
+    return [{ source: "/.well-known/webmcp.json", destination: "/api/webmcp/manifest" }];
+  },
   transpilePackages: ["@blocksmith/pulse-runtime", "@blocksmith/acme-ui-kit"],
   // instrumentation.ts is stable in Next 15 — no config flag needed
   serverExternalPackages: ["chokidar"],

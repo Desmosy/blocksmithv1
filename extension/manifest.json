@@ -1,18 +1,34 @@
 {
   "manifest_version": 3,
   "name": "BlockSmith Capture",
-  "version": "0.1.0",
-  "description": "Capture any design — Canva, Figma, Adobe, live sites — and turn it into a governed design.md in your BlockSmith wiki.",
+  "version": "0.2.0",
+  "description": "Registers BlockSmith's WebMCP tools on any site \u2014 capture its design system or audit the page against one \u2014 and captures designs from screenshots.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "BlockSmith Capture"
   },
-  "permissions": ["activeTab", "storage"],
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
   "host_permissions": [
+    "https://blocksmithv1.vercel.app/*",
     "https://blocksmith-mocha.vercel.app/*",
     "http://localhost:3000/*"
   ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "webmcp.js"
+      ],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ]
 }

@@ -1,5 +1,18 @@
 # BlockSmith Capture — browser extension
 
+## WebMCP on any site
+
+`webmcp.js` runs on every page in the page's main world (so a site's
+Content-Security-Policy cannot block it, unlike the bookmarklet) and registers
+four tools with `document.modelContext`: `blocksmith_capture_this_site`,
+`blocksmith_audit_this_page`, `blocksmith_get_rules`, `blocksmith_page_context`.
+An agent browsing the site can capture its design system or judge what the
+page paints against one BlockSmith governs. A small badge in the corner says
+how many tools are live; needs Chrome with `chrome://flags/#enable-webmcp-testing`.
+
+The file is a copy of `public/webmcp/blocksmith.js` — `npm run sync:extension`
+refreshes it, and `verify:webmcp` fails when they differ.
+
 Design-first ingest: capture what you see in **Canva, Figma, Adobe XD, or any
 website**, and BlockSmith turns it into a governed `design.md` in your wiki.
 

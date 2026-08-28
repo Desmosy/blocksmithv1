@@ -74,7 +74,8 @@
     "verify:figma-import": "tsx --conditions=react-server scripts/verify-figma-import.ts",
     "verify:webmcp": "tsx --conditions=react-server scripts/verify-webmcp.ts",
     "demo:reset": "node scripts/demo-reset.mjs",
-    "verify:capture": "tsx --conditions=react-server scripts/verify-capture-quality.ts"
+    "verify:capture": "tsx --conditions=react-server scripts/verify-capture-quality.ts",
+    "sync:extension": "cp public/webmcp/blocksmith.js extension/webmcp.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
