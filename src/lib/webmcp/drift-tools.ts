@@ -35,6 +35,19 @@ export type DriftToolDeps = {
   nearestToken: (hex: string, colors: TokenColor[]) => NearestToken | null;
 };
 
+/**
+ * Token families a value may be matched across. Colours are one family
+ * whatever they are called; dimensions are matched only within the family
+ * their name declares.
+ */
+const FAMILIES = ["radius", "space", "spacing", "gap", "size", "font", "line", "letter", "width", "height", "shadow", "opacity"];
+function family(name: string): string {
+  const n = name.toLowerCase();
+  if (/colou?r|brand|ink|surface|ground|bg|fg|text|border|accent/.test(n)) return "color";
+  return FAMILIES.find((f) => n.includes(f)) ?? "other";
+}
+const sameKind = (a: string, b: string): boolean => family(a) === family(b);
+
 /** "Same colour, slightly off": about 24 levels per channel. */
 const CLOSE_ENOUGH = 3 * 24 ** 2;
 
@@ -146,7 +159,10 @@ export function makeDriftTools(deps: DriftToolDeps): WebMcpToolDef[] {
       const onlyFigma: string[] = [];
       for (const row of report.rows) {
         if (row.status !== "figma-only" || !row.figmaValue) continue;
-        const twin = code.vars.find((v) => valuesEqual(v.value, row.figmaValue!));
+        // A twin must be the same kind of token: 8px of radius is not 8px of
+        // spacing, and reporting them as a rename would send the agent to the
+        // wrong variable.
+        const twin = code.vars.find((v) => sameKind(row.cssVar, v.name) && valuesEqual(v.value, row.figmaValue!));
         if (twin) {
           renamed.push(`- \`${row.cssVar}\` = ${row.figmaValue} is \`${twin.name}\` in code — renamed, not drifted`);
           continue;
@@ -169,7 +185,9 @@ export function makeDriftTools(deps: DriftToolDeps): WebMcpToolDef[] {
           ? report.figmaOnly + report.codeOnly === 0
             ? "In sync: every shared token agrees."
             : "No value disagreements; the two sides declare different sets."
-          : `${mismatches.length + drifted.length} token${mismatches.length + drifted.length === 1 ? "" : "s"} disagree.`;
+          : mismatches.length + drifted.length === 1
+            ? "1 token disagrees."
+            : `${mismatches.length + drifted.length} tokens disagree.`;
 
       const lines = [
         `# Figma vs ${system.name}`,
@@ -236,7 +254,10 @@ export function makeDriftTools(deps: DriftToolDeps): WebMcpToolDef[] {
       if (!judged.length) return "None of the colours parsed as hex or rgb().";
       const onWeight = judged.filter((j) => j.on).reduce((s, j) => s + j.count, 0);
       const nearWeight = judged.filter((j) => !j.on && j.match?.close).reduce((s, j) => s + j.count, 0);
-      const pct = (w: number) => `${Math.round((w / total) * 100)}%`;
+      const pct = (w: number) => {
+        const p = (w / total) * 100;
+        return w > 0 && p < 1 ? "<1%" : `${Math.round(p)}%`;
+      };
       const off = judged.filter((j) => !j.on).sort((a, b) => b.count - a.count);
 
       const fontsIn = new Set(system.typography.map((t) => t.name.toLowerCase()));
