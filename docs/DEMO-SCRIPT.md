@@ -1,436 +1,345 @@
 # Demo script — WebMCP Challenge
 
-**Narration: 441 words across eight beats — 2:56 at a normal pace.**
-Four prompts typed, one button clicked. Everything else is already on screen.
+## Read this first
 
-> **Read it once with a stopwatch before you record.** At 2:56 spoken there is
-> no room for the two pauses this script asks for. If you land anywhere over
-> 2:45, **cut beat 6** — it is marked in §4, it is the least load-bearing of the
-> eight, and without it you are at 403 words / 2:41 with room to breathe.
-> Do not cut anything else; every other beat is a move in the argument below.
+This is **one scene**, not a tour. A person sits down to build a pricing section
+for their startup, has no designer, and finishes it with an AI that knows their
+rules. The camera never leaves that task.
 
-> Every result quoted in this script is **real output from the deployed app**,
-> captured on 2026-08-30 from `https://blocksmithv1.vercel.app`. Nothing here is
-> illustrative or mocked up. If any of these numbers stop matching the product,
-> `npm run verify:webmcp` fails.
+Earlier drafts of this script jumped between three different rulebooks and six
+tabs to show off more features. That is why they were confusing. **One person,
+one job, one rulebook, two tabs.** Everything the product can do is shown *by
+that person needing it*, never because it exists.
+
+- **Narration: 446 words.** 2:58 if you read it slowly, **2:42 at the pace
+  people actually narrate a demo**. The limit is 3:00 and judges are not
+  required to watch past it, so **read it aloud with a stopwatch before you
+  record** — do not assume.
+- **If you land over 2:50**, cut beat 5 (it is marked). It is the only beat that
+  argues rather than acts. Without it: 383 words, comfortably 2:33.
+- **Every result quoted here is real output from `blocksmithv1.vercel.app`**,
+  captured 2026-08-30. Nothing is mocked.
 
 ---
 
-## 1. Who is watching, and what that means for the words you use
+## The scene, in one paragraph
 
-The judges are browser and platform engineers. They are not design-system
-practitioners, and the general audience on YouTube certainly isn't. So:
+*I'm building a pricing section for my startup tonight. I have no designer. I
+ask an AI and get the same generic card that's on ten thousand other websites —
+because nobody ever told it what my product looks like. So I point BlockSmith at
+a website I admire and say "fetch me that", and twelve seconds later I have a
+rulebook. Now the AI asks the page what it's allowed to use before it writes a
+line. It builds in my colours. It refuses a purple I asked for, because purple
+isn't mine — and instead of overruling me or ignoring me, it asks. I say yes.
+It carries on, working from the rule I just made.*
 
-| Never say | Say instead |
+That is the whole video. Everything below serves it.
+
+---
+
+## Language rules
+
+Nobody watching knows what a design system is. Never say these words:
+
+| Never say | Say |
 |---|---|
-| design system | **a rulebook** |
+| design system | **a rulebook**, or **my rules** |
 | design tokens | **the exact colours and spacing** |
-| off-token colour | **a colour that isn't in the rulebook** |
-| the tool surface / registered tools | *(don't mention it — show it)* |
-| `check_capability`, `check_governance` | *(never spoken; they appear on screen)* |
-| governance | **the rules**, or **saying no** |
-| WebMCP | say it **once**, at 0:34, and never again |
+| governance / validation | **the page says no** |
+| `check_governance`, `get_governance_rules` | *never spoken — they appear on screen when called* |
+| WebMCP | say it **once**, in beat 7, and nowhere else |
 
-**The single most important rule:** you never read a tool name out loud. When
-the AI calls one, ChatGPT shows it on screen. That is what proves the technical
-work to a judge scoring "WebMCP Leverage" — and it happens without you spending
-a second of narration on vocabulary the audience doesn't have.
+**You never read a tool name aloud.** ChatGPT displays each call on screen by
+itself. That is what proves the engineering to a judge, and it costs you zero
+seconds of narration.
 
 ---
 
-## 2. The argument, in five moves
+## Setup (20 minutes, off camera)
 
-The video is not a tour of features. It is an argument, and each beat is a move
-in it. If you have to cut something, cut whatever is not one of these.
-
-1. **The web is filling up with sites that all look the same.** Everyone
-   watching has noticed this.
-2. **It is not that AI has bad taste — nobody ever gave it a standard**, and the
-   standard is not in the page it is looking at. So it does the average thing.
-3. **If you have no standard, take one.** Any website becomes a rulebook in
-   about twelve seconds.
-4. **Now the page hands that rulebook to the AI**, and the AI gets told no —
-   with the actual sentence a designer wrote, so it learns the rule rather than
-   just deleting a line.
-5. **You stay in charge.** It can propose, it cannot decide. And the moment you
-   change your mind, it is working from the new rule.
-
----
-
-## 3. Before you record (about 20 minutes, off camera)
-
-### 3.1 Warm the app
+### Warm the app
 
 ```bash
 BLOCKSMITH_DEMO_URL=https://blocksmithv1.vercel.app npm run demo:reset
 ```
 
-Run it **twice**. The second run must report every system under 1500ms. A cold
-page takes about three seconds; a spinner in the first ten seconds of a demo
-video is the single most damaging thing that can happen to you.
+Twice. The second run must report everything under 1500ms.
 
-### 3.2 Sign in
+### Sign in
 
-Sign in on your own Chrome (the right-hand screen). The **Approve** click at
-2:20 writes a real change, and the server returns 401 to anyone who isn't signed
-in. This is the only beat in the whole video that needs a session.
+Sign in on your Chrome — the right-hand screen. The **Approve** click in beat 6
+writes a real change and returns 401 to anyone who isn't signed in. It is the
+only beat that needs a session.
 
-### 3.3 Turn on the agent surface
+### Turn the agent surface on
 
-- `chrome://flags/#enable-webmcp-testing` -> **Enabled** -> **Relaunch**
-- `chrome://extensions` -> Developer mode -> **Load unpacked** -> `extension/`
-- Sanity check: open any page, DevTools console, type `document.modelContext`.
-  It must print an object, not `undefined`.
+- `chrome://flags/#enable-webmcp-testing` → **Enabled** → **Relaunch**
+- `chrome://extensions` → Developer mode → **Load unpacked** → `extension/`
+- Check: any page, console, `document.modelContext` must print an object.
 
-### 3.4 Set up two screens
+### Two screens
 
-This is not optional — one beat is *only* legible with both visible.
+- **LEFT — ChatGPT desktop app**, using its in-app browser. This is *the AI*.
+- **RIGHT — your Chrome.** This is *you*.
 
-- **LEFT = ChatGPT's desktop app**, using its in-app browser. This is "the AI."
-- **RIGHT = your Chrome.** This is "you."
+From beat 4 onward both are on the same page, and the AI on the left puts things
+on your screen on the right. If the viewer can't see both, that beat is dead.
 
-At 1:52 the AI, on the left, puts something on your screen, on the right. If the
-viewer cannot see both at once, the entire point of that beat is lost.
+### Only two tabs
 
-### 3.5 Pre-record the capture
+| Tab | Screen | URL |
+|---|---|---|
+| 1 | RIGHT | `https://cohere.com` — extension loaded |
+| 2 | BOTH | `/wiki?doc=upload:capture-cohere-5f71a053.md` |
 
-Beat 3 (0:40–1:05) fetches a live third-party website through a headless
-browser. It normally takes about twelve seconds, but it is the one thing in this
-video that depends on somebody else's server. **Record it separately, before the
-main take, and cut it in.** Do not attempt it live.
+That is the entire demo. Two tabs.
 
-### 3.6 Open these tabs, in this order
+### Pre-record beat 3
 
-| # | Screen | URL | Used at |
-|---|---|---|---|
-| 1 | RIGHT | `https://cohere.com` (extension loaded) | 0:40 |
-| 2 | RIGHT | `/wiki/guidelines?doc=portfolio.md` | 0:22 |
-| 3 | RIGHT | `/wiki/governance?doc=portfolio.md` | 1:05, 1:52 |
-| 4 | LEFT | `/wiki?doc=portfolio.md` | 1:30 |
-| 5 | LEFT | `/wiki?doc=saas.md` | 1:42 |
-| 6 | BOTH | `/wiki?doc=upload:capture-cohere-5f71a053.md` | 2:10 |
+The capture fetches a live third-party website through a headless browser.
+Twelve seconds normally, but it depends on somebody else's server. **Record it
+separately and cut it in.** Never live.
 
 ---
 
-# 4. The run
+# The run
 
 ---
 
-## Beat 1 · 0:00 – 0:22 · The problem everyone has already noticed
+## Beat 1 · 0:00 – 0:26 · The situation, and what everybody actually gets
 
-**On screen:** a plain browser. Nothing of ours yet. Scroll slowly through two
-or three recent AI-built landing pages — or honestly, your own last quick
-project.
+**On screen:** a plain code editor or a chat window. Nothing of ours.
 
-**Say:**
+> "I'm building a pricing section for my startup tonight. I don't have a
+> designer. So I do what everyone does now — I ask an AI."
 
-> "Anyone can build a website now. You describe it, an AI writes it, it's live
-> the same afternoon. And you've probably noticed what that's doing to the web.
-> The same gradient. The same drop shadow. The same rounded card, everywhere.
-> Fast, competent, completely interchangeable."
+**On screen:** the generated card. Let it sit for two seconds.
 
-**Pause for one beat before continuing.**
+> "And this is what everybody gets. It's fine. It's also the same card that's on
+> ten thousand other sites. Because the AI has no idea what *my* product looks
+> like. Nobody told it."
 
-**What the viewer should now believe:** *this is a real problem, and I've seen
-it myself.* You have not mentioned your project yet, and that is deliberate —
-you are earning the right to.
+**What the viewer should feel:** *I have been here.* You have not mentioned your
+product yet. Don't.
 
 ---
 
-## Beat 2 · 0:22 – 0:40 · Why it happens, and it is not taste
+## Beat 2 · 0:26 – 0:46 · Why it happens — and it isn't taste
 
-**On screen:** switch to **tab 2**, the Do's and Don'ts page. Scroll it slowly
-so the viewer sees these are sentences a person wrote, not settings.
+**On screen:** an ordinary website. Any one.
 
-**Say:**
+> "It's not that the AI has bad taste. Nobody gave it a standard. Real companies
+> have one — exact colours, exact spacing, things you never do. But it lives in
+> a Figma file, or somebody's head. And the AI is looking at a web page. None of
+> that is *in* a web page — so it gives you the average of the internet."
 
-> "It's not that the AI has bad taste. Nobody ever gave it a standard. Serious
-> teams have one — the exact colours, the exact spacing, the things you never
-> do. But it lives in a document like this, or a Figma file, or someone's head."
-
-**On screen:** cut to any ordinary webpage.
-
-> "And the AI is looking at a web page. None of that is *in* the page. So it
-> does the average thing — and the average of the entire internet is exactly
-> what you've been looking at."
-
-**What the viewer should now believe:** *the rules exist, but they're invisible
-to the machine doing the work.* This is the sentence the whole demo rests on. If
-they only remember one thing from the first minute, this is it.
+**What the viewer should now understand:** *the rules exist, but the machine
+doing the work can't see them.* This is the sentence the entire video rests on.
 
 ---
 
-## Beat 3 · 0:40 – 1:05 · The turn — you don't have to know any of this
+## Beat 3 · 0:46 – 1:14 · The turn — I take a rulebook
 
-**On screen:** **tab 1**, `cohere.com`, with the extension running. Point at the
-badge in the corner: *"BlockSmith · 4 agent tools live on this page."*
+**This is where BlockSmith arrives.** Say the name here and nowhere earlier.
 
-**This is the turn of the whole video** — the moment the problem becomes a
-product. Say the name here and nowhere earlier.
+**On screen:** tab 1, `cohere.com`, extension running. The badge is visible in
+the corner: *"BlockSmith · 4 agent tools live on this page."*
 
-**Say:**
+> "So what if you didn't need to know any of this? That's BlockSmith. Two ways
+> in. Bring the rules your team already has — or point at a site you admire and
+> say: fetch me that one."
 
-> "So what if you didn't need to know any of this to build something good?
-> That's BlockSmith. Two ways in. Bring your own rules — your team has them
-> written down somewhere — and it holds every page to them. Or point at a site
-> you admire and say: fetch me that one."
-
-**On screen:** as you say "fetch me that one", click the extension.
-
-**On screen:** the pre-recorded capture. Result:
+**On screen:** on the words "fetch me that one", the capture runs (pre-recorded).
 
 ```
 Captured Cohere — 14 colours · 2 typefaces · 16 components
 ```
 
-> "Twelve seconds. Their colours, their spacing, their type — read straight off
-> the live page and written down as rules. I'm not copying their website. I'm
-> borrowing their discipline."
+> "Twelve seconds. Their colours, their spacing, their type, read off the live
+> page. I'm not copying their website — I'm borrowing their discipline. And now
+> it's mine."
 
-**Emphasise "I'm not copying their website."** It is the honest claim, and it is
-also the more impressive one — anyone can screenshot a site; almost nobody can
-extract the decisions underneath it.
-
-**What the viewer should now believe:** *I could have a real standard in
-seconds, whether or not I have ever thought about design.*
-
-**Why "two ways in" matters.** Half your audience already has a design standard
-and half has never had one. That one sentence tells both of them this is for
-them, in four seconds, without a detour. And bringing your own is real — paste
-it, scan a repo, or import from Figma — you simply aren't showing it here.
+**Emphasise "I'm not copying their website."** It's the honest claim and the
+more impressive one — anyone can screenshot a site; almost nobody can pull out
+the decisions underneath it.
 
 ---
 
-## Beat 4 · 1:05 – 1:30 · Now the page can say no
+## Beat 4 · 1:14 – 1:48 · The same request, standing on my rulebook
 
-**On screen:** **tab 3**, the checking page on a different rulebook. A component
-is already sitting there. Click **Check**.
+**On screen:** both screens now on tab 2 — my new rulebook. Left is ChatGPT's
+in-app browser sitting on it.
 
-**Say:**
+> "Now the same request again — except this time the AI is standing on my
+> rulebook."
 
-> "Now I've got a rulebook. Here's what BlockSmith does with it. This is a
-> component an AI just wrote me. Honestly? Looks fine."
+**Type:**
+`Build me a pricing card for the Pro plan at $29 a month and show it to me on the page.`
 
-**Let the verdict land. Say nothing for two full seconds.** Then point at the
-one line that matters:
+*Two tool calls appear in ChatGPT. It reads the rules first, then builds. Do not
+name either one out loud — just let the viewer watch it happen.*
 
-```
-REJECTED — 10 violation(s) in Portfolio.
+*The component appears on the **RIGHT-hand screen**. Point at it.*
 
-- Line 1 `banned-shadow` — `shadow-lg` — Shadows are not allowed in this design
-  system. Rule: "Do not add drop shadows to cards or buttons. Separation comes
-  from the Rule (#e2e4ea) hairline and from space, not elevation."
-```
+> "It didn't guess. Before it wrote a line, it asked the page what it was
+> allowed to use. And there it is, on my screen, in my colours. I never pasted a
+> style guide into that chat."
 
-> "Ten problems. And look what it says back — not 'wrong colour'. It reads out
-> the sentence the designer wrote. So the AI doesn't just delete a line. It
-> learns the rule."
+**If it comes back with violations instead of a clean pass** — likely, and
+*better television*: read one out, then type `fix what you can`. It repairs the
+mechanical ones and hands back the rest. Narrate:
 
-**What the viewer should now believe:** *the page is enforcing a human's
-intention, not running a linter.*
-
----
-
-## Beat 5 · 1:30 – 1:52 · The question no screen could ever answer
-
-This is the strongest twenty seconds in the video. **Slow down.**
-
-**On screen:** switch to **LEFT**, **tab 4** — ChatGPT's in-app browser, sitting
-on that same page.
-
-**Say:**
-
-> "And here's what convinced me this belongs in the page itself. Watch me ask
-> something that's nowhere on the screen."
-
-**Type prompt 1:** `Does this design system have a tooltip?`
-
-*ChatGPT shows the tool call. Do not read its name. Just let the viewer see that
-something was called.*
-
-```
-**Tooltip** — not part of this design system. Use **Meta Label** instead.
-```
-
-> "No. And use this other thing instead."
-
-**On screen:** switch to **tab 5** — a different product's rulebook. **Type the
-exact same prompt.**
-
-```
-**Tooltip** — available. A short label for an icon-only control or a truncated cell.
-```
-
-> "Same AI. Same question. Opposite answer. No pixel on either screen could have
-> told it that — a person decided it, and the page handed the decision over."
-
-**What the viewer should now believe:** *this genuinely cannot be done by
-scraping or screenshotting a page.* This is the beat a judge scoring "WebMCP
-Leverage" is waiting for.
+> "It fixes what it can, then stops. The rest it hands back — those aren't
+> typos, they're decisions."
 
 ---
 
-## Beat 6 · 1:52 – 2:10 · It repairs its own work, and knows where to stop
+## Beat 5 · 1:48 – 2:10 · The rule no scraper could ever find
 
-**On screen:** stay on the left. **Type prompt 2:**
-`Fix whatever you can in that component automatically.`
+> **Cut this beat first if you are over time.** It is the only one that argues
+> rather than acts — but it is also the sharpest proof in the video, so cut it
+> reluctantly.
+
+**On screen:** scroll to the Don't list on the right-hand screen. Highlight this
+line:
 
 ```
-Applied 5 fix(es):
-- p-5 -> p-4      - rounded-lg -> rounded-md      - text-sm -> text-[13px]
-
-5 need a decision from you:
-- `bg-blue-500` — no token matches this colour — pick one from the palette
-- `shadow-lg` — removing this changes the design, not just a value
+Do not use #ff7759 Red for UI chrome or interactive elements — it is decorative only
 ```
 
-**Say:**
+> "And here's what I couldn't have got any other way. That red is right there on
+> their website — you can see it. Anything that scrapes a page would grab it and
+> stick it on a button. But somebody decided that red is decorative. It never
+> touches a control."
 
-> "It fixes five itself, then stops. The other five it hands back — those aren't
-> typos, they're decisions. It won't quietly pick a colour for me."
+> "That decision isn't a pixel. It isn't in the HTML. No screenshot contains it.
+> It exists because the page can say it out loud — and now my AI knows it too."
 
-**What the viewer should now believe:** *this thing has judgement about the
-limits of its own authority.* Most AI tools are graded on how much they do; this
-one is showing restraint, on purpose.
-
-> **If you are running long, this is the first beat to cut.** It is the least
-> load-bearing of the eight. Cutting it saves 18 seconds.
+**Slow down here.** This is the twenty seconds a judge scoring the technology is
+waiting for, and it is said entirely in plain English.
 
 ---
 
-## Beat 7 · 2:10 – 2:42 · You stay in charge — and the rules can change mid-conversation
+## Beat 6 · 2:10 – 2:44 · I change my mind, and it asks permission
 
-**On screen:** **both** screens on **tab 6**. The right-hand screen must be
-clearly visible in frame. This beat is about the handoff between them.
+**On screen:** stay on tab 2. Both screens in frame.
 
-**Type prompt 3:**
-`Build a launch banner using #7c3aed and show it to me on the page.`
+> "One more thing. I want a launch banner, and I want it purple."
 
-*The component appears on the RIGHT-hand screen. Point at it — the AI is on the
-left, and it just put something on your screen on the right.*
+**Type:** `Build a launch banner using #7c3aed and show it to me on the page.`
 
 ```
-Nothing in Cohere is close to this color — the nearest is **Accent** (#4c6ee6),
+Nothing in Cohere is close to this color — the nearest is Accent (#4c6ee6),
 which is a different hue. Adding a new color is a design decision for the user,
 not a substitution to make silently.
 ```
 
-**Say:**
-
-> "Purple isn't in this rulebook. And it can't just add it — it has no power to
+> "Purple isn't in my rulebook. And it can't just add it — it has no power to
 > change anything. So it asks."
 
-**Type prompt 4:** `Then propose adding it to the system as a new token.`
+**Type:** `Then propose adding it to the system as a new token.`
 
-*A card appears on the RIGHT screen: **"Your agent proposed 1 change."***
+*A card appears on the **RIGHT** screen: **"Your agent proposed 1 change."***
 
 > "That's its request, on my screen, waiting for a person."
 
-**Click Approve** on the right-hand screen. Then, on the left,
-**type:** `Check that banner again.`
+**Click Approve** on the right. Then on the left, **type:** `Check that banner again.`
 
 ```
 PASS
 ```
 
-> "Same code. I never touched it. I changed the rules halfway through the
-> conversation and it just knew. A style guide pasted into a prompt can never
-> do that."
+> "Same code — I never touched it. I changed my own rules halfway through the
+> conversation, and it just knew."
 
-**What the viewer should now believe:** *the human is the decision-maker, and
-the AI is always working from the current rules — not a copy that went stale the
-moment it was pasted.*
+**What the viewer should now understand:** *the person is still in charge, and
+the AI is never working from a stale copy.*
 
 ---
 
-## Beat 8 · 2:42 – 2:52 · Close
+## Beat 7 · 2:44 – 2:58 · Close
 
-**On screen:** back to the rulebook page, or a slow scroll of the captured
-system. Something calm.
+**On screen:** the finished pricing section and banner, together.
 
-**Say:**
-
-> "Agents are going to build most of the web from here. They don't have to make
-> all of it look the same. They just need somebody's rules — and a page that can
-> hand them over."
+> "A pricing section and a banner, built by an AI in one sitting — and every
+> colour in them is mine. That's WebMCP: the page itself handing an agent the
+> rules. Agents will build most of the web from here. It doesn't all have to
+> look the same. They just need somebody's rules — and a page that hands them
+> over."
 
 ---
 
-# 5. The four prompts, ready to paste
+# Everything you type, in order
 
 ```
-1. Does this design system have a tooltip?
-2. Fix whatever you can in that component automatically.
+1. Build me a pricing card for the Pro plan at $29 a month and show it to me on the page.
+2. (only if beat 4 comes back rejected)  fix what you can
 3. Build a launch banner using #7c3aed and show it to me on the page.
 4. Then propose adding it to the system as a new token.
+5. Check that banner again.
 ```
 
-Plus one follow-up you type at the end of beat 7: `Check that banner again.`
-
-**If ChatGPT answers from the page's text instead of calling a tool**, say once:
-*"Use the tools this page provides."* Most clients need that nudge exactly once
-per session, and after that they reach for tools on their own.
+If ChatGPT answers from the page text instead of calling a tool, say once:
+**"Use the tools this page provides."** One nudge per session is usually enough.
 
 ---
 
-# 6. If something goes wrong while recording
+# If something goes wrong
 
 | Problem | What to do |
 |---|---|
-| **Capture is slow, or the site is down** | Expected — it fetches somebody else's live website. **Pre-record beat 3** and cut it in. Never attempt it live |
-| The AI answers without calling a tool | *"Use the tools this page provides."* Once is enough |
-| Spinner on the first page | You skipped `demo:reset`. Cut, warm it, start again |
-| **Approve returns an error** | You are not signed in on the right-hand screen. This is the only beat that needs it |
-| The proposal never reaches the right screen | Check with `curl ".../api/webmcp/proposal?doc=upload:capture-cohere-5f71a053.md"`. It is stored durably now, so this should hold |
-| No badge on cohere.com | Reload the page. The Chrome flag must be on and the extension loaded unpacked |
-| Running long | Cut beat 6 (18s). Then trim the pause in beat 1 |
+| **Capture is slow / their site is down** | Expected. **Pre-record beat 3.** Never run it live |
+| The AI answers without calling a tool | *"Use the tools this page provides."* |
+| Beat 4 passes cleanly with nothing to fix | Fine — skip the `fix what you can` line and move on. It's a shorter, cleaner beat |
+| Beat 4 comes back with violations | **Better.** Read one out and use the fix line. This is the scripted path |
+| **Approve returns an error** | You are not signed in on the right-hand screen |
+| The proposal never reaches the right screen | `curl ".../api/webmcp/proposal?doc=upload:capture-cohere-5f71a053.md"`. It's stored durably, so this should hold |
+| No badge on cohere.com | Reload. The Chrome flag must be on and the extension loaded unpacked |
+| Over 2:50 | Cut beat 5 |
 
-**Record a safety file first.** Beats 4 and 6 need no AI, no browser flag and no
-login — they are clicks on a page. Record those two once, on their own, before
-you attempt the full run. If the live take falls apart, you still have the core
-claim on tape.
+**Record a safety file first.** Beat 6 is the whole argument in thirty seconds
+and needs only your own two screens. Record it alone, once, before the full run.
 
 ---
 
-# 7. Final checklist before you hit record
+# Before you hit record
 
-**The app**
-- [ ] `demo:reset` run twice, every system under 1500ms
-- [ ] Beat 3 (the capture) already recorded and edited
+**App**
+- [ ] `demo:reset` twice, everything under 1500ms
+- [ ] Beat 3 already recorded and edited
 - [ ] Signed in on the right-hand screen
 
-**The browser**
-- [ ] `chrome://flags/#enable-webmcp-testing` enabled and relaunched
+**Browser**
+- [ ] Chrome flag enabled and browser relaunched
 - [ ] Extension loaded unpacked from `extension/`
-- [ ] `document.modelContext` prints an object in the console
-- [ ] Six tabs open in the order in §3.6
+- [ ] `document.modelContext` prints an object
+- [ ] Two tabs only, as in Setup
 
-**The recording**
-- [ ] 1920x1080, browser zoom 110–125% so text survives YouTube compression
-- [ ] Both screens in frame for beat 7
-- [ ] Prompts in a scratch file you can paste from without fumbling
+**Recording**
+- [ ] 1920×1080, zoom 110–125% so text survives compression
+- [ ] Both screens in frame from beat 4 on
+- [ ] Prompts in a file you can paste from
 
-**Do not leak anything**
-- [ ] No `.env` or `.env.local` open anywhere
+**Do not leak**
+- [ ] No `.env` or `.env.local` open
 - [ ] No terminal showing `NVIDIA_API_KEY`, Supabase keys, or a `bs_live_` key
-- [ ] `/dashboard/api-keys` not open in any tab
-- [ ] No personal bookmarks, tabs, or notifications in shot
+- [ ] `/dashboard/api-keys` closed
+- [ ] No personal tabs, bookmarks or notifications in shot
 
 **Between takes**
 - [ ] `demo:reset`
-- [ ] Reload tabs 4 and 6 — proposals are per-document and expire after 30 min
-- [ ] If you approved the purple token, remove it before running beat 7 again
+- [ ] Reload tab 2 on both screens
+- [ ] If you approved the purple token, remove it before running beat 6 again
 
 ---
 
-# 8. Where each judging criterion is proved
+# Where each judging criterion is proved
 
-| Criterion | Timestamp | What the judge actually sees |
+| Criterion | Time | What the judge sees |
 |---|---|---|
-| **Potential Impact** | 0:00–0:40 | A problem anyone who uses the web has noticed, plus a specific diagnosis of *why* it happens |
-| **Creativity & Ambition** | 0:40–1:05 | Our tools running on a site we have no relationship with; a rulebook produced from a live page in twelve seconds |
-| **Execution** | 1:05–1:30, throughout | One live URL, a finished product — rulebook pages, a checker, an approval inbox, a working extension |
-| **WebMCP Leverage** | 1:30–1:52 | A tool answering a question that has no representation in the DOM; opposite answers on two pages; tool calls visible on screen throughout |
-| **WebMCP Leverage (2)** | 2:10–2:42 | The AI staging a change it structurally cannot apply, and picking up the new rule on its next call |
-| **Human–agent collaboration** | 2:10–2:42 | It proposes -> a person approves -> the next answer changes. The AI never holds write access at any point |
-| **Complete product experience** | 1:52–2:10 | It repairs what it can and refuses what it shouldn't decide — restraint, not just capability |
+| **Potential Impact** | 0:00–0:46 | A problem anyone who has shipped a site recognises, plus a precise diagnosis of why it happens |
+| **Creativity & Ambition** | 0:46–1:14 | Our tools running on a site we have no relationship with; a rulebook pulled off a live page in twelve seconds |
+| **WebMCP Leverage** | 1:14–1:48 | The AI querying the page for its constraints *before* generating, with the calls visible on screen |
+| **WebMCP Leverage (2)** | 1:48–2:10 | A rule with no DOM representation at all — a judgement about a colour that is plainly visible |
+| **Human–agent collaboration** | 2:10–2:44 | It proposes, a person approves, its next answer changes. The AI never holds write access |
+| **Execution** | throughout | One live URL, one continuous task, finished on camera |
