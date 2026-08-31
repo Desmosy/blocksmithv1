@@ -11,12 +11,14 @@ tabs to show off more features. That is why they were confusing. **One person,
 one job, one rulebook, two tabs.** Everything the product can do is shown *by
 that person needing it*, never because it exists.
 
-- **Narration: 446 words.** 2:58 if you read it slowly, **2:42 at the pace
-  people actually narrate a demo**. The limit is 3:00 and judges are not
-  required to watch past it, so **read it aloud with a stopwatch before you
-  record** — do not assume.
-- **If you land over 2:50**, cut beat 5 (it is marked). It is the only beat that
-  argues rather than acts. Without it: 383 words, comfortably 2:33.
+- **Narration: 465 words** — 3:06 read slowly, **2:49 at the pace people
+  actually narrate a demo.** The 3:00 limit is hard and judges are not required
+  to watch past it, so **time yourself out loud before recording.**
+- **If you are over, cut beat 5** (it is marked). That takes you to 402 words —
+  2:41 even read slowly. But cut it reluctantly: it is the sharpest proof in the
+  video that this could not be done by scraping a page, and "WebMCP Leverage" is
+  the first thing on the judging sheet. My advice is to speed up rather than
+  lose it.
 - **Every result quoted here is real output from `blocksmithv1.vercel.app`**,
   captured 2026-08-30. Nothing is mocked.
 
@@ -257,15 +259,57 @@ the AI is never working from a stale copy.*
 
 ---
 
-## Beat 7 · 2:44 – 2:58 · Close
+## Beat 7 · 2:44 – 3:00 · Close — and it doesn't stop at this browser
 
-**On screen:** the finished pricing section and banner, together.
+**On screen:** the finished pricing section and banner together. Then, for four
+seconds, the skill file — `/api/webmcp/skill?doc=…` — scrolling.
 
-> "A pricing section and a banner, built by an AI in one sitting — and every
-> colour in them is mine. That's WebMCP: the page itself handing an agent the
-> rules. Agents will build most of the web from here. It doesn't all have to
-> look the same. They just need somebody's rules — and a page that hands them
-> over."
+> "A pricing section and a banner, built by an AI in one sitting, and every
+> colour in them is mine."
+
+> "And these rules don't only live in this browser. The same rulebook loads into
+> your editor, and the same check runs before every commit — one place that
+> governs, instead of a style guide copy-pasted into forty repos going stale."
+
+> "That's WebMCP: the page handing an agent the rules. Agents will build most of
+> the web from here. It doesn't all have to look the same."
+
+**Why this is worth the seconds.** Everything before it could be read as a clever
+browser trick. This is the line that says *a team could actually run on this* —
+which is the difference between a demo and a product, and it is what a judge
+scoring impact is listening for.
+
+**What is real behind that claim** (do not say any of this aloud):
+
+- `export_skill` writes the whole system as a skill file an editor's agent loads
+- `/api/mcp` serves the same engine over MCP to Cursor and Claude Code
+- `blocksmith setup hooks` installs a pre-commit check that **exits non-zero**
+  on a violation
+
+---
+
+# Dry run — do this once before you record
+
+Run the whole scene silently first and confirm each prompt reaches the tool it
+is supposed to. If ChatGPT answers from the page's text instead of calling
+something, the beat is dead on camera and you will not notice until editing.
+
+| What you type | Tool that must fire | How you know it worked |
+|---|---|---|
+| `Build me a pricing card for the Pro plan at $29 a month and show it to me on the page.` | `get_governance_rules`, then `propose_component` | **Two** calls, in that order — reads before it writes. The card appears on the RIGHT screen |
+| `fix what you can` *(only if rejected)* | `fix_violations` | Some fixes applied, the rest handed back with reasons |
+| `Build a launch banner using #7c3aed and show it to me on the page.` | `propose_component` | Verdict says nothing is close to that colour |
+| `Then propose adding it to the system as a new token.` | `propose_design_change` | "Your agent proposed 1 change" appears on the RIGHT screen |
+| `Check that banner again.` *(after you approve)* | `check_governance` | `PASS` |
+
+If a call does not fire, say **"Use the tools this page provides"** once and try
+again. Once a session has done it, it keeps doing it.
+
+**Also confirm before recording:**
+
+- [ ] The skill file resolves: `curl -sI ".../api/webmcp/skill?doc=upload%3Acapture-cohere-5f71a053.md"` returns **200**, not 404
+- [ ] The badge appears on `cohere.com` with the extension loaded
+- [ ] Approve works while signed in — do it once, then undo it
 
 ---
 
