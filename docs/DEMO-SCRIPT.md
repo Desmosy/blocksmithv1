@@ -1,11 +1,13 @@
 # Demo script — WebMCP Challenge
 
-**Narration: 429 words across eight beats — 2:52 at a normal pace.**
+**Narration: 441 words across eight beats — 2:56 at a normal pace.**
 Four prompts typed, one button clicked. Everything else is already on screen.
 
-> **If your read lands over 2:55, cut beat 6.** It is marked in §4 and is the
-> least load-bearing of the eight; without it the script is 389 words / 2:36.
-> Do not cut anything else — every other beat is a move in the argument below.
+> **Read it once with a stopwatch before you record.** At 2:56 spoken there is
+> no room for the two pauses this script asks for. If you land anywhere over
+> 2:45, **cut beat 6** — it is marked in §4, it is the least load-bearing of the
+> eight, and without it you are at 403 words / 2:41 with room to breathe.
+> Do not cut anything else; every other beat is a move in the argument below.
 
 > Every result quoted in this script is **real output from the deployed app**,
 > captured on 2026-08-30 from `https://blocksmithv1.vercel.app`. Nothing here is
@@ -158,15 +160,22 @@ they only remember one thing from the first minute, this is it.
 
 ---
 
-## Beat 3 · 0:40 – 1:05 · If you don't have a rulebook, take one
+## Beat 3 · 0:40 – 1:05 · The turn — you don't have to know any of this
 
 **On screen:** **tab 1**, `cohere.com`, with the extension running. Point at the
 badge in the corner: *"BlockSmith · 4 agent tools live on this page."*
 
+**This is the turn of the whole video** — the moment the problem becomes a
+product. Say the name here and nowhere earlier.
+
 **Say:**
 
-> "So — first half of the fix. If you don't have a rulebook, borrow one. Here's
-> our extension, running on somebody else's site. One click."
+> "So what if you didn't need to know any of this to build something good?
+> That's BlockSmith. Two ways in. Bring your own rules — your team has them
+> written down somewhere — and it holds every page to them. Or point at a site
+> you admire and say: fetch me that one."
+
+**On screen:** as you say "fetch me that one", click the extension.
 
 **On screen:** the pre-recorded capture. Result:
 
@@ -174,15 +183,21 @@ badge in the corner: *"BlockSmith · 4 agent tools live on this page."*
 Captured Cohere — 14 colours · 2 typefaces · 16 components
 ```
 
-> "Twelve seconds, and their real design decisions — measured off the live page
-> — become a rulebook I can hold my own work to. Not a copy of their site: the
-> colours, the spacing, the type, written down as something checkable."
+> "Twelve seconds. Their colours, their spacing, their type — read straight off
+> the live page and written down as rules. I'm not copying their website. I'm
+> borrowing their discipline."
 
-**Emphasise "not a copy."** It is the honest claim and it is also the more
-impressive one.
+**Emphasise "I'm not copying their website."** It is the honest claim, and it is
+also the more impressive one — anyone can screenshot a site; almost nobody can
+extract the decisions underneath it.
 
-**What the viewer should now believe:** *even someone with no design background
-can get a real standard in seconds.*
+**What the viewer should now believe:** *I could have a real standard in
+seconds, whether or not I have ever thought about design.*
+
+**Why "two ways in" matters.** Half your audience already has a design standard
+and half has never had one. That one sentence tells both of them this is for
+them, in four seconds, without a detour. And bringing your own is real — paste
+it, scan a repo, or import from Figma — you simply aren't showing it here.
 
 ---
 
@@ -193,8 +208,8 @@ is already sitting there. Click **Check**.
 
 **Say:**
 
-> "Second half, and this is the part that matters. Here's a component an AI just
-> wrote me. Honestly? Looks fine."
+> "Now I've got a rulebook. Here's what BlockSmith does with it. This is a
+> component an AI just wrote me. Honestly? Looks fine."
 
 **Let the verdict land. Say nothing for two full seconds.** Then point at the
 one line that matters:
@@ -225,8 +240,8 @@ on that same page.
 
 **Say:**
 
-> "Here's what convinced me this belongs in the page. Watch me ask something
-> that's nowhere on it."
+> "And here's what convinced me this belongs in the page itself. Watch me ask
+> something that's nowhere on the screen."
 
 **Type prompt 1:** `Does this design system have a tooltip?`
 
@@ -271,8 +286,8 @@ Applied 5 fix(es):
 
 **Say:**
 
-> "It fixes five itself. Then it stops. The other five it hands back — those
-> aren't typos, they're decisions. It won't quietly pick a colour for me."
+> "It fixes five itself, then stops. The other five it hands back — those aren't
+> typos, they're decisions. It won't quietly pick a colour for me."
 
 **What the viewer should now believe:** *this thing has judgement about the
 limits of its own authority.* Most AI tools are graded on how much they do; this
