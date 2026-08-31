@@ -10,41 +10,33 @@ a click or is already on screen.
 
 ---
 
-## Record against production, not localhost
-
-`https://blocksmithv1.vercel.app` is the URL a judge can open themselves, and
-it is now as fast as local: **0.5s warm, 3s cold**. Localhost is the fallback
-if your network is unreliable on the day.
-
 ## Before you start (5 minutes, off camera)
 
-**1. Warm every page you will visit.** The first render of a design system
-parses and compiles server-side; a cold one costs three seconds and a judge
-watches a spinner.
-
 ```bash
-BLOCKSMITH_DEMO_URL=https://blocksmithv1.vercel.app npm run demo:reset
+npm install
+npm run dev
 ```
 
-Run it **twice**. The second run must report every system under 1500ms — if
-one is still cold, something is compiling and you are not ready.
+Then **warm every page you will visit** — the first render of a design system
+compiles and parses server-side, and a cold one takes several seconds:
 
-**2. Enable WebMCP in Chrome.** `chrome://flags/#enable-webmcp-testing` →
-Enabled → Relaunch. Confirm in any tab's console that `document.modelContext`
-prints an object rather than `undefined`.
+```bash
+for d in portfolio.md saas.md docs.md apollo.md; do
+  curl -s -o /dev/null "http://localhost:3000/wiki?doc=$d"
+done
+```
 
-`?agent=sim` installs a shim **in development only** — it is never installed on
-the production build, so it is not a fallback for a recorded run.
+Measured cold vs warm: **7.7s → 0.15s**. Do not skip this. A spinner in the
+first ten seconds is the single most damaging thing that can happen on camera.
 
-**3. Open these tabs in order**, so you never type a URL under pressure:
+Open these tabs in order, so you never type a URL under pressure:
 
-1. `https://blocksmithv1.vercel.app/wiki?doc=portfolio.md`
-2. `https://blocksmithv1.vercel.app/wiki?doc=saas.md`
-3. `https://cohere.com` — for the any-site beat
-4. `https://blocksmithv1.vercel.app/.well-known/webmcp.json`
+1. `http://localhost:3000/wiki?doc=portfolio.md`
+2. `http://localhost:3000/wiki?doc=saas.md`
 
-Confirm tab 1 shows **15 agent tools live on this page**. Click it once to
-check the panel opens, then close it again — you will open it on camera.
+Confirm the page header shows **13 agent tools live on this page**. If it does
+not, your browser has no WebMCP surface — append `?agent=sim` in development, or
+enable `chrome://flags/#enable-webmcp-testing` and relaunch.
 
 ---
 
@@ -152,34 +144,6 @@ Applied 5 fix(es):
 > for SaaS. Switch systems and the tools re-register. The agent cannot name a
 > component the system it is looking at does not have."
 
-### The two beats to add if you have the seconds
-
-Both were added after the first cut of this script. Neither is essential to the
-core claim; each is the strongest thing in the submission on a different axis.
-
-**Tools on a site we do not own (~25s).** Tab 3, `https://cohere.com`. Click the
-**⚒ BlockSmith on this page** bookmarklet (drag it from `/protocol/webmcp`
-beforehand). A badge appears: *"BlockSmith · 4 agent tools live on this page."*
-Then in the console:
-
-```js
-const t = await document.modelContext.getTools();
-await document.modelContext.executeTool(
-  t.find(x => x.name === "blocksmith_audit_this_page"),
-  JSON.stringify({ doc: "saas.md" }));
-```
-
-> "This is not our page. The tools are ours. An agent browsing anyone's site can
-> now ask whether what it is looking at is on-system — and get the token to use
-> instead of the colour that is there."
-
-**The surface is generated, not claimed (~10s).** Tab 4,
-`/.well-known/webmcp.json`.
-
-> "Every tool, its schema, and where it is registered — built from the registry
-> at request time. It cannot advertise a tool that does not exist, and
-> `npm run verify:webmcp` fails if any number in the README disagrees with it."
-
 ### 2:50–3:00 · Close
 
 > "Most WebMCP demos give an agent more power. This one gives it boundaries,
@@ -194,9 +158,7 @@ await document.modelContext.executeTool(
 |---|---|
 | Agent ignores page tools | *"Use the tools this page provides."* Most clients need the nudge |
 | Page slow on first paint | You skipped the warm-up. Cut, warm, re-record |
-| No "15 agent tools" line | Browser has no WebMCP — enable the Chrome flag and relaunch. The panel still lists the surface, and says the browser has none |
-| Bookmarklet does nothing | The site's CSP blocked it (github.com, x.com do). Use the extension, or pick a site you rehearsed |
-| Badge says "could not register" | Another BlockSmith script already ran on that tab. Reload the page first |
+| No "13 agent tools" line | Browser has no WebMCP. `?agent=sim` in dev, or the Chrome flag |
 | `capture_site_design` fails | Network. Skip it — it is not on the critical path |
 | Governance panel empty | Click **Try a typical AI component** again; state is per-tab |
 
