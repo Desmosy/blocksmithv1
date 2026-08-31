@@ -1,6 +1,6 @@
 {
   "$comment": "WebMCP evals for BlockSmith. Format per developer.chrome.com/docs/ai/webmcp/evals: each case sends `messages` to a model with our tool surface registered and asserts the model chose `expectedCall`. These test tool SELECTION — whether the model reaches for the right tool with the right arguments — which manual testing in the DevTools panel cannot catch. Run against a deployed instance with the evals CLI from GoogleChromeLabs/webmcp-tools.",
-  "url": "http://localhost:3000/lab",
+  "url": "https://blocksmithv1.vercel.app/wiki?doc=saas.md",
   "evals": [
     {
       "name": "checks before showing generated code",

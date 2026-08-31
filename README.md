@@ -4,7 +4,9 @@
 
 Built for the **WebMCP Challenge**. BlockSmith exposes its design-system governance engine as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent working alongside you in the browser can read your design system, propose changes, and *get told no* when a change breaks it.
 
-**Live demo:** _TBD_ — run `npm run dev` and open `/wiki?doc=portfolio.md` · **License:** [MIT](./LICENSE)
+**Live:** **<https://blocksmithv1.vercel.app/wiki?doc=saas.md>** — open it in ChatGPT's in-app browser, or in Chrome with `chrome://flags/#enable-webmcp-testing` enabled, and the page hands your agent fifteen tools. No sign-in needed to read, check code, or capture a site.
+
+**Every tool, its schema and where it is registered:** [`/.well-known/webmcp.json`](https://blocksmithv1.vercel.app/.well-known/webmcp.json) · **How it works:** [`/protocol/webmcp`](https://blocksmithv1.vercel.app/protocol/webmcp) · **License:** [MIT](./LICENSE)
 
 ---
 
