@@ -72,35 +72,43 @@ async function withDeadline<T>(work: Promise<T>): Promise<T | null> {
 }
 
 /**
- * Record a handoff. Resolves once it is in memory; the durable copy is written
- * in the background so the agent's tool call is not waiting on a bucket.
+ * Record a handoff, durably.
+ *
+ * The storage write is awaited rather than left in the background: a
+ * serverless instance can be frozen the moment its response is sent, and an
+ * unawaited upload is then simply lost — which showed up as a handoff that
+ * round-tripped most of the time and vanished on the polls that happened to
+ * reach a colder instance. Costing the agent's tool call a couple of hundred
+ * milliseconds is the right trade for the human reliably seeing the work.
  */
-export function writeHandoff<T>(kind: HandoffKind, doc: string, value: T): void {
+export async function writeHandoff<T>(
+  kind: HandoffKind,
+  doc: string,
+  value: T,
+): Promise<void> {
   prune();
   const entry: Entry<T> = { value, at: Date.now() };
   memory.set(key(kind, doc), entry);
 
   if (!supabaseStorageEnabled()) return;
-  void withDeadline(
+  await withDeadline(
     supabaseUploadBlob(objectName(kind, doc), JSON.stringify(entry), "application/json"),
-  ).catch(() => {
-    /* memory already has it; durability is the bonus */
-  });
+  );
 }
 
 /** Forget a handoff — the human dismissed it, or it was acted on. */
-export function clearHandoff(kind: HandoffKind, doc: string): boolean {
+export async function clearHandoff(kind: HandoffKind, doc: string): Promise<boolean> {
   const existed = memory.delete(key(kind, doc));
   if (supabaseStorageEnabled()) {
     // An empty entry, rather than a delete: a stale copy on another instance
     // must not resurrect work the human has already dismissed.
-    void withDeadline(
+    await withDeadline(
       supabaseUploadBlob(
         objectName(kind, doc),
         JSON.stringify({ value: null, at: Date.now() }),
         "application/json",
       ),
-    ).catch(() => {});
+    );
   }
   return existed;
 }

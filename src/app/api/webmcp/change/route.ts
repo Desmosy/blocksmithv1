@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
     const list = ((await readHandoff<ProposedChange[]>("change", doc)) ?? []).filter(
       (c) => c.id !== id,
     );
-    if (list.length) writeHandoff("change", doc, list);
-    else clearHandoff("change", doc);
+    if (list.length) await writeHandoff("change", doc, list);
+    else await clearHandoff("change", doc);
     return NextResponse.json({ ok: true, discarded: id });
   }
 
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     ...((await readHandoff<ProposedChange[]>("change", doc)) ?? []),
     change,
   ].slice(-MAX_PER_DOC);
-  writeHandoff("change", doc, list);
+  await writeHandoff("change", doc, list);
 
   return NextResponse.json({ ok: true, id: change.id, pending: list.length });
 }

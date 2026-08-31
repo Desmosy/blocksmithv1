@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   // Clearing is a legitimate write — the human dismissing what was proposed.
   if (body.code === null || body.code === "") {
-    clearHandoff("proposal", doc);
+    await clearHandoff("proposal", doc);
     return NextResponse.json({ ok: true, cleared: true });
   }
 
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  writeHandoff<StoredProposal>("proposal", doc, {
+  await writeHandoff<StoredProposal>("proposal", doc, {
     code,
     intent:
       typeof body.intent === "string" && body.intent.trim()
@@ -96,6 +96,6 @@ export async function DELETE(request: NextRequest) {
   }
 
   const doc = resolveDocRef(request.nextUrl.searchParams.get("doc") ?? undefined);
-  const existed = clearHandoff("proposal", doc);
+  const existed = await clearHandoff("proposal", doc);
   return NextResponse.json({ ok: true, cleared: existed ? 1 : 0, doc });
 }
