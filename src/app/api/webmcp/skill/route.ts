@@ -5,6 +5,8 @@ import {
   resolveDocRef,
 } from "@/lib/webmcp/registry";
 import { buildSkill } from "@/lib/governance/skill";
+import { prepareDesignSystemDoc } from "@/lib/clients/registry";
+import { corsPreflight, withCors } from "@/lib/webmcp/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -18,16 +20,28 @@ export const dynamic = "force-dynamic";
  *
  * Served as plain text so it can be piped straight into a file:
  *   curl -s '/api/webmcp/skill?doc=portfolio.md' > SKILL.md
+ *
+ * Cross-origin, because the point of a skill file is that it travels: an
+ * editor, a CI job or a script on another host fetches it directly.
  */
+export async function OPTIONS() {
+  return corsPreflight();
+}
+
 export async function GET(request: NextRequest) {
   const doc = request.nextUrl.searchParams.get("doc") ?? undefined;
 
   try {
     const docRef = resolveDocRef(doc);
+    // `loadDesignSystem` is synchronous and reads an in-process cache, so a
+    // captured or uploaded document has to be pulled out of storage first.
+    // Without this the tool hands the agent a URL that 404s — which is worse
+    // than not offering the file at all.
+    await prepareDesignSystemDoc(docRef);
     const system = loadDesignSystem(docRef);
     const skill = buildSkill(system, readDocMarkdown(docRef));
 
-    return new NextResponse(skill, {
+    return withCors(new NextResponse(skill, {
       status: 200,
       headers: {
         "content-type": "text/markdown; charset=utf-8",
@@ -37,7 +51,7 @@ export async function GET(request: NextRequest) {
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")}-skill.md"`,
       },
-    });
+    }));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown design system.";
     return NextResponse.json(
