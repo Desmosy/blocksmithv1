@@ -90,10 +90,28 @@ If the viewer can't see both at once, those beats are dead.
 | Tab | Screen | URL | Used in |
 |---|---|---|---|
 | 1 | RIGHT | `https://cohere.com` — extension loaded | 3 |
-| 2 | BOTH | `/wiki?doc=upload:capture-cohere-5f71a053.md` | 4–8 |
-| 3 | RIGHT | `/wiki/guidelines?doc=portfolio.md` | 6 |
-| 4 | RIGHT | `/api/webmcp/skill?doc=upload%3Acapture-cohere-5f71a053.md` | 9 |
-| 5 | RIGHT | `/.well-known/webmcp.json` | 10 |
+| 2 | **RIGHT** | **`/wiki/governance?doc=upload:capture-cohere-5f71a053.md`** | 4–8 |
+| 3 | **LEFT** | `/wiki?doc=upload:capture-cohere-5f71a053.md` | 4–8 |
+| 4 | RIGHT | `/wiki/guidelines?doc=portfolio.md` | 6 |
+| 5 | RIGHT | `/api/webmcp/skill?doc=upload%3Acapture-cohere-5f71a053.md` | 9 |
+| 6 | RIGHT | `/.well-known/webmcp.json` | 10 |
+
+### Where things appear — read this, it is the thing people get wrong
+
+The AI is on the **left**, in ChatGPT's browser. Your screen is on the **right**.
+When the AI builds something, **two** things happen, and the demo depends on the
+viewer seeing both:
+
+| What | Where it shows | Why |
+|---|---|---|
+| The **component**, rendered live in your system's own colours | **RIGHT** — the Governance page | `propose_component` publishes it; your page polls and renders it |
+| The **verdict** ("REJECTED — 10 violations…") | **BOTH** | The tool *returns* the verdict to the AI as its result — that is how it can fix itself in the same turn — and your page renders the same verdict beside the component |
+
+**The right-hand screen must be on `/wiki/governance?…`, not `/wiki?…`.** The
+panel that catches an agent's work only exists on that page. Before you start,
+it reads *"Nothing to check yet. Ask your agent to build something, and it will
+appear here rendered."* — which is a gift: leave it on screen in beat 3 so the
+viewer sees the empty box *before* something lands in it.
 
 ### Pre-record beat 3
 
@@ -171,31 +189,39 @@ you no words.
 
 ## Beat 4 · 1:12 – 1:44 · The same request, standing on my rulebook
 
-**On screen:** both screens now on tab 2. Left is ChatGPT's in-app browser on it.
+**On screen:** LEFT = ChatGPT on tab 3. RIGHT = the Governance page, tab 2,
+showing its empty state: *"Nothing to check yet. Ask your agent to build
+something, and it will appear here rendered."* Let the viewer read that box.
 
 > "Now the same request — except this time the AI is standing on my rulebook."
 
-**Type:**
+**Type into ChatGPT:**
 `Build me a pricing card for the Pro plan at $29 a month and show it to me on the page.`
 
 *Two calls appear in ChatGPT: it reads the rules, then builds. Don't name them.*
 
-*The component appears on the **RIGHT-hand screen**. Point at it.*
+*Now the empty box on the **RIGHT** fills in — the component renders there, in
+your system's own colours. **Point at it, and say the next line while looking at
+the right-hand screen.***
 
 > "It didn't guess. Before it wrote a line, it asked the page what it was
-> allowed to use. And there it is, on my screen, in my colours. I never pasted a
-> style guide into that chat."
+> allowed to use. And there it is — not in the chat, on *my* page, in my
+> colours. I never pasted a style guide into that conversation."
 
-**This is the core WebMCP moment.** The tool calls are visible, in order,
-reading before writing.
+**This is the core WebMCP moment**: the calls are visible, in order, reading
+before writing — and the result lands on a different screen from the one the AI
+is talking on.
 
 ---
 
 ## Beat 5 · 1:44 – 2:02 · Told no, in the designer's own words
 
-**On screen:** the verdict panel on the right.
+**On screen:** the **Verdict** panel, directly beneath the component you just
+pointed at on the RIGHT screen. Then glance at the LEFT — the same verdict came
+back to the AI as the result of its own call.
 
-> "And when it gets something wrong, look at what comes back."
+> "And it doesn't just show me the thing — it checks it. This verdict is on my
+> screen, and the same words went straight back to the AI. Look at what it says."
 
 ```
 REJECTED — 10 violation(s).
@@ -206,7 +232,8 @@ REJECTED — 10 violation(s).
 ```
 
 > "Not 'wrong colour'. It reads back the sentence a designer actually wrote. So
-> the AI doesn't just delete a line — it learns the rule."
+> the AI doesn't just delete a line — it learns the rule. And because that came
+> back as the answer to its own question, it can fix it without me saying a word."
 
 ---
 
@@ -390,6 +417,8 @@ session has done it, it keeps doing it.
 
 **Also confirm:**
 
+- [ ] The RIGHT screen is on `/wiki/governance?doc=…` — on the plain `/wiki?doc=…`
+      page nothing will ever appear, and this is the single easiest way to ruin a take
 - [ ] Skill file is live: `curl -sI ".../api/webmcp/skill?doc=upload%3Acapture-cohere-5f71a053.md"` → **200**, not 404
 - [ ] Badge appears on `cohere.com` with the extension loaded
 - [ ] Approve works while signed in — do it once, then undo it
