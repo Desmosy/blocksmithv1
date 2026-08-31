@@ -61,6 +61,10 @@ export const PAGE_TOOLS: readonly PageToolDescriptor[] = [
           type: "string",
           description: "Why this is the right change, in one or two sentences.",
         },
+        create: {
+          type: "string",
+          description: 'Pass "true" when this adds a block that does not exist yet, such as a new colour token.',
+        },
       },
       required: ["blockId", "summary", "updatedData"],
     },

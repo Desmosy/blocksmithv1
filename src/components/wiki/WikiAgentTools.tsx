@@ -125,6 +125,9 @@ export function WikiAgentTools({
                 summary,
                 updatedData,
                 rationale: args.rationale ? String(args.rationale) : undefined,
+                // Adding a token is a different intent from editing one, and
+                // the editor will not infer it — so the proposal has to say so.
+                create: args.create === true || String(args.create ?? "") === "true",
                 doc: docFileName,
               }),
             });
