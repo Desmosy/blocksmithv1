@@ -6,7 +6,7 @@ A rehearsed run for the <3-minute video.
 None of it is illustrative. If a number here stops matching, `npm run
 verify:webmcp` fails.
 
-- **Narration:** 415 words · **Runtime at a normal pace:** 2:44–2:50
+- **Narration:** 377 words · **Runtime:** 2:31 spoken; ~2:45 with the pauses and clicks the script calls for
 - **Typing on camera:** four prompts and one click of Approve. Everything else
   is already on screen.
 - **Recorded against:** `https://blocksmithv1.vercel.app` (0.5s warm)
@@ -85,16 +85,15 @@ REJECTED — 10 violation(s) in Portfolio.
 ### 0:20–0:30 · Name the problem once
 
 > "None of that is on the page. Not the palette, not the spacing scale, not
-> 'separation comes from the hairline, not elevation.' An agent scraping this
-> DOM cannot find any of it. So it guesses — and it guesses plausibly, which is
-> what makes it expensive."
+> 'separation comes from the hairline.' An agent scraping this DOM cannot find
+> any of it — so it guesses, plausibly, which is what makes it expensive."
 
 ### 0:30–1:05 · The proof: not in the DOM
 
 **Screen A**, ChatGPT's browser, tab 2.
 
-> "This is ChatGPT's in-app browser on that same page. BlockSmith registers
-> fifteen WebMCP tools on it."
+> "ChatGPT's in-app browser, same page. BlockSmith registers fifteen WebMCP
+> tools on it."
 
 Paste **prompt 1**: `Does this design system have a tooltip?`
 
@@ -104,8 +103,8 @@ Expected tool: **`check_capability`** →
 **Tooltip** — not part of this design system. Use **Meta Label** instead.
 ```
 
-> "It didn't guess. It called `check_capability`, and the system answered:
-> not part of this design system, use Meta Label instead."
+> "It didn't guess. It called `check_capability`, and the system answered: not
+> part of this design system — use Meta Label."
 
 Now navigate **Screen A** to `?doc=saas.md` and paste **prompt 1** again.
 
@@ -113,9 +112,8 @@ Now navigate **Screen A** to `?doc=saas.md` and paste **prompt 1** again.
 **Tooltip** — available. A short label for an icon-only control or a truncated cell.
 ```
 
-> "Same agent, same question, opposite answer. There is no pixel on either
-> screen that could have told it that. And the tools re-registered when the page
-> changed — the schema carries this system's components, not the last one's."
+> "Same agent, same question, opposite answer — and no pixel on either screen
+> could have told it. The tools re-registered when the page changed."
 
 **This is the strongest thirty seconds in the video. Do not rush it.**
 
@@ -137,16 +135,16 @@ Applied 5 fix(es):
 - `shadow-lg` — removing this changes the design, not just a value
 ```
 
-> "Five applied. Five refused — and look at which five. It will not swap some
-> grey in for that blue, and it will not delete the gradient, because removing
-> it changes the design, not a value. It repairs. It does not overrule."
+> "Five applied. Five refused — and look at which five. It won't swap some grey
+> in for that blue, and it won't delete the gradient, because that changes the
+> design, not a value. It repairs. It doesn't overrule."
 
 ### 1:30–2:10 · The loop closes: the rules change under the agent
 
 **Both screens on tab 3** — the Cohere system. Screen B visible beside A.
 
-> "This design system was not hand-written. BlockSmith read it off a live
-> website — I'll show you that in a second. Because it is mine, I can change it."
+> "This system wasn't hand-written — BlockSmith read it off a live website.
+> Because it's mine, I can change it."
 
 Paste **prompt 3**:
 `Build a launch banner using #7c3aed and show it to me on the page.`
@@ -160,7 +158,7 @@ which is a different hue. Adding a new color is a design decision for the user,
 not a substitution to make silently.
 ```
 
-> "Rejected. Nothing in the system is close to it — and adding a colour is my
+> "Rejected. Nothing in the system is close — and adding a colour is my
 > decision, not its."
 
 Paste **prompt 4**: `Then propose adding it to the system as a new token.`
@@ -168,43 +166,41 @@ Paste **prompt 4**: `Then propose adding it to the system as a new token.`
 Expected tool: **`propose_design_change`** → appears on **Screen B** under
 *Your agent proposed 1 change*.
 
-> "So it proposes one. It cannot apply it — it has no write access to anything.
-> It lands here, on my screen, and waits."
+> "So it proposes one. It can't apply it — it has no write access. It lands
+> here, on my screen, and waits."
 
 **Click Approve on Screen B.** Then paste **prompt 2** again, or
 `Check that banner again.`
 
 Expected tool: **`check_governance`** → `PASS`.
 
-> "Same code. I never touched it. The rules changed underneath the agent, and
+> "Same code. I never touched it. The rules changed underneath the agent and
 > the tool handed it the new ones — no new prompt, no stale copy of the docs.
-> That is the half people forget: a design system that can't change isn't a
-> design system, it's a screenshot."
+> A design system that can't change isn't a design system, it's a screenshot."
 
 ### 2:10–2:35 · The same tools on a site we don't own
 
 **Screen B, tab 4** — `cohere.com`, with the extension loaded.
 
-> "And this is not limited to our own site. Our extension registers the same
-> tools on any page in the browser."
+> "And this isn't limited to our own site. Our extension registers the same
+> tools on any page."
 
 Point at the badge: **"BlockSmith · 4 agent tools live on this page."**
 
 Run `blocksmith_capture_this_site` (or narrate over the pre-recorded capture).
 
-> "Fourteen colours, sixteen components — a governed design system, read from a
-> site we have no relationship with, in about twelve seconds. That is where the
-> Cohere system on the last screen came from."
+> "Fourteen colours, sixteen components — a governed design system read from a
+> site we have no relationship with, in twelve seconds. That's where the system
+> on the last screen came from."
 
 ### 2:35–2:50 · Close
 
 **Screen B, tab 5** — the manifest. Scroll once.
 
-> "Every tool, its schema, and where it is registered is published here, and
-> it's generated from the registry, so it can't advertise something that doesn't
-> exist. Most WebMCP demos give an agent more power. This one gives it
-> boundaries — written by the people who own the design system, and enforced by
-> the page itself."
+> "Every tool and schema is published here, generated from the registry, so it
+> can't advertise something that doesn't exist. Most WebMCP demos give an agent
+> more power. This one gives it boundaries — written by the people who own the
+> design system, enforced by the page itself."
 
 ---
 
