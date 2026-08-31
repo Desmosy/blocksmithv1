@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveDocRef } from "@/lib/webmcp/registry";
+import { clearHandoff, readHandoff, writeHandoff } from "@/lib/webmcp/handoff";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +12,11 @@ export const dynamic = "force-dynamic";
  * lands somewhere the human cannot see. Keeping the latest proposal here means
  * whoever has that design system open — on any machine — sees what was built.
  *
- * Deliberately in-memory and unpersisted. A proposal is a moment in a
- * conversation, not a record; it should not outlive the process or accumulate
- * on disk. One per design system, so a second proposal replaces the first
- * rather than growing a queue nobody reads.
+ * Held by the shared handoff store: memory for speed, object storage so the
+ * write and the read may land on different instances — which they will, since
+ * the agent and the human are in different browsers. A proposal is a moment in
+ * a conversation, not a record, so it expires. One per design system: a second
+ * proposal replaces the first rather than growing a queue nobody reads.
  */
 
 type StoredProposal = {
@@ -24,25 +26,6 @@ type StoredProposal = {
 };
 
 const MAX_CODE_BYTES = 24_000;
-const MAX_DOCS = 20;
-/** A proposal older than this is stale conversation, not current work. */
-const TTL_MS = 30 * 60 * 1000;
-
-const proposals = new Map<string, StoredProposal>();
-
-function prune() {
-  const cutoff = Date.now() - TTL_MS;
-  for (const [doc, p] of proposals) {
-    if (p.at < cutoff) proposals.delete(doc);
-  }
-  // Bound the map regardless, oldest first.
-  if (proposals.size > MAX_DOCS) {
-    const byAge = [...proposals.entries()].sort((a, b) => a[1].at - b[1].at);
-    for (const [doc] of byAge.slice(0, proposals.size - MAX_DOCS)) {
-      proposals.delete(doc);
-    }
-  }
-}
 
 export async function POST(request: NextRequest) {
   let body: { code?: unknown; intent?: unknown; doc?: unknown };
@@ -58,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   // Clearing is a legitimate write — the human dismissing what was proposed.
   if (body.code === null || body.code === "") {
-    proposals.delete(doc);
+    clearHandoff("proposal", doc);
     return NextResponse.json({ ok: true, cleared: true });
   }
 
@@ -73,8 +56,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  prune();
-  proposals.set(doc, {
+  writeHandoff<StoredProposal>("proposal", doc, {
     code,
     intent:
       typeof body.intent === "string" && body.intent.trim()
@@ -87,11 +69,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  prune();
   const doc = resolveDocRef(
     request.nextUrl.searchParams.get("doc") ?? undefined,
   );
-  const found = proposals.get(doc) ?? null;
+  const found = await readHandoff<StoredProposal>("proposal", doc);
   return NextResponse.json(
     { proposal: found },
     { headers: { "cache-control": "no-store" } },
@@ -114,14 +95,7 @@ export async function DELETE(request: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
 
-  const docParam = request.nextUrl.searchParams.get("doc");
-  if (docParam) {
-    const doc = resolveDocRef(docParam);
-    const existed = proposals.delete(doc);
-    return NextResponse.json({ ok: true, cleared: existed ? 1 : 0, doc });
-  }
-
-  const cleared = proposals.size;
-  proposals.clear();
-  return NextResponse.json({ ok: true, cleared });
+  const doc = resolveDocRef(request.nextUrl.searchParams.get("doc") ?? undefined);
+  const existed = clearHandoff("proposal", doc);
+  return NextResponse.json({ ok: true, cleared: existed ? 1 : 0, doc });
 }

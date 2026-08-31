@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveDocRef } from "@/lib/webmcp/registry";
+import { clearHandoff, readHandoff, writeHandoff } from "@/lib/webmcp/handoff";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +17,10 @@ export const dynamic = "force-dynamic";
  * bypass the access check that already guards every edit. The worst a bad
  * proposal can do is waste someone's time reading it.
  *
- * In-memory and unpersisted, like the component proposals: a proposal is a
- * moment in a conversation, not a record.
+ * Held by the same handoff store the component proposals use, so a change
+ * staged by an agent in one browser reaches the human in another — and
+ * survives the instance the agent happened to write to. A proposal is a moment
+ * in a conversation, not a record, so it expires.
  */
 
 export type ProposedChange = {
@@ -36,8 +39,6 @@ export type ProposedChange = {
 };
 
 const MAX_PER_DOC = 8;
-const MAX_DOCS = 20;
-const TTL_MS = 30 * 60 * 1000;
 const MAX_SUMMARY = 200;
 const MAX_RATIONALE = 600;
 
@@ -53,27 +54,10 @@ const EDITABLE = [
   "component:",
 ];
 
-const changes = new Map<string, ProposedChange[]>();
-
 function isEditable(blockId: string): boolean {
   return EDITABLE.some((prefix) =>
     prefix.endsWith(":") ? blockId.startsWith(prefix) : blockId === prefix,
   );
-}
-
-function prune() {
-  const cutoff = Date.now() - TTL_MS;
-  for (const [doc, list] of changes) {
-    const live = list.filter((c) => c.at >= cutoff);
-    if (live.length) changes.set(doc, live);
-    else changes.delete(doc);
-  }
-  if (changes.size > MAX_DOCS) {
-    const oldest = [...changes.entries()]
-      .sort((a, b) => (a[1][0]?.at ?? 0) - (b[1][0]?.at ?? 0))
-      .slice(0, changes.size - MAX_DOCS);
-    for (const [doc] of oldest) changes.delete(doc);
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -89,9 +73,11 @@ export async function POST(request: NextRequest) {
   // Discarding is the human rejecting a proposal.
   if (body.discard) {
     const id = String(body.discard);
-    const list = (changes.get(doc) ?? []).filter((c) => c.id !== id);
-    if (list.length) changes.set(doc, list);
-    else changes.delete(doc);
+    const list = ((await readHandoff<ProposedChange[]>("change", doc)) ?? []).filter(
+      (c) => c.id !== id,
+    );
+    if (list.length) writeHandoff("change", doc, list);
+    else clearHandoff("change", doc);
     return NextResponse.json({ ok: true, discarded: id });
   }
 
@@ -118,7 +104,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "`updatedData` is required." }, { status: 400 });
   }
 
-  prune();
   const change: ProposedChange = {
     id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     blockId,
@@ -132,17 +117,19 @@ export async function POST(request: NextRequest) {
     at: Date.now(),
   };
 
-  const list = [...(changes.get(doc) ?? []), change].slice(-MAX_PER_DOC);
-  changes.set(doc, list);
+  const list = [
+    ...((await readHandoff<ProposedChange[]>("change", doc)) ?? []),
+    change,
+  ].slice(-MAX_PER_DOC);
+  writeHandoff("change", doc, list);
 
   return NextResponse.json({ ok: true, id: change.id, pending: list.length });
 }
 
 export async function GET(request: NextRequest) {
-  prune();
   const doc = resolveDocRef(request.nextUrl.searchParams.get("doc") ?? undefined);
   return NextResponse.json(
-    { changes: changes.get(doc) ?? [] },
+    { changes: (await readHandoff<ProposedChange[]>("change", doc)) ?? [] },
     { headers: { "cache-control": "no-store" } },
   );
 }
