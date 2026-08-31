@@ -1,10 +1,10 @@
 # Demo script — WebMCP Challenge
 
-**Narration: 428 words across eight beats — 2:51 at a normal pace.**
+**Narration: 429 words across eight beats — 2:52 at a normal pace.**
 Four prompts typed, one button clicked. Everything else is already on screen.
 
 > **If your read lands over 2:55, cut beat 6.** It is marked in §4 and is the
-> least load-bearing of the eight; without it the script is 388 words / 2:35.
+> least load-bearing of the eight; without it the script is 389 words / 2:36.
 > Do not cut anything else — every other beat is a move in the argument below.
 
 > Every result quoted in this script is **real output from the deployed app**,
