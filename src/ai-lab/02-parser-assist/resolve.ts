@@ -26,6 +26,29 @@ export type ParserAssistResult = {
   reason?: string;
 };
 
+/**
+ * How long a page render will wait for the normalizing model.
+ *
+ * Like font resolve, this sits on the wiki's critical path and its cache is a
+ * directory that does not survive a serverless host, so an unbounded call
+ * meant an unstructured document could hang the page for as long as the model
+ * took. The budget is generous — a normalized doc parses far better than a raw
+ * one — but it is finite, and the page renders either way.
+ */
+const BUDGET_MS = Number(process.env.AI_LAB_PARSER_ASSIST_BUDGET_MS ?? 8000);
+
+/** Documents whose normalize overran or failed, and when to try again. */
+const COOLDOWN_MS = 10 * 60_000;
+const coolingOff = new Map<string, number>();
+
+function onCooldown(docRef: string): boolean {
+  const until = coolingOff.get(docRef);
+  if (until === undefined) return false;
+  if (Date.now() < until) return true;
+  coolingOff.delete(docRef);
+  return false;
+}
+
 function contentHash(md: string): string {
   return createHash("sha256").update(md).digest("hex").slice(0, 16);
 }
@@ -83,11 +106,26 @@ export async function ensureParserAssist(
     return { applied: true, cached: true };
   }
 
+  if (onCooldown(docRef)) {
+    return { applied: false, cached: false, reason: "cooling_off" };
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const { markdown: normalized, model } = await normalizeMarkdownWithAi(
-      rawMarkdown,
-      docRef,
-    );
+    const outcome = await Promise.race([
+      normalizeMarkdownWithAi(rawMarkdown, docRef),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), BUDGET_MS);
+      }),
+    ]);
+    if (outcome === null) {
+      coolingOff.set(docRef, Date.now() + COOLDOWN_MS);
+      console.warn(
+        `[ai-lab:02] parser assist for ${docRef} exceeded ${BUDGET_MS}ms — parsing the document as written`,
+      );
+      return { applied: false, cached: false, reason: "over_budget" };
+    }
+    const { markdown: normalized, model } = outcome;
     persistNormalizedMarkdown(docRef, hash, normalized, {
       model,
       sourceBytes: rawMarkdown.length,
@@ -97,8 +135,11 @@ export async function ensureParserAssist(
     return { applied: true, cached: false, model };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    coolingOff.set(docRef, Date.now() + COOLDOWN_MS);
     console.error("[ai-lab:02] normalize failed for", docRef, message);
     return { applied: false, cached: false, reason: message };
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

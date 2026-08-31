@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { LoadedDesignSystem } from "@/lib/clients/registry";
+import type { TypographyFamily } from "@/lib/blocks/types";
 import type { DesignIR } from "@/lib/design-ir/schema";
 import { compileFontStacksWithResolutions } from "@/lib/fonts/font-resolve";
 import {
@@ -19,6 +20,55 @@ export type FontResolveResult = {
   model?: string;
   reason?: string;
 };
+
+/**
+ * How long a page render will wait for the font-matching model.
+ *
+ * This runs on the wiki's critical path: nothing reaches the browser until it
+ * returns. The call was unbounded, and its cache (`.blocksmith/design`) is
+ * gitignored and unwritable on a serverless host — so every request paid the
+ * full model latency and a slow model hung the page indefinitely. A resolved
+ * font is a nicety; the stacks already carry real fallbacks. So it gets a
+ * budget, and the page renders either way.
+ */
+const BUDGET_MS = Number(process.env.AI_LAB_FONT_RESOLVE_BUDGET_MS ?? 2500);
+
+/**
+ * Documents whose resolve overran or failed, and when to try again.
+ *
+ * Without this, a doc the model is slow on pays the budget on every render,
+ * for every reader. Per-process and deliberately short: a warm server stops
+ * retrying, a new one starts fresh.
+ */
+const COOLDOWN_MS = 10 * 60_000;
+const coolingOff = new Map<string, number>();
+
+function onCooldown(docRef: string): boolean {
+  const until = coolingOff.get(docRef);
+  if (until === undefined) return false;
+  if (Date.now() < until) return true;
+  coolingOff.delete(docRef);
+  return false;
+}
+
+/** Resolve within the budget, or `null` — the caller renders without it. */
+async function resolveWithinBudget(
+  fonts: TypographyFamily[],
+  docRef: string,
+  systemName: string,
+): Promise<FontResolutionMap | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      resolveFontsWithAi(fonts, docRef, systemName),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), BUDGET_MS);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export function fontResolveEnabled(): boolean {
   const flag = process.env.AI_LAB_FONT_RESOLVE?.trim();
@@ -108,12 +158,25 @@ export async function ensureFontResolve(
     };
   }
 
+  if (onCooldown(docRef)) {
+    return {
+      ir,
+      result: { applied: false, cached: false, resolvedCount: 0, reason: "cooling_off" },
+    };
+  }
+
   try {
-    const newResolutions = await resolveFontsWithAi(
-      needed,
-      docRef,
-      system.name,
-    );
+    const newResolutions = await resolveWithinBudget(needed, docRef, system.name);
+    if (newResolutions === null) {
+      coolingOff.set(docRef, Date.now() + COOLDOWN_MS);
+      console.warn(
+        `[ai-lab:05] font resolve for ${docRef} exceeded ${BUDGET_MS}ms — rendering with fallback stacks`,
+      );
+      return {
+        ir,
+        result: { applied: false, cached: false, resolvedCount: 0, reason: "over_budget" },
+      };
+    }
     const merged: FontResolutionMap = {
       ...(ir.fontResolutions ?? {}),
       ...newResolutions,
@@ -137,6 +200,7 @@ export async function ensureFontResolve(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    coolingOff.set(docRef, Date.now() + COOLDOWN_MS);
     console.error("[ai-lab:05] font resolve failed for", docRef, message);
     return {
       ir,
