@@ -1,75 +1,88 @@
 # Demo script — WebMCP Challenge
 
-A rehearsed run for the <3-minute video.
-
-**Every output quoted below was captured from the deployed app on 2026-08-30.**
-None of it is illustrative. If a number here stops matching, `npm run
-verify:webmcp` fails.
-
-- **Narration:** 377 words · **Runtime:** 2:31 spoken; ~2:45 with the pauses and clicks the script calls for
-- **Typing on camera:** four prompts and one click of Approve. Everything else
-  is already on screen.
-- **Recorded against:** `https://blocksmithv1.vercel.app` (0.5s warm)
+**Runtime: 2:42.** 368 words of narration. Four prompts typed, one button clicked.
 
 ---
 
-## The two claims this has to prove
+## Rules this script follows
 
-Everything below is arranged around them. If a beat doesn't serve one, it's cut.
-
-1. **The rules are not in the DOM.** No amount of scraping the page finds the
-   palette, the spacing scale, or "this system has no tooltips — use Meta Label."
-2. **The rules change, and the tools stay current.** When the design system
-   changes, the agent gets the new rules — not a stale copy of the docs.
+1. **Nobody watching knows what a design system is.** It gets explained once, in
+   one sentence, in plain words, and never again.
+2. **No tool names in the narration.** They are *visible on screen* when the AI
+   calls them — that is what proves the WebMCP work — but you never say
+   "check_capability" out loud. The camera does that job.
+3. **One person, one problem, one arc.** Not a tour of features.
+4. **Every quoted output below is real**, captured from the deployed app on
+   2026-08-30. Nothing here is illustrative.
 
 ---
 
-## Before you start (10 minutes, off camera)
+## The story in one line
 
-**1. Warm every page.** Run it twice; the second run must show every system
-under 1500ms.
+*I asked an AI to build something. It looked right and was wrong. So I made the
+website itself tell the AI the rules — and then I changed the rules while it was
+working.*
+
+---
+
+## Before you record (10 min, off camera)
 
 ```bash
 BLOCKSMITH_DEMO_URL=https://blocksmithv1.vercel.app npm run demo:reset
 ```
 
-**2. Sign in** on your own Chrome. Approving a design change writes through
-`/api/wiki/finalize`, which returns 401 to anyone who isn't. This is the only
-beat that needs a session.
+Run it twice. The second run must show every system under 1500ms.
 
-**3. Chrome flag** for the extension half: `chrome://flags/#enable-webmcp-testing`
-→ Enabled → Relaunch. Load the unpacked extension from `extension/`.
+- **Sign in** on your Chrome. The Approve click at 2:00 needs it (401 otherwise).
+- **Chrome flag:** `chrome://flags/#enable-webmcp-testing` -> Enabled -> Relaunch.
+  Load the unpacked extension from `extension/`.
+- **Two screens side by side.** Left = ChatGPT's in-app browser (the AI).
+  Right = your Chrome (you). The 1:38 beat only works if both are visible.
 
-**4. Two screens.**
-- **A — ChatGPT's desktop app**, in-app browser. This is the agent.
-- **B — your Chrome**, same page. This is the human. Act 4 needs both visible.
+**Tabs, in order:**
 
-**5. Open, in this order:**
-
-| # | Where | URL |
+| # | Screen | URL |
 |---|---|---|
-| 1 | B | `/wiki/governance?doc=portfolio.md` |
-| 2 | A | `/wiki?doc=portfolio.md` |
-| 3 | A + B | `/wiki?doc=upload:capture-cohere-5f71a053.md` |
-| 4 | B | `https://cohere.com` |
-| 5 | B | `/.well-known/webmcp.json` |
-
-**6. Copy these four prompts somewhere you can paste from.** They are in
-"Prompts to paste" at the bottom.
+| 1 | Right | `/wiki/governance?doc=portfolio.md` |
+| 2 | Right | `/wiki/guidelines?doc=portfolio.md` |
+| 3 | Left | `/wiki?doc=portfolio.md` |
+| 4 | Left | `/wiki?doc=saas.md` |
+| 5 | Both | `/wiki?doc=upload:capture-cohere-5f71a053.md` |
+| 6 | Right | `https://cohere.com` |
 
 ---
 
-## The run
+# The run
 
-### 0:00–0:20 · The failure, before any explanation
+## 0:00 - 0:16 · Something that looks right and is wrong
 
-**Screen B, tab 1.** The Governance page on Portfolio. Click **Try a typical AI
-component**, then **Check**.
+**Screen: tab 1.** The generated component is already on screen. Don't click yet.
 
-> "This is a component an AI agent just wrote. It compiles, it renders, and it
-> looks completely fine. Here is what this team's design system says about it."
+> "I asked an AI to build a pricing card for my product. This is what it gave
+> me. It looks fine. It would get rejected the moment a designer saw it — and if
+> you're not a designer, you probably can't tell me why."
 
-Let the verdict land. Say nothing for two seconds. Then point at one line:
+*Beat. Let them look at it and fail to spot anything.*
+
+## 0:16 - 0:34 · The rulebook nobody gave the AI
+
+**Switch to tab 2** — the Do's and Don'ts page. Scroll slowly through the rules.
+
+> "Because every company has rules about how its product looks. Exact colours.
+> Exact spacing. No drop shadows, ever. Real teams write this down — it lives in
+> a document like this one."
+
+**Switch back to tab 1.**
+
+> "The AI never saw this. And here's the thing — it couldn't have. Nothing on
+> the screen it was looking at says any of it."
+
+## 0:34 - 0:56 · Hand the page the rulebook
+
+Click **Check**.
+
+> "So we gave the page a voice. Now, when an AI works here, the page hands it
+> the rules."
 
 ```
 REJECTED — 10 violation(s) in Portfolio.
@@ -79,78 +92,64 @@ REJECTED — 10 violation(s) in Portfolio.
   from the Rule (#e2e4ea) hairline and from space, not elevation."
 ```
 
-> "Ten violations. And it is not saying 'invalid colour' — it is quoting the
-> rule a designer wrote."
+> "Ten problems. And look at what it says — not 'wrong colour'. It reads back
+> the actual sentence a designer wrote: separation comes from the hairline and
+> from space, not elevation."
 
-### 0:20–0:30 · Name the problem once
+## 0:56 - 1:18 · The question no screen can answer
 
-> "None of that is on the page. Not the palette, not the spacing scale, not
-> 'separation comes from the hairline.' An agent scraping this DOM cannot find
-> any of it — so it guesses, plausibly, which is what makes it expensive."
+**Switch to Screen Left, tab 3.** ChatGPT's browser, on that same page.
 
-### 0:30–1:05 · The proof: not in the DOM
+> "Now watch me ask it something that isn't on the screen at all."
 
-**Screen A**, ChatGPT's browser, tab 2.
+**Type:** `Does this design system have a tooltip?`
 
-> "ChatGPT's in-app browser, same page. BlockSmith registers fifteen WebMCP
-> tools on it."
-
-Paste **prompt 1**: `Does this design system have a tooltip?`
-
-Expected tool: **`check_capability`** → 
+*The tool call is visible in ChatGPT. Don't read its name — just let it show.*
 
 ```
 **Tooltip** — not part of this design system. Use **Meta Label** instead.
 ```
 
-> "It didn't guess. It called `check_capability`, and the system answered: not
-> part of this design system — use Meta Label."
+> "No. And use this other thing instead."
 
-Now navigate **Screen A** to `?doc=saas.md` and paste **prompt 1** again.
+**Switch to tab 4** (a different product's rules). **Type the same question.**
 
 ```
 **Tooltip** — available. A short label for an icon-only control or a truncated cell.
 ```
 
-> "Same agent, same question, opposite answer — and no pixel on either screen
-> could have told it. The tools re-registered when the page changed."
+> "Same AI. Same question. Opposite answer. There was never a pixel on either
+> screen that could have told it that — somebody decided it, and the page passed
+> the decision along."
 
-**This is the strongest thirty seconds in the video. Do not rush it.**
+**This is the most important 20 seconds in the video. Slow down.**
 
-### 1:05–1:30 · It repairs, and it knows where to stop
+## 1:18 - 1:38 · It fixes its own work, and knows when to stop
 
-Paste **prompt 2**: `Fix whatever you can in that component automatically.`
-
-Expected tool: **`fix_violations`** →
+**Type:** `Fix whatever you can in that component automatically.`
 
 ```
 Applied 5 fix(es):
-- p-5 → p-4        - rounded-lg → rounded-md
-- rounded-xl → rounded-[10px]    - text-sm → text-[13px]
-- to-black → to-[var(--color-ink)]
+- p-5 -> p-4     - rounded-lg -> rounded-md     - text-sm -> text-[13px]
 
 5 need a decision from you:
 - `bg-blue-500` — no token matches this colour — pick one from the palette
-- `bg-gradient-to-br` — removing this changes the design, not just a value
 - `shadow-lg` — removing this changes the design, not just a value
 ```
 
-> "Five applied. Five refused — and look at which five. It won't swap some grey
-> in for that blue, and it won't delete the gradient, because that changes the
-> design, not a value. It repairs. It doesn't overrule."
+> "It fixes five things itself. And then it stops. The other five it hands back
+> — because those aren't typos, they're decisions. It won't quietly pick a
+> colour for me."
 
-### 1:30–2:10 · The loop closes: the rules change under the agent
+## 1:38 - 2:18 · I change the rules while it's working
 
-**Both screens on tab 3** — the Cohere system. Screen B visible beside A.
+**Both screens on tab 5.** Make sure the right-hand screen is clearly visible.
 
-> "This system wasn't hand-written — BlockSmith read it off a live website.
-> Because it's mine, I can change it."
+> "Which brings me to the part I actually care about."
 
-Paste **prompt 3**:
-`Build a launch banner using #7c3aed and show it to me on the page.`
+**Type:** `Build a launch banner using #7c3aed and show it to me on the page.`
 
-Expected tools: **`propose_component`** → verdict, and the component appears on
-**Screen B**.
+*The component appears on the RIGHT-hand screen — point at it.*
 
 ```
 Nothing in Cohere is close to this color — the nearest is **Accent** (#4c6ee6),
@@ -158,49 +157,38 @@ which is a different hue. Adding a new color is a design decision for the user,
 not a substitution to make silently.
 ```
 
-> "Rejected. Nothing in the system is close — and adding a colour is my
-> decision, not its."
+> "Purple isn't in this rulebook. It can't just add it — it has no power to
+> change anything here."
 
-Paste **prompt 4**: `Then propose adding it to the system as a new token.`
+**Type:** `Then propose adding it to the system as a new token.`
 
-Expected tool: **`propose_design_change`** → appears on **Screen B** under
-*Your agent proposed 1 change*.
+*A card appears on the RIGHT screen: "Your agent proposed 1 change."*
 
-> "So it proposes one. It can't apply it — it has no write access. It lands
-> here, on my screen, and waits."
+> "So it asks me. That's its request, sitting on my screen, waiting for a human."
 
-**Click Approve on Screen B.** Then paste **prompt 2** again, or
-`Check that banner again.`
+**Click Approve.** Then type: `Check that banner again.`
 
-Expected tool: **`check_governance`** → `PASS`.
+```
+PASS
+```
 
-> "Same code. I never touched it. The rules changed underneath the agent and
-> the tool handed it the new ones — no new prompt, no stale copy of the docs.
-> A design system that can't change isn't a design system, it's a screenshot."
+> "Same code. I didn't touch a line of it. I changed the rules in the middle of
+> the conversation — and it just knew. That's the part a copy-pasted style guide
+> can never do."
 
-### 2:10–2:35 · The same tools on a site we don't own
+## 2:18 - 2:36 · On websites we don't own
 
-**Screen B, tab 4** — `cohere.com`, with the extension loaded.
+**Screen right, tab 6** — `cohere.com`, extension loaded. Point at the badge.
 
-> "And this isn't limited to our own site. Our extension registers the same
-> tools on any page."
+> "One last thing. This isn't only our site. With our browser extension, any
+> website will do — one click, and a company's design becomes a rulebook you can
+> hold your AI to."
 
-Point at the badge: **"BlockSmith · 4 agent tools live on this page."**
+## 2:36 - 2:42 · Close
 
-Run `blocksmith_capture_this_site` (or narrate over the pre-recorded capture).
-
-> "Fourteen colours, sixteen components — a governed design system read from a
-> site we have no relationship with, in twelve seconds. That's where the system
-> on the last screen came from."
-
-### 2:35–2:50 · Close
-
-**Screen B, tab 5** — the manifest. Scroll once.
-
-> "Every tool and schema is published here, generated from the registry, so it
-> can't advertise something that doesn't exist. Most WebMCP demos give an agent
-> more power. This one gives it boundaries — written by the people who own the
-> design system, enforced by the page itself."
+> "Agents are going to build most of the interfaces we use. The question was
+> never whether they can. It's whose rules they follow — and now the web itself
+> can answer that."
 
 ---
 
@@ -214,66 +202,52 @@ Run `blocksmith_capture_this_site` (or narrate over the pre-recorded capture).
 ```
 
 If ChatGPT answers from the page text instead of calling a tool, say once:
-**"Use the tools this page provides."** Most clients need the nudge exactly once
-per session.
+**"Use the tools this page provides."**
 
 ---
 
-## If something fails on camera
+## If something fails while recording
 
-| Failure | Recovery |
+| Problem | What to do |
 |---|---|
-| Agent ignores the tools | *"Use the tools this page provides."* |
-| Spinner on first paint | You skipped `demo:reset`. Cut, warm, restart |
-| No "15 agent tools" line | Chrome flag off, or ChatGPT's browser doesn't expose it. The panel still lists the surface and says the browser has none — you can narrate that honestly |
-| **Approve returns 401** | You are not signed in on Screen B. This is the one beat that needs it |
-| Proposal doesn't reach Screen B | Confirm with `curl ".../api/webmcp/proposal?doc=upload:capture-cohere-5f71a053.md"`. It is written to object storage, so it survives instances |
-| Bookmarklet does nothing | That site's CSP blocked it. The extension is the CSP-proof path — use it |
-| Capture is slow | It is a live browser fetch of a third-party site. **Pre-record Act 5** and cut it in |
+| AI answers without calling a tool | *"Use the tools this page provides."* Once is usually enough |
+| Spinner on first paint | You skipped `demo:reset`. Cut and restart |
+| **Approve gives an error** | You're not signed in on the right-hand screen. Only this beat needs it |
+| Proposal doesn't cross to the right screen | `curl ".../api/webmcp/proposal?doc=upload:capture-cohere-5f71a053.md"` to confirm. It is stored durably, so this should hold |
+| Extension badge missing | Reload the page; the flag must be on and the extension loaded unpacked |
+| Capture is slow on camera | It's a live fetch of someone else's site — **pre-record 2:18-2:36** and cut it in |
 
-**Record Act 5 separately.** It is the only beat that depends on a third-party
-site being up and a headless browser answering. Everything else is local to
-BlockSmith and deterministic.
+**Record 2:18-2:36 separately.** It is the only beat depending on a third-party
+site. Everything else is deterministic.
 
-**Catastrophic fallback:** Acts 1 and 3 need no agent, no flag and no session —
-they are clicks in the Governance panel. They still carry the core claim.
-Record them once as a backup file before you attempt the full run.
+**Backup:** 0:00-0:56 needs no AI, no flag, no login — just clicks. Record it
+once as a safety file before attempting the full run.
 
 ---
 
-## Recording checklist
+## Before you hit record
 
-**Environment**
-- [ ] `demo:reset` run twice, all systems <1500ms
-- [ ] Signed in on Screen B (Approve needs it)
-- [ ] `chrome://flags/#enable-webmcp-testing` enabled, browser relaunched
-- [ ] Extension loaded unpacked from `extension/`
-- [ ] Five tabs open in the order above
-- [ ] Four prompts in a scratch file, ready to paste
-- [ ] 1920×1080, browser zoom 110–125% so code is legible after compression
-- [ ] Screen B beside Screen A for Act 4 — the handoff is the point
+- [ ] `demo:reset` twice, all under 1500ms
+- [ ] Signed in on the right-hand screen
+- [ ] Chrome flag on, extension loaded
+- [ ] Six tabs open in order
+- [ ] Four prompts in a file you can paste from
+- [ ] 1920x1080, zoom 110-125% so text survives compression
+- [ ] **No `.env`, no terminal with API keys, no personal tabs or bookmarks in shot**
+- [ ] `/dashboard/api-keys` not open anywhere
 
-**Hygiene — check before you hit record**
-- [ ] No `.env`, `.env.local`, or terminal with `NVIDIA_API_KEY` / Supabase keys visible
-- [ ] Browser profile has no personal bookmarks or tabs in shot
-- [ ] Dashboard shows demo projects, not anything private
-- [ ] No API key visible on `/dashboard/api-keys`
-
-**Reset between takes**
-- [ ] `demo:reset`
-- [ ] Reload tabs 2 and 3 (proposals are per-doc and expire in 30 minutes)
-- [ ] If you approved the Signal token, remove it from the doc before re-running Act 4
+Between takes: `demo:reset`, reload tabs 3 and 5, and if you approved the purple
+token, remove it before running 1:38 again.
 
 ---
 
-## Where the video proves each criterion
+## Where each judging criterion is proved
 
-| Criterion | Timestamp | What proves it |
+| Criterion | Time | What the judge sees |
 |---|---|---|
-| **WebMCP Leverage** | 0:30–1:05, 1:30–2:10 | Fifteen registered tools; a tool answering a question with no DOM representation; schemas re-registering on navigation; the agent staged a change it structurally cannot apply |
-| **Execution** | throughout | A deployed product, not a harness: governance panel, approval inbox, capture, extension, published manifest — all on one live URL |
-| **Potential Impact** | 0:00–0:30 | A real, named failure for design-system teams — plausible AI UI that violates invisible rules — and the rule quoted back verbatim |
-| **Creativity & Ambition** | 2:10–2:35 | The same tools registered on a site we don't own; a design system read from a live page in twelve seconds |
-| **Human–agent collaboration** | 1:30–2:10 | Agent proposes → human approves → agent's next call sees the new rule. The agent holds no write access at any point |
-| **Working extension** | 2:10–2:35 | Badge on a third-party origin, main-world content script, CSP-proof |
-| **Rules stay current** | 1:55–2:10 | Same code, untouched, PASSES after the human approves |
+| **WebMCP Leverage** | 0:56-1:18, 1:38-2:18 | Tool calls visible on screen answering questions with no DOM representation; the AI staging a change it structurally cannot apply |
+| **Execution** | throughout | One live URL, a real product — rules page, checker, approval inbox, extension |
+| **Potential Impact** | 0:00-0:34 | A failure anyone recognises, and the rule quoted back word for word |
+| **Creativity & Ambition** | 2:18-2:36 | The same tools running on a site we have no relationship with |
+| **Human-agent collaboration** | 1:38-2:18 | Asks -> human approves -> next answer changes. The AI never holds write access |
+| **Rules stay current** | 2:05-2:18 | Same code, untouched, passes after approval |
