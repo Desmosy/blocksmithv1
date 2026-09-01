@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { generatePulsePackage, type PulseCodegenResult } from "./pulse";
 import { parseWorkspaceScanMarkdown } from "@/lib/scan/parse";
-import { loadDesignSystem } from "@/lib/clients/registry";
+import { loadDesignSystem, prepareDesignSystemDoc } from "@/lib/clients/registry";
 import type { DesignSystem } from "@/lib/blocks/types";
 import {
   isUploadDocRef,
@@ -119,6 +119,22 @@ function cssVarsFromDesignSystem(
 }
 
 /**
+ * A captured or pasted system is written in the Style Reference format too.
+ *
+ * Only a workspace scan produces scan markdown; everything else — a bundled
+ * sample, a paste, an upload, a design system read off a live website — is a
+ * Style Reference and must go through the same parser the wiki uses. Sending
+ * one to the scan parser yields a package with no tokens and no components,
+ * and no error to say why.
+ *
+ * This is what makes "read a website, then install it as a package" true
+ * rather than nearly true.
+ */
+function isStyleReferenceDoc(ref: string): boolean {
+  return !/^upload:scan-/.test(ref.trim());
+}
+
+/**
  * A bundled design system in `docs/designs.md/` is written in the Style
  * Reference format, not the workspace-scan format. Running the scan parser
  * over one silently yields a package with no tokens and no components, so
@@ -146,6 +162,13 @@ export async function runPulseCodegen(
     const loadedSystem = loadDesignSystem(fileName);
     system = { ...loadedSystem, scanCssVars: cssVarsFromDesignSystem(loadedSystem) };
     resolvedFrom = join(process.cwd(), "docs", "designs.md", fileName);
+  } else if (isStyleReferenceDoc(ref)) {
+    // A capture, an upload or a paste: the wiki's own parser, and the tokens
+    // derived the same way the bundled branch derives them.
+    await prepareDesignSystemDoc(ref);
+    const loadedSystem = loadDesignSystem(ref);
+    system = { ...loadedSystem, scanCssVars: cssVarsFromDesignSystem(loadedSystem) };
+    resolvedFrom = ref;
   } else {
     const loaded = await loadScanMarkdownForCodegen(ref);
     system = parseWorkspaceScanMarkdown(loaded.markdown, ref);
