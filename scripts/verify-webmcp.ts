@@ -450,13 +450,13 @@ console.log("\nDocumentation drift");
     ok("the extension carries the same any-site script");
   }
 
-  // JUDGING.md, TESTING.md and HACKATHON.md are gitignored on purpose — they are
-  // working documents, not part of the public repo. So they are checked when
-  // present and skipped when not: a judge running this from a fresh clone must
-  // not hit an ENOENT, and the maintainer editing them locally must still be
-  // caught. README.md and docs/SUBMISSION.md are tracked and always checked.
-  const ALWAYS = ["README.md", "docs/SUBMISSION.md"];
-  const IF_PRESENT = ["JUDGING.md", "TESTING.md"];
+  // The working documents — judging notes, testing notes, the hackathon
+  // submission — are kept out of the public repo. They are checked when
+  // present and skipped when not: a fresh clone must not hit an ENOENT, and
+  // the maintainer editing them locally must still be caught. Only README.md
+  // is tracked and always checked.
+  const ALWAYS = ["README.md"];
+  const IF_PRESENT = ["JUDGING.md", "TESTING.md", "docs/SUBMISSION.md"];
   const missing = ALWAYS.filter((d) => !existsSync(d));
   if (missing.length) fail(`missing tracked document(s): ${missing.join(", ")}`);
 

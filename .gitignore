@@ -44,3 +44,11 @@ tsconfig.tsbuildinfo
 # license — must not ship inside this MIT repo). Fetch it with:
 #   npm run skill:lieflat
 .claude/skills/lieflat-charts/
+
+# Working documents and wiki exports are not part of the public repo. The
+# design-source drop folder (docs/designs.md/) stays tracked; everything else
+# in docs/ is local working material.
+/docs/*.md
+/monad.md
+/*-wiki-export.md
+/.quality/
