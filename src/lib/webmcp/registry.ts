@@ -56,6 +56,7 @@ import { synthesizeDesignSystem } from "@/lib/ingest/synthesize-system";
 import { addRationale } from "@/lib/ingest/rationale";
 import { renderSource } from "@/lib/ingest/render-site";
 import { buildSkill } from "@/lib/governance/skill";
+import { motionOneLiner } from "@/lib/governance/motion";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
 import { prepareDesignSystemDoc } from "@/lib/clients/registry";
 import { makeDriftTools } from "./drift-tools";
@@ -188,7 +189,10 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
       ];
       if (r.dos.length) lines.push("", "## Do", ...r.dos.map((d) => `- ${d}`));
       if (r.donts.length) lines.push("", "## Don't", ...r.donts.map((d) => `- ${d}`));
-      return lines.join("\n");
+      // Motion is the one dimension nothing else here states, so an agent
+      // defaults to none and ships a page that is correct and lifeless.
+      lines.push("", "## Motion", motionOneLiner(readDocMarkdown(resolveDocRef(ctx.doc))));
+      return clampOutput(lines.join("\n"));
     },
   },
 

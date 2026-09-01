@@ -14,6 +14,7 @@
 
 import type { DesignSystem } from "@/lib/blocks/types";
 import { graphicsKit } from "@/lib/graphics/kit";
+import { motionSection } from "@/lib/governance/motion";
 import { capabilitySurface, summarizeCapability } from "./capability";
 
 /** YAML-safe single-line string for frontmatter. */
@@ -204,6 +205,10 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
   const graphicTokens = system.colors.filter((c) =>
     /decorative|artwork/i.test(c.role || ""),
   );
+
+  // Movement before decoration: an agent that reads only this far should
+  // already know the page it builds is expected to move.
+  out.push(...motionSection(system, markdown));
 
   out.push(
     "## Building graphics",
