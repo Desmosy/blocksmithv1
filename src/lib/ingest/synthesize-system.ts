@@ -877,7 +877,7 @@ export function synthesizeDesignSystem(found: Extracted): {
   );
   if (chartLadder.length >= 2) {
     dos.push(
-      `Draw charts as inline SVG from the chart tokens: series take \`--chart-1\` through \`--chart-${chartLadder.length}\` in order of importance — the most important series is the darkest — with every label in the system's own typeface. At most one hairline baseline per chart; never a graph-paper grid.`,
+      `Draw charts as inline SVG from the chart tokens, every label in the system's own typeface. Multi-series charts take \`--chart-1\` through \`--chart-${chartLadder.length}\` in order of importance — the most important series is the darkest. A single-series chart — a progress ring, one line, one bar — ${accentColor ? "takes `--chart-accent`, the colour the system uses for what matters" : "takes the ink"}. At most one hairline baseline per chart; never a graph-paper grid.`,
     );
   }
   const donts: string[] = [
@@ -927,7 +927,7 @@ export function synthesizeDesignSystem(found: Extracted): {
       : "- No shadows were observed. Separate surfaces with borders and space.",
     ...(chartLadder.length >= 2
       ? [
-          "- Charts are components of this system, not add-ons: build them from the `--chart-*` tokens with labels in the system's faces, at most one hairline baseline, and no graph-paper grid. Say when data is illustrative.",
+          "- Charts are components of this system, not add-ons: multi-series charts walk the `--chart-*` ladder darkest-first; a single-series chart (progress ring, one line) takes `--chart-accent` when the system has one. Labels in the system's faces, at most one hairline baseline, no graph-paper grid. Say when data is illustrative.",
         ]
       : []),
     "",

@@ -201,11 +201,51 @@ export function renderSource(): "remote" | "local" | "none" {
  */
 const COLLECT_IN_PAGE = `(() => {
   const hex2 = (n) => Math.round(n).toString(16).padStart(2, "0");
+  // Computed colours arrive in whatever space the author wrote them in —
+  // ramp.com's brand yellow is "lab(92.14 -20.49 84.77)", and a parser that
+  // only reads rgb() returned null for every lab(), oklch() and color()
+  // value, so the site's entire identity colour never entered the census
+  // and a stray rgb-declared red won the accent by forfeit. The browser
+  // already knows how to convert: round-trip anything unfamiliar through a
+  // canvas fillStyle, which serialises to #rrggbb or rgba().
+  const normCache = new Map();
+  const normCtx = (() => {
+    try {
+      const c = document.createElement("canvas");
+      c.width = 1; c.height = 1;
+      return c.getContext("2d", { willReadFrequently: true });
+    } catch { return null; }
+  })();
+  // The fillStyle *getter* hands lab() straight back, so painting is the only
+  // conversion the browser guarantees: fill one pixel, read the bytes.
+  const normColor = (v) => {
+    if (!v) return null;
+    if (v.startsWith("rgb")) return v;
+    if (normCache.has(v)) return normCache.get(v);
+    let out = null;
+    if (normCtx) {
+      try {
+        normCtx.fillStyle = "#010203";
+        normCtx.fillStyle = v;
+        if (String(normCtx.fillStyle) !== "#010203" || v === "#010203") {
+          normCtx.clearRect(0, 0, 1, 1);
+          normCtx.fillRect(0, 0, 1, 1);
+          const d = normCtx.getImageData(0, 0, 1, 1).data;
+          out = "rgba(" + d[0] + ", " + d[1] + ", " + d[2] + ", " + (d[3] / 255) + ")";
+        }
+      } catch { out = null; }
+    }
+    normCache.set(v, out);
+    return out;
+  };
   // A translucent colour is what it looks like *over its background*. A
   // border of rgba(0,0,0,.08) on eggshell is the stone hairline a designer
   // names; reading it as #000000 finds a black border nobody can see.
-  const rgbToHexOver = (v, base) => {
-    const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
+  const rgbToHexOver = (raw0, base) => {
+    const v = normColor(raw0);
+    if (!v) return null;
+    if (v[0] === "#") return v.length === 7 ? v.toLowerCase() : null;
+    const m = v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
     if (!m) return null;
     const a = m[4] === undefined ? 1 : parseFloat(m[4]);
     if (a < 0.05) return null;
@@ -1372,7 +1412,24 @@ async function readHoverStates(
         const el = document.querySelectorAll("body *")[${idx}];
         if (!el) return null;
         const cs = getComputedStyle(el);
-        const toHex = (v) => { const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/); if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null; const h = (n) => parseInt(n, 10).toString(16).padStart(2, "0"); return "#" + h(m[1]) + h(m[2]) + h(m[3]); };
+        const nctx = (() => { try { const c = document.createElement("canvas"); c.width = 1; c.height = 1; return c.getContext("2d", { willReadFrequently: true }); } catch { return null; } })();
+        const toHex = (raw) => {
+          let v = raw;
+          if (v && !v.startsWith("rgb") && !v.startsWith("#") && nctx) {
+            try {
+              nctx.fillStyle = "#010203"; nctx.fillStyle = v;
+              if (String(nctx.fillStyle) === "#010203" && v !== "#010203") return null;
+              nctx.clearRect(0, 0, 1, 1); nctx.fillRect(0, 0, 1, 1);
+              const d = nctx.getImageData(0, 0, 1, 1).data;
+              v = "rgba(" + d[0] + ", " + d[1] + ", " + d[2] + ", " + (d[3] / 255) + ")";
+            } catch { return null; }
+          }
+          if (v && v[0] === "#") return v.length === 7 ? v.toLowerCase() : null;
+          const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
+          if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null;
+          const h = (n) => parseInt(n, 10).toString(16).padStart(2, "0");
+          return "#" + h(m[1]) + h(m[2]) + h(m[3]);
+        };
         const bw = Math.round(parseFloat(cs.borderTopWidth) || 0);
         return { bg: toHex(cs.backgroundColor), fg: toHex(cs.color), border: bw > 0 ? bw + "px " + (toHex(cs.borderTopColor) || "") : "" };
       })()`)) as HoverState | null;
@@ -1393,7 +1450,24 @@ async function readHoverStates(
  */
 const READ_NAV_STATE = `(() => {
   const vw = window.innerWidth;
-  const toHex = (v) => { const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/); if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null; const h = (n) => parseInt(n, 10).toString(16).padStart(2, "0"); return "#" + h(m[1]) + h(m[2]) + h(m[3]); };
+  const nctx = (() => { try { const c = document.createElement("canvas"); c.width = 1; c.height = 1; return c.getContext("2d", { willReadFrequently: true }); } catch { return null; } })();
+  const toHex = (raw) => {
+    let v = raw;
+    if (v && !v.startsWith("rgb") && !v.startsWith("#") && nctx) {
+      try {
+        nctx.fillStyle = "#010203"; nctx.fillStyle = v;
+        if (String(nctx.fillStyle) === "#010203" && v !== "#010203") return null;
+        nctx.clearRect(0, 0, 1, 1); nctx.fillRect(0, 0, 1, 1);
+        const d = nctx.getImageData(0, 0, 1, 1).data;
+        v = "rgba(" + d[0] + ", " + d[1] + ", " + d[2] + ", " + (d[3] / 255) + ")";
+      } catch { return null; }
+    }
+    if (v && v[0] === "#") return v.length === 7 ? v.toLowerCase() : null;
+    const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
+    if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null;
+    const h = (n) => parseInt(n, 10).toString(16).padStart(2, "0");
+    return "#" + h(m[1]) + h(m[2]) + h(m[3]);
+  };
   const all = Array.prototype.slice.call(document.querySelectorAll("body *"), 0, 1200);
   // The nav is the pinned bar that carries links — a promo strip is pinned
   // too, and picking by width alone chose it over the nav it sits above.
