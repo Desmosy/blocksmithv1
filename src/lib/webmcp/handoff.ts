@@ -28,8 +28,22 @@ type Entry<T> = { value: T; at: number };
 
 const memory = new Map<string, Entry<unknown>>();
 
-/** A handoff older than this is stale conversation, not current work. */
-const TTL_MS = 30 * 60 * 1000;
+/**
+ * How long each kind of handoff stays current.
+ *
+ * A staged *change* is a moment in a conversation and goes stale in minutes.
+ * A *proposal* is work the human may want to come back to, compare against
+ * the next attempt, or pull into their editor tomorrow — expiring it in half
+ * an hour is how "where did my component go" happens.
+ */
+const TTLS: Record<HandoffKind, number> = {
+  proposal: 24 * 60 * 60 * 1000,
+  change: 30 * 60 * 1000,
+};
+
+function ttlOf(k: string): number {
+  return k.startsWith("proposal:") ? TTLS.proposal : TTLS.change;
+}
 const MAX_KEYS = 40;
 /** Storage must never hold a page render open. */
 const STORAGE_TIMEOUT_MS = 2500;
@@ -44,9 +58,9 @@ function objectName(kind: HandoffKind, doc: string): string {
 }
 
 function prune(): void {
-  const cutoff = Date.now() - TTL_MS;
+  const now = Date.now();
   for (const [k, entry] of memory) {
-    if (entry.at < cutoff) memory.delete(k);
+    if (now - entry.at > ttlOf(k)) memory.delete(k);
   }
   if (memory.size > MAX_KEYS) {
     const byAge = [...memory.entries()].sort((a, b) => a[1].at - b[1].at);
@@ -134,7 +148,7 @@ export async function readHandoff<T>(
   try {
     const entry = JSON.parse(raw) as Entry<T>;
     if (!entry || typeof entry.at !== "number") return null;
-    if (Date.now() - entry.at > TTL_MS) return null;
+    if (Date.now() - entry.at > TTLS[kind]) return null;
     if (entry.value === null || entry.value === undefined) return null;
     // Warm this instance so the next poll does not pay for storage again.
     memory.set(key(kind, doc), entry as Entry<unknown>);

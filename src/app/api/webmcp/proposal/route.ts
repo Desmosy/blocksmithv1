@@ -19,13 +19,26 @@ export const dynamic = "force-dynamic";
  * proposal replaces the first rather than growing a queue nobody reads.
  */
 
-type StoredProposal = {
+export type StoredProposal = {
   code: string;
   intent?: string;
   at: number;
+  /**
+   * Older proposals for the same system, newest first. "Show me another
+   * version" used to destroy the last one — the human had no way to compare,
+   * go back, or pull an earlier attempt into their editor. Now each new
+   * proposal pushes the previous into history instead of erasing it.
+   */
+  history?: { code: string; intent?: string; at: number }[];
 };
 
-const MAX_CODE_BYTES = 24_000;
+/**
+ * A real landing page with inline SVG and script runs well past the old
+ * 24k cap — agents were silently trimming sections to fit, which read as
+ * "the tool generates sparse pages".
+ */
+const MAX_CODE_BYTES = 160_000;
+const MAX_HISTORY = 10;
 
 export async function POST(request: NextRequest) {
   let body: { code?: unknown; intent?: unknown; doc?: unknown };
@@ -56,6 +69,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const previous = await readHandoff<StoredProposal>("proposal", doc);
+  const history = previous?.code
+    ? [
+        { code: previous.code, intent: previous.intent, at: previous.at },
+        ...(previous.history ?? []),
+      ].slice(0, MAX_HISTORY)
+    : previous?.history ?? [];
+
   await writeHandoff<StoredProposal>("proposal", doc, {
     code,
     intent:
@@ -63,9 +84,10 @@ export async function POST(request: NextRequest) {
         ? body.intent.trim().slice(0, 160)
         : undefined,
     at: Date.now(),
+    history,
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, versions: history.length + 1 });
 }
 
 export async function GET(request: NextRequest) {
@@ -73,8 +95,33 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("doc") ?? undefined,
   );
   const found = await readHandoff<StoredProposal>("proposal", doc);
+
+  // ?list=1 — the version history as metadata, without shipping every body.
+  if (request.nextUrl.searchParams.get("list")) {
+    const versions = found
+      ? [
+          { v: 0, intent: found.intent ?? null, at: found.at, bytes: found.code.length },
+          ...(found.history ?? []).map((h, i) => ({
+            v: i + 1,
+            intent: h.intent ?? null,
+            at: h.at,
+            bytes: h.code.length,
+          })),
+        ]
+      : [];
+    return NextResponse.json(
+      { versions },
+      { headers: { "cache-control": "no-store" } },
+    );
+  }
+
+  // Existing consumers (the wiki panel) read only the current proposal; keep
+  // their payload shaped as before, plus how deep the history goes.
   return NextResponse.json(
-    { proposal: found },
+    {
+      proposal: found ? { code: found.code, intent: found.intent, at: found.at } : null,
+      versions: found ? (found.history?.length ?? 0) + 1 : 0,
+    },
     { headers: { "cache-control": "no-store" } },
   );
 }

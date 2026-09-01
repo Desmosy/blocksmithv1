@@ -21,7 +21,7 @@ export const PAGE_TOOLS: readonly PageToolDescriptor[] = [
   {
     name: "propose_component",
     description:
-      "Put a component in front of the user on the page they are reading, rendered in this design system's own tokens, and get back the governance verdict. Use this instead of only printing code in chat — the user should see the thing, not the markup.",
+      "Put a component or full page in front of the user on the page they are reading, rendered in this design system's own tokens, and get back the governance verdict. Use this instead of only printing code in chat — the user should see the thing, not the markup. Earlier proposals are kept: each new one becomes a version the user can revisit, view as code, or download from the full-page view, so propose freely rather than editing one blob in place.",
     inputSchema: {
       type: "object",
       properties: {
