@@ -58,6 +58,7 @@ import { renderSource } from "@/lib/ingest/render-site";
 import { buildSkill } from "@/lib/governance/skill";
 import { motionOneLiner } from "@/lib/governance/motion";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
+import { claimUploadForCaller } from "@/lib/uploads/claim";
 import { prepareDesignSystemDoc } from "@/lib/clients/registry";
 import { makeDriftTools } from "./drift-tools";
 import { PAGE_TOOLS } from "./page-tools";
@@ -355,6 +356,9 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
         const rationale = await addRationale(measured, facts, undefined, { timeoutMs: 45_000 - (Date.now() - started) });
         const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
+        // Claim it for whoever is signed in, so the system an agent just
+        // captured can actually be changed afterwards.
+        const owned = await claimUploadForCaller(saved.fileName, saved.docRef);
         await prepareDesignSystemDoc(saved.docRef);
 
         const lines = [

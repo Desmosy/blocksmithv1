@@ -7,10 +7,7 @@ import { addRationale, isRationaleEnabled } from "@/lib/ingest/rationale";
 import { persistUploadMarkdown } from "@/lib/uploads/persist";
 import { clearDesignSystemCache } from "@/lib/clients/registry";
 import { corsPreflight, withCors } from "@/lib/webmcp/cors";
-import { getSupabaseUser } from "@/lib/auth/session";
-import { registerDocument } from "@/lib/cloud/documents";
-import { ensureDefaultOrg } from "@/lib/cloud/orgs";
-import { saasDbEnabled } from "@/lib/cloud/saas";
+import { claimUploadForCaller } from "@/lib/uploads/claim";
 import { uploadFileNameFromRef } from "@/lib/uploads/store";
 
 export const dynamic = "force-dynamic";
@@ -132,25 +129,7 @@ async function capture(request: NextRequest, progress: Record<string, number>): 
      * with no session — stay unowned, and stay read-only. That is the right
      * answer for them.
      */
-    if (saasDbEnabled()) {
-      try {
-        const user = await getSupabaseUser();
-        if (user) {
-          const org = await ensureDefaultOrg(user.userId, user.login);
-          await registerDocument({
-            fileName: saved.fileName,
-            docRef: saved.docRef,
-            ownerUserId: user.userId,
-            orgId: org.id,
-            scanMode: "import",
-          });
-        }
-      } catch (err) {
-        // A capture that saved is worth keeping even if the ownership row
-        // failed; it is readable, and a later import can claim it.
-        console.error("[capture] could not register ownership", err);
-      }
-    }
+    await claimUploadForCaller(saved.fileName, saved.docRef);
     await prepareDesignSystemDoc(saved.docRef);
     onPhase("prepare:done");
     const rationalePending = isRationaleEnabled();
