@@ -877,7 +877,7 @@ export function synthesizeDesignSystem(found: Extracted): {
   );
   if (chartLadder.length >= 2) {
     dos.push(
-      `Draw charts as inline SVG from the chart tokens: series take \`--chart-1\` through \`--chart-${chartLadder.length}\` in order of importance — the most important series is the darkest — with hairline grid lines and every label in the system's own typeface.`,
+      `Draw charts as inline SVG from the chart tokens: series take \`--chart-1\` through \`--chart-${chartLadder.length}\` in order of importance — the most important series is the darkest — with every label in the system's own typeface. At most one hairline baseline per chart; never a graph-paper grid.`,
     );
   }
   const donts: string[] = [
@@ -892,6 +892,7 @@ export function synthesizeDesignSystem(found: Extracted): {
     donts.push(
       "Do not use a chart library's default theme or palette; a chart that ignores the tokens is off-system even when the rest of the page is not.",
       "Do not present invented numbers as measurements. A demo chart says it is illustrative, keeps honest units and axes, and carries a source line whenever the data is real.",
+      "Do not draw graph-paper grids — a mesh of ruled squares behind a chart, diagram or card. No SVG in this system carries one; a single hairline baseline is the most a chart gets.",
     );
   }
   if (sizes.length) {
@@ -926,7 +927,7 @@ export function synthesizeDesignSystem(found: Extracted): {
       : "- No shadows were observed. Separate surfaces with borders and space.",
     ...(chartLadder.length >= 2
       ? [
-          "- Charts are components of this system, not add-ons: build them from the `--chart-*` tokens, grid them with the hairline, and typeset labels in the system's faces. Say when data is illustrative.",
+          "- Charts are components of this system, not add-ons: build them from the `--chart-*` tokens with labels in the system's faces, at most one hairline baseline, and no graph-paper grid. Say when data is illustrative.",
         ]
       : []),
     "",

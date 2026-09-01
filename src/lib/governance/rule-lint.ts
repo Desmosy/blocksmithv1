@@ -25,7 +25,7 @@
 
 import type { DesignSystem } from "@/lib/blocks/types";
 
-export type RuleKind = "gradient" | "shadow" | "pureColor" | "fontFamily";
+export type RuleKind = "gradient" | "shadow" | "pureColor" | "fontFamily" | "gridMesh";
 
 export type RuleViolation = {
   kind: RuleKind;
@@ -47,6 +47,8 @@ export type RuleChecks = {
   pureBlack: string | null;
   pureWhite: string | null;
   fontFamily: string | null;
+  /** "No graph-paper grids" — the ruled-squares backdrop behind SVGs. */
+  gridMesh: string | null;
   /** Normalized names of every font family the system declares. */
   fonts: string[];
 };
@@ -63,6 +65,7 @@ const INVERTED = /\b(remov\w*|omit\w*|skip\w*|strip\w*|delet\w*|forget\w*)\b/;
 
 const GRADIENT_INTENT = /\bgradients?\b/;
 const SHADOW_INTENT = /\bshadows?\b/;
+const GRID_MESH_INTENT = /\bgraph-?paper\b|\bgrid (?:mesh|of (?:ruled )?squares)\b|\bruled squares\b/;
 const BLACK_INTENT = /\b(?:pure|true|solid|full)\s+black\b|#0{3}(?:0{3})?\b/;
 const WHITE_INTENT = /\b(?:pure|true|solid|full)\s+white\b|#f{3}(?:f{3})?\b/;
 /** Explicit family talk, or "font" qualified by a novelty/foreign word. */
@@ -141,6 +144,7 @@ export function checksFromSystem(system: DesignSystem): RuleChecks {
   return {
     gradient: findDont(donts, GRADIENT_INTENT),
     shadow: findDont(donts, SHADOW_INTENT),
+    gridMesh: findDont(donts, GRID_MESH_INTENT),
     // A rule against pure black is meaningless if the palette ships #000000.
     pureBlack: palette.has("#000000") ? null : findDont(donts, BLACK_INTENT),
     pureWhite: palette.has("#ffffff") ? null : findDont(donts, WHITE_INTENT),
@@ -364,6 +368,28 @@ function scanPureColor(line: string, word: "white" | "black"): string[] {
   return hits;
 }
 
+/**
+ * The graph-paper backdrop, in its literal forms: an SVG `<pattern>` named
+ * for a grid, a fill that references one, or a minified run of `<line>`
+ * elements. Grids drawn in a JS loop slip past — conservative by design;
+ * the Don't line in the prompt covers what a regex cannot.
+ */
+const GRID_PATTERN_TAG = /(<pattern\b[^>]*id\s*=\s*["'][^"']*grid[^"']*["'])/gi;
+const GRID_PATTERN_REF = /(url\(\s*#[^)]*grid[^)]*\))/gi;
+const GRID_LINE_RUN = /((?:<line\b[^>]*>[^<]*){6,})/gi;
+
+function scanGridMesh(line: string): string[] {
+  const hits = [
+    ...tokens(line, GRID_PATTERN_TAG).map((t) => t.slice(0, 60)),
+    ...tokens(line, GRID_PATTERN_REF),
+  ];
+  if (GRID_LINE_RUN.test(line)) {
+    GRID_LINE_RUN.lastIndex = 0;
+    hits.push("6+ <line> elements in a row — a ruled grid");
+  }
+  return hits;
+}
+
 const FONT_FAMILY_PROP = new RegExp(
   `${EDGE}(?:font-family|fontFamily)\\s*:\\s*([^;\\n}]+)`,
   "g",
@@ -431,6 +457,7 @@ export function findRuleViolations(
     !checks.shadow &&
     !checks.pureBlack &&
     !checks.pureWhite &&
+    !checks.gridMesh &&
     !runFonts
   ) {
     return [];
@@ -461,6 +488,11 @@ export function findRuleViolations(
     if (checks.shadow) {
       for (const hit of scanShadows(line)) {
         push("shadow", checks.shadow, i, hit);
+      }
+    }
+    if (checks.gridMesh) {
+      for (const hit of scanGridMesh(line)) {
+        push("gridMesh", checks.gridMesh, i, hit);
       }
     }
     if (checks.pureWhite) {
@@ -495,6 +527,8 @@ export function describeRuleViolation(v: RuleViolation): string {
         ? "Shadows are not allowed in this design system"
         : v.kind === "pureColor"
           ? "Pure black/white is not allowed in this design system"
-          : "That font family is not declared in this design system";
+          : v.kind === "gridMesh"
+            ? "Graph-paper grids are not allowed in this design system — remove the ruled backdrop, keep the diagram"
+            : "That font family is not declared in this design system";
   return `\`${v.matched}\` — ${lead}. Rule: "${v.rule}"`;
 }
