@@ -172,8 +172,33 @@ const COLLECT_IN_PAGE = `(() => {
   for (let i = 0; i < all.length; i++) {
     const el = all[i];
     const tag = el.tagName.toLowerCase();
-    // Shapes inside an <svg> are the icon's drawing, not components.
-    if (el.namespaceURI === SVG_NS && tag !== "svg") continue;
+    // Shapes inside an <svg> are the icon's drawing, not components — but
+    // their paint is still the brand's. A logo and an illustration are where
+    // a lot of sites keep their one real colour, and reading only
+    // background-color and color meant those never entered the census at all:
+    // saucelabs.com is built around a green that is painted nowhere except
+    // inside SVG, so the capture published nine neutrals and no accent.
+    //
+    // Counted by the shape's own area, like everything else, so a mark stays
+    // small next to a page background and cannot dominate the palette — it
+    // only has to exist to be nameable.
+    if (el.namespaceURI === SVG_NS && tag !== "svg") {
+      const r = el.getBoundingClientRect();
+      if (r.width >= 2 && r.height >= 2) {
+        const sc = getComputedStyle(el);
+        if (sc.visibility !== "hidden" && sc.display !== "none" && Number(sc.opacity) >= 0.05) {
+          const a = Math.min(r.width * r.height, 40000);
+          const paints = [sc.fill, sc.stroke];
+          for (let p = 0; p < paints.length; p++) {
+            const raw = paints[p];
+            if (!raw || raw === "none") continue;
+            const hex = rgbToHex(raw);
+            if (hex) area.set(hex, (area.get(hex) || 0) + a);
+          }
+        }
+      }
+      continue;
+    }
 
     const rect = el.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) continue;
