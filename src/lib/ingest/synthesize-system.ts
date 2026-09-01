@@ -37,10 +37,22 @@ function chroma(hex: string): number {
 /**
  * Saturation floor for "this is a colour, not a tinted neutral".
  *
- * Tuned against real sites: Stripe's #32325d navy text sits at 43 and must not
- * qualify, while its #533afd indigo at 195 must.
+ * Chroma is max(r,g,b) − min(r,g,b). Tuned against real sites: Stripe's
+ * #32325d navy text sits at 43 and must not qualify, while its #533afd indigo
+ * at 195 must.
+ *
+ * This was 100, which admitted every loud brand — Stripe at 195, Spotify's
+ * green at 156 — and rejected the muted ones that are just as deliberate.
+ * saucelabs.com is built on #abe082, chroma 94: it missed by six, so the whole
+ * site was published with no accent at all, and an agent given that palette
+ * cannot make anything stand out because nothing in the system does.
+ *
+ * 70 is the line between a colour a brand chose and a wash over a neutral. It
+ * still keeps out Stripe's navy at 43, Sauce Labs' own pale olive at 65 and
+ * its 53 background tint, while admitting the muted greens, sages and clays a
+ * lot of current brands are actually built on.
  */
-const ACCENT_MIN_CHROMA = 100;
+const ACCENT_MIN_CHROMA = 70;
 /**
  * How much a colour must be used before it can be called the accent.
  *
