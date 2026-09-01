@@ -190,6 +190,95 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
   }
 
   /**
+   * How pages are composed in this system.
+   *
+   * Tokens and components say what a page is made of; without composition an
+   * agent falls back to the one landing-page template every model carries —
+   * hero, logo marquee, three cards, demo — whatever the source site looks
+   * like. The capture now records the source page's anatomy under "## Layout";
+   * reprint it here with the rules that make it binding.
+   */
+  // No /m flag: with it, `$` matches the first line-end and the capture
+  // stops after one line, silently dropping the page anatomy.
+  const layoutSection = markdown.match(/\n## Layout\s*\n([\s\S]*?)(?=\n## |$)/)?.[1]?.trim();
+  const sectionGap =
+    layoutSection?.match(/separated by ~(\d+)px/)?.[1] ??
+    (spacing.length ? String(spacing[spacing.length - 1].px) : null);
+  out.push(
+    "## Composing a page",
+    "",
+    ...(layoutSection
+      ? [layoutSection, ""]
+      : ["This system records no page anatomy of its own; the rules below still bind.", ""]),
+    "Composition rules, all binding:",
+    "",
+    "- **Structure comes from the anatomy above and from the request — never from",
+    "  a stock template.** \"Hero, logo marquee, three feature cards, interactive",
+    "  demo\" on every page is the tell of an ungoverned build; when your draft",
+    "  matches that shape, re-derive it from the anatomy before showing anyone.",
+    ...(sectionGap
+      ? [
+          `- **Respect the section rhythm.** Consecutive sections are separated by`,
+          `  ~${sectionGap}px of vertical space (padding or margin — pick one and keep it).`,
+          "  No two sections may touch unless the anatomy shows bands running edge to edge.",
+        ]
+      : [
+          "- **Respect a consistent section rhythm.** Pick one large spacing value for",
+          "  the gap between sections and use it everywhere.",
+        ]),
+    "- **Alternate surfaces the way the anatomy does** — ground, tinted, inverted —",
+    "  not on a fixed rotation and not never.",
+    "- **Scale sections like the source.** A hero that is most of a viewport on the",
+    "  source page is not a 300px strip; a footer is not a hero.",
+    "- **A different page type has a different anatomy.** A dashboard, pricing page",
+    "  or report keeps the rhythm and the surfaces, not the landing page's band list.",
+    "",
+  );
+
+  /**
+   * Patterns the capture never saw, pre-derived from the tokens.
+   *
+   * "The system does not define tabs" used to end the conversation — the agent
+   * either refused the pattern or invented an off-system one. Absence of
+   * evidence is not a prohibition: every core primitive below has one honest
+   * derivation from tokens the system already has, so the agent can keep
+   * building and note the piece as derived.
+   */
+  const componentProse = system.components.map((c) => `${c.title} ${c.role ?? ""}`).join(" ").toLowerCase();
+  const hairlineColor =
+    system.colors.find((c) => /hairline|border|separator|divider/i.test(c.role ?? ""))?.value ??
+    system.colors.find((c) => /hairline|border/i.test(c.name))?.value ?? null;
+  const hairline = hairlineColor ?? "the palette's lightest structural grey";
+  const controlRadius = radii.find((r) => /control|button/i.test(r.element))?.px ?? radii[0]?.px ?? 6;
+  const derivable: { key: RegExp; name: string; spec: string }[] = [
+    { key: /\btabs?\b|segmented/, name: "Tabs", spec: `a row of text-weight triggers at the body size; the active one carries the ink and a 2px ink underline (or the pill fill, if this system's buttons are pills); inactive ones use the muted text colour; one hairline (${hairline}) under the full row.` },
+    { key: /accordion|disclosure|collaps/, name: "Accordion", spec: `full-width rows separated by the hairline (${hairline}); a caption-size chevron rotates 180° on the fast duration; content expands over the entrance duration; no boxes around boxes.` },
+    { key: /\binput\b|text field|form field|search field/, name: "Text input", spec: `the outline button's treatment as a field: ${controlRadius}px radius, hairline edge, control height, body-size text, placeholder in the muted colour; focus swaps the hairline for the ink (or accent) at the same width.` },
+    { key: /select|dropdown|menu\b/, name: "Select / dropdown", spec: `the text input with a caption-size chevron; the open panel is the card surface with the card's edge treatment and one hairline between options.` },
+    { key: /modal|dialog|sheet/, name: "Modal", spec: `the card treatment centred over a scrim of the ink at ~40% opacity; card radius, card padding doubled; entrance over the entrance duration; no new shadows — use the card's own edge.` },
+    { key: /\btable\b|data grid/, name: "Data table", spec: `caption-size uppercase-or-muted headers, body-size cells, hairline rules between rows only (no vertical rules, no zebra unless the system has a tinted band).` },
+    { key: /tooltip/, name: "Tooltip", spec: `an inverted chip: ink fill, ground text, caption size, the smallest radius, appearing over the fast duration.` },
+    { key: /toast|notification|snackbar/, name: "Toast", spec: `the card treatment at its smallest, bottom corner, entering over the entrance duration; body-size message, one optional text-weight action.` },
+    { key: /badge|\btag\b|chip|pill label/, name: "Badge", spec: `caption-size label in a hairline-edged pill (or the smallest radius), muted text on the ground; the accent version is reserved for state that matters.` },
+    { key: /pagination|pager/, name: "Pagination", spec: `text-weight page numbers at the body size; the current page carries the ink and the active treatment tabs use; hairline separators only if the nav does.` },
+  ];
+  const missing = derivable.filter((d) => !d.key.test(componentProse));
+  if (missing.length) {
+    out.push(
+      "## Patterns this system does not define — derived defaults",
+      "",
+      "The captured page never showed these. That is absence of evidence, not a",
+      "prohibition: when a build needs one, use the derivation below, say in your",
+      "summary that it is derived rather than observed, and keep building — do not",
+      "refuse the pattern and do not invent an off-system one. When a derived",
+      "pattern earns a permanent spec, propose it with `propose_design_change`.",
+      "",
+      ...missing.map((d) => `- **${d.name}** — ${d.spec}`),
+      "",
+    );
+  }
+
+  /**
    * How to build a graphic in this system.
    *
    * The rest of this file says what the system *is*. An agent asked for a
@@ -323,6 +412,7 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
     "5. You used an existing component rather than inventing one.",
     "6. Decorative graphics are SVG, Canvas or shader code built from the tokens — not PNG, JPEG or generated images.",
     "7. No decorative element overlaps text or controls, and none is a clip-art glyph — re-read the decoration contract if either is close.",
+    "8. The page's structure came from the anatomy and the request, not a stock template, and every section break carries the section rhythm.",
     "",
     "If this project is connected to BlockSmith, `check_governance` verifies all",
     "five mechanically. Run it before showing the user generated UI.",
