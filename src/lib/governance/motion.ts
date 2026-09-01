@@ -20,8 +20,15 @@ import type { DesignSystem } from "@/lib/blocks/types";
 export type MotionTokens = {
   durations: string[];
   easing: string;
-  /** True when these came off the captured page rather than from defaults. */
-  measured: boolean;
+  /**
+   * Reported per field, not as one flag.
+   *
+   * A page routinely declares an easing and no durations. Saying "these are
+   * the values this page uses" over a half-invented table is the one thing
+   * this tool must never do — its whole value is that it does not guess.
+   */
+  measuredDurations: boolean;
+  measuredEasing: boolean;
 };
 
 /** Web-standard defaults, used only when the document records nothing. */
@@ -39,22 +46,31 @@ export function motionTokens(markdown: string): MotionTokens {
     markdown.match(/easing[^`\n]*`([^`]+)`/i)?.[1] ??
     "";
 
-  const measured = durations.length > 0 || easing.length > 0;
   return {
     durations: durations.length ? durations : DEFAULT_DURATIONS,
     easing: easing || DEFAULT_EASING,
-    measured,
+    measuredDurations: durations.length > 0,
+    measuredEasing: easing.length > 0,
   };
 }
 
 /** One line for the in-page rules, which are capped at 1500 characters. */
 export function motionOneLiner(markdown: string): string {
-  const { durations, easing, measured } = motionTokens(markdown);
+  const { durations, easing, measuredDurations, measuredEasing } =
+    motionTokens(markdown);
+  const note =
+    measuredDurations && measuredEasing
+      ? ""
+      : !measuredDurations && !measuredEasing
+        ? " (web defaults — this system records none)"
+        : measuredEasing
+          ? " (easing measured; durations are defaults)"
+          : " (durations measured; easing is a default)";
   return (
-    `Motion: ${durations.slice(0, 3).join(" / ")}, ${easing}` +
-    `${measured ? "" : " (defaults — this system records none)"}. ` +
-    `Animate entrances on scroll with CSS animation-timeline, transition interactive ` +
-    `states, and always honour prefers-reduced-motion.`
+    `Motion: ${durations.slice(0, 3).join(" / ")}, ${easing}${note}. ` +
+    `Animate entrances on scroll with CSS animation-timeline, transition ` +
+    `interactive states, honour prefers-reduced-motion. A page built from the ` +
+    `right tokens can still be dead.`
   );
 }
 
@@ -69,7 +85,8 @@ export function motionOneLiner(markdown: string): string {
  * looks broken and a developer who thinks the tool is broken.
  */
 export function motionSection(system: DesignSystem, markdown: string): string[] {
-  const { durations, easing, measured } = motionTokens(markdown);
+  const { durations, easing, measuredDurations, measuredEasing } =
+    motionTokens(markdown);
   const [fast, base, slow] = [
     durations[0] ?? DEFAULT_DURATIONS[0],
     durations[1] ?? durations[0] ?? DEFAULT_DURATIONS[1],
@@ -79,18 +96,25 @@ export function motionSection(system: DesignSystem, markdown: string): string[] 
   return [
     "## Motion",
     "",
-    measured
-      ? `These are the durations and easing this page actually uses. Match them —` +
-        ` one easing across a product is most of what makes it feel like one product.`
-      : `${system.name} records no motion of its own, so these are web defaults.` +
-        ` Use them consistently rather than picking a new number each time.`,
+    measuredDurations && measuredEasing
+      ? "These are the durations and easing this page actually uses. Match them —" +
+        " one easing across a product is most of what makes it feel like one product."
+      : !measuredDurations && !measuredEasing
+        ? `${system.name} records no motion of its own, so these are web defaults.` +
+          ` Use them consistently rather than picking a new number each time.`
+        : measuredEasing
+          ? `The easing below was measured from this page; the durations are web` +
+            ` defaults, because the page declares none. Keep the easing exactly —` +
+            ` it is the part that carries the feel.`
+          : `The durations below were measured from this page; the easing is a web` +
+            ` default, because the page declares none.`,
     "",
     `| Role | Value |`,
     `|------|-------|`,
-    `| Interactive state — hover, focus, press | \`${fast}\` |`,
-    `| Entrance, reveal, expand | \`${base}\` |`,
-    `| Large or full-page movement | \`${slow}\` |`,
-    `| Easing, everywhere | \`${easing}\` |`,
+    `| Interactive state — hover, focus, press | \`${fast}\`${measuredDurations ? "" : " *(default)*"} |`,
+    `| Entrance, reveal, expand | \`${base}\`${measuredDurations ? "" : " *(default)*"} |`,
+    `| Large or full-page movement | \`${slow}\`${measuredDurations ? "" : " *(default)*"} |`,
+    `| Easing, everywhere | \`${easing}\`${measuredEasing ? " *(measured)*" : " *(default)*"} |`,
     "",
     "**A page built entirely from the right tokens can still be dead.** Movement is",
     "part of the system, not decoration added afterwards. Every page you build",

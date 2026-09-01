@@ -187,11 +187,13 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         "## Tokens",
         ...r.palette.map((p) => `- ${p.name}: ${p.value}`),
       ];
+      // Motion goes above the do/don't lists, not below them. It is the one
+      // dimension nothing else states — so an agent that never reaches it
+      // ships a page that is correct and lifeless — and appended last it was
+      // the first thing the 1500-character clamp threw away.
+      lines.push("", "## Motion", motionOneLiner(readDocMarkdown(resolveDocRef(ctx.doc))));
       if (r.dos.length) lines.push("", "## Do", ...r.dos.map((d) => `- ${d}`));
       if (r.donts.length) lines.push("", "## Don't", ...r.donts.map((d) => `- ${d}`));
-      // Motion is the one dimension nothing else here states, so an agent
-      // defaults to none and ships a page that is correct and lifeless.
-      lines.push("", "## Motion", motionOneLiner(readDocMarkdown(resolveDocRef(ctx.doc))));
       return clampOutput(lines.join("\n"));
     },
   },
