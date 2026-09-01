@@ -75,6 +75,7 @@
     "verify:webmcp": "tsx --conditions=react-server scripts/verify-webmcp.ts",
     "demo:reset": "node scripts/demo-reset.mjs",
     "verify:capture": "tsx --conditions=react-server scripts/verify-capture-quality.ts",
+    "skill:lieflat": "node scripts/setup-lieflat-skill.mjs",
     "sync:extension": "cp public/webmcp/blocksmith.js extension/webmcp.js"
   },
   "dependencies": {

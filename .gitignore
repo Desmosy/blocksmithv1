@@ -39,3 +39,8 @@ tsconfig.tsbuildinfo
 /docs/BLOCKS-V1-SPEC.md
 /docs/DESIGN-CICD.md
 /Update.md
+
+# Local install of the lieflat-charts agent skill (PolyForm Noncommercial
+# license — must not ship inside this MIT repo). Fetch it with:
+#   npm run skill:lieflat
+.claude/skills/lieflat-charts/
