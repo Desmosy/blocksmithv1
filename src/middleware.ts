@@ -55,9 +55,13 @@ function securedNext(request: NextRequest): NextResponse {
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline'",
+    // Google Fonts is how a captured typeface actually loads. Without it the
+    // link is emitted, blocked, and every system renders in ui-sans-serif —
+    // which reads as "it picked a random font" rather than "the stylesheet
+    // was refused". Only the two Google hosts, nothing wider.
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' blob: data: https:",
-    "font-src 'self' data: https:",
+    "font-src 'self' data: https://fonts.gstatic.com https:",
     "connect-src 'self' https://*.supabase.co https://*.upstash.io https://*.sentry.io https://api.github.com https://api.figma.com",
     "object-src 'none'",
     "base-uri 'self'",

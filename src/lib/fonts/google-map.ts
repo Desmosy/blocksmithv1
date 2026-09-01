@@ -55,12 +55,29 @@ export function googleFontFromSubstitute(substitute: string): GoogleFontSpec | n
 }
 
 export function googleFontsUrl(specs: GoogleFontSpec[]): string {
-  const params = specs
-    .map((s) => {
-      const name = s.family.replace(/ /g, "+");
-      const w = s.weights.join(";");
-      return `family=${name}:wght@${w}`;
-    })
+  // A capture records whatever case the page used, so the same face can arrive
+  // twice — "EB Garamond" from the catalogue and "Eb garamond" from the
+  // document. Asking Google for both wastes a request and, for the spelling
+  // that is not a real family, returns nothing. Merge on the folded name and
+  // keep the better-cased spelling.
+  const merged = new Map<string, GoogleFontSpec>();
+  for (const spec of specs) {
+    const key = spec.family.trim().toLowerCase();
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, { ...spec, weights: [...spec.weights] });
+      continue;
+    }
+    existing.weights = [...new Set([...existing.weights, ...spec.weights])].sort(
+      (a, b) => a - b,
+    );
+    // Prefer the spelling that looks like a real family name over a
+    // sentence-cased one derived from a heading.
+    if (/[A-Z]/.test(spec.family.slice(1))) existing.family = spec.family;
+  }
+
+  const params = [...merged.values()]
+    .map((s) => `family=${s.family.replace(/ /g, "+")}:wght@${s.weights.join(";")}`)
     .join("&");
   return `https://fonts.googleapis.com/css2?${params}&display=swap`;
 }

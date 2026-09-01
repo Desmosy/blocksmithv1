@@ -59,7 +59,7 @@ import { buildSkill } from "@/lib/governance/skill";
 import { motionOneLiner } from "@/lib/governance/motion";
 import { saveMarkdownUpload } from "@/lib/uploads/store";
 import { claimUploadForCaller } from "@/lib/uploads/claim";
-import { prepareDesignSystemDoc } from "@/lib/clients/registry";
+import { prepareDesignSystemDoc, clearDesignSystemCache } from "@/lib/clients/registry";
 import { makeDriftTools } from "./drift-tools";
 import { PAGE_TOOLS } from "./page-tools";
 
@@ -354,8 +354,36 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         // Turn the reading into a system that can actually be governed against.
         // A list of hexes is a report; this is something to build with.
         const { markdown: measured, title, facts } = synthesizeDesignSystem(found);
-        const rationale = await addRationale(measured, facts, undefined, { timeoutMs: 45_000 - (Date.now() - started) });
-        const saved = await saveMarkdownUpload(rationale.markdown, `capture-${title}`);
+
+        /**
+         * Save the measurements before asking a model for judgement.
+         *
+         * This used to wait for the rationale pass and only then save, so a
+         * site that rendered slowly spent what was left of the budget waiting
+         * on a model and the whole tool timed out — with nothing saved. An
+         * agent that gets a timeout does not retry the tool; it goes looking
+         * for another way in, and the one it finds is the HTTP API, which is
+         * exactly the surface this project exists to make unnecessary.
+         *
+         * The measurements are the answer. Judgement is an improvement to it,
+         * and it lands afterwards if there is time.
+         */
+        const saved = await saveMarkdownUpload(measured, `capture-${title}`);
+
+        const left = 40_000 - (Date.now() - started);
+        if (left > 6_000) {
+          try {
+            const rationale = await addRationale(measured, facts, undefined, { timeoutMs: left });
+            if (rationale.applied) {
+              const { persistUploadMarkdown } = await import("@/lib/uploads/persist");
+              const { uploadFileNameFromRef } = await import("@/lib/uploads/store");
+              await persistUploadMarkdown(uploadFileNameFromRef(saved.docRef), rationale.markdown);
+              clearDesignSystemCache();
+            }
+          } catch {
+            // The measured document is saved and complete on its own.
+          }
+        }
         // Claim it for whoever is signed in, so the system an agent just
         // captured can actually be changed afterwards.
         const owned = await claimUploadForCaller(saved.fileName, saved.docRef);
