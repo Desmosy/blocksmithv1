@@ -20,12 +20,14 @@ export type ScaleViolation = {
   kind: ScaleKind;
   /** The CSS or JSX property that carried the value, e.g. "padding". */
   property: string;
-  /** The offending value in px. */
+  /** The offending value in px — signed, so `-48` is reported as written. */
   value: number;
   line: number;
   snippet: string;
   /** Nearest allowed value on the scale, when one is close. */
   nearest: number | null;
+  /** Set when the value is negative — a different failure than drift. */
+  negative?: boolean;
 };
 
 /** The scales a design system permits, in px. */
@@ -68,12 +70,20 @@ function kebab(prop: string): string {
   return prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 }
 
-/** Parse "16px" / "16" / " 16 " to a number; null for anything else. */
+/**
+ * Parse "16px" / "16" / " 16 " to a number; null for anything else.
+ *
+ * Signed on purpose. This used to return the absolute value, which made
+ * `gap: -48px` read as an on-scale 48 — so a page whose every gap was
+ * negative (invalid CSS, silently dropped by the browser) and whose margins
+ * pulled each block over its neighbour passed governance with zero
+ * violations, and shipped looking shredded.
+ */
 function px(raw: string): number | null {
   const m = raw.trim().match(/^(-?\d+(?:\.\d+)?)(px)?$/);
   if (!m) return null;
   const n = Number(m[1]);
-  return Number.isFinite(n) ? Math.abs(n) : null;
+  return Number.isFinite(n) ? n : null;
 }
 
 /** Pull the px values a design system considers legal. */
@@ -139,6 +149,27 @@ function scanGroup(
         for (const part of parts) {
           const value = px(part);
           if (value === null) continue;
+          if (value < 0) {
+            // The one legitimate negative: a small horizontal pull for an
+            // overlapping stack (avatars, badges). Everything else negative
+            // is either invalid CSS (gap, padding — the browser drops it)
+            // or content pulled over its neighbour.
+            const overlapIdiom =
+              kind === "spacing" &&
+              /^margin(Left|Right|Inline)$/.test(prop) &&
+              value >= -12;
+            if (overlapIdiom) continue;
+            out.push({
+              kind,
+              property: prop,
+              value,
+              line: i + 1,
+              snippet: line.trim().slice(0, 100),
+              nearest: nearest(Math.abs(value), allowed),
+              negative: true,
+            });
+            continue;
+          }
           if (allowed.includes(value)) continue;
           out.push({
             kind,
@@ -171,6 +202,14 @@ export function findScaleViolations(
 
 /** One-line explanation an agent can act on directly. */
 export function describeScaleViolation(v: ScaleViolation): string {
+  if (v.negative) {
+    const why =
+      /^(gap|rowGap|columnGap|padding)/i.test(v.property)
+        ? "is invalid CSS — the browser drops the declaration and the spacing collapses to 0"
+        : "pulls content over its neighbour";
+    const fix = v.nearest !== null ? ` Use ${v.nearest}px, or 0.` : " Use a positive scale value, or 0.";
+    return `\`${v.property}: ${v.value}px\` is negative, which ${why}.${fix}`;
+  }
   const label =
     v.kind === "fontSize"
       ? "not on the type scale"
