@@ -252,11 +252,39 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
 }
 
 /** Ascending, de-duplicated, and capped — a scale, not a list of every value. */
-function scale(values: number[], max: number): number[] {
-  return [...new Set(values)]
-    .filter((n) => n > 0)
-    .sort((a, b) => a - b)
-    .slice(0, max);
+/**
+ * A scale is a range, not a prefix.
+ *
+ * This sorted ascending and kept the first `max` values — the *smallest* nine
+ * of them. Every display size a page had was deleted: a site with 12 through
+ * 72px was published as a system topping out at 32, and the same happened to
+ * spacing, so its section rhythm went with it. An agent handed that builds a
+ * settings screen and cannot do otherwise; there is no large type in the
+ * system to build a hero from.
+ *
+ * Sub-8px values are dropped first. They are measurement artefacts — 6.79px is
+ * a computed line box, not a decision anybody made — and they were consuming
+ * the slots the display sizes needed.
+ *
+ * When there are still more values than fit, the ends are kept and the middle
+ * is thinned evenly, so the scale keeps its span.
+ */
+function scale(values: number[], max: number, floor = 8): number[] {
+  const clean = [...new Set(values.map((n) => Math.round(n * 10) / 10))]
+    .filter((n) => n >= floor)
+    .sort((a, b) => a - b);
+  if (clean.length <= max) return clean;
+
+  const kept = [clean[0]];
+  // Evenly spaced picks across the interior, then the largest value last.
+  const step = (clean.length - 1) / (max - 1);
+  for (let i = 1; i < max - 1; i += 1) {
+    const v = clean[Math.round(i * step)];
+    if (v !== undefined && v !== kept[kept.length - 1]) kept.push(v);
+  }
+  const largest = clean[clean.length - 1];
+  if (largest !== kept[kept.length - 1]) kept.push(largest);
+  return kept;
 }
 
 const SPACING_NAMES = ["2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl", "4xl", "5xl"];
@@ -295,9 +323,11 @@ export function synthesizeDesignSystem(found: Extracted): {
   const short = segments.find((s) => s.split(/\s+/).length <= 3);
   const title = named ?? short ?? (brand ? brand[0].toUpperCase() + brand.slice(1) : host);
   const colors = nameColors(found.colors);
-  const spacing = scale(found.spacing, 9);
-  const sizes = scale(found.fontSizes, 9);
-  const radii = scale(found.radii, 5);
+  // Floors differ by what the values are. 6.79px is not a type size, but 4px
+  // is a real spacing step and 2px is a real radius.
+  const spacing = scale(found.spacing, 9, 2);
+  const sizes = scale(found.fontSizes, 9, 8);
+  const radii = scale(found.radii, 5, 1);
 
   const lines: string[] = [
     `# ${title} — Style Reference`,
