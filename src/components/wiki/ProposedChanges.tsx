@@ -102,10 +102,11 @@ export function ProposedChanges({ docFileName }: { docFileName?: string }) {
           id: change.id,
           state: "failed",
           message:
-            data.error ??
-            (res.status === 401 || res.status === 403
+            res.status === 401
               ? "You need to be signed in to change this design system."
-              : `The edit was refused (${res.status}).`),
+              : res.status === 403
+                ? "This design system is not yours to change. A system captured without being signed in has no owner, so nobody can edit it — capture it again while signed in and the copy will be yours."
+                : (data.error ?? `The edit was refused (${res.status}).`),
         });
         return;
       }
@@ -194,8 +195,15 @@ export function ProposedChanges({ docFileName }: { docFileName?: string }) {
               ) : null}
 
               {result?.state === "failed" ? (
-                <p className="mt-2 text-xs text-[var(--wiki-text)]">
-                  {result.message}
+                /* This used to be one line of grey text under a row the user
+                   had already stopped looking at, so a refused approval read
+                   as nothing happening at all — and the proposal reappeared on
+                   the next poll with no explanation. */
+                <p
+                  role="alert"
+                  className="mt-3 rounded-lg border border-[var(--wiki-text)] bg-[var(--wiki-bg)] px-3 py-2 text-xs leading-relaxed text-[var(--wiki-text)]"
+                >
+                  <strong>Not applied.</strong> {result.message}
                 </p>
               ) : null}
             </li>

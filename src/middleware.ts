@@ -80,7 +80,10 @@ export function middleware(request: NextRequest): NextResponse {
   // reach into it, so applying the page CSP here would only blank the canvas.
   // Checked before anything else, because outside strict mode every other
   // path returns the secured response immediately.
-  if (request.nextUrl.pathname === "/api/graphics/frame") {
+  if (
+    request.nextUrl.pathname === "/api/graphics/frame" ||
+    request.nextUrl.pathname === "/api/webmcp/proposal/frame"
+  ) {
     return NextResponse.next();
   }
   if (!strictMode()) return securedNext(request);

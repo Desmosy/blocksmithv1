@@ -125,6 +125,18 @@ export function GovernanceCheckPanel({
               {showCode ? "Hide code" : "Edit code"}
             </button>
           ) : null}
+          {/* A landing page inside a review card reads as a thumbnail of
+              itself. Open it at the size it was designed for. */}
+          {fromAgent && code ? (
+            <a
+              href={`/api/webmcp/proposal/frame${docFileName ? `?doc=${encodeURIComponent(docFileName)}` : ""}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
+            >
+              Open full page ↗
+            </a>
+          ) : null}
           <button
             type="button"
             className="text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
