@@ -7,6 +7,8 @@ import { pullOverrides } from "./pull.js";
 import { exportLocalScan } from "./scan-local.js";
 import { cmdSetupCursor } from "./cursor-setup.js";
 import { cmdSetupHooks } from "./setup-hooks.js";
+import { cmdFix } from "./fix.js";
+import { cmdUpdates } from "./updates.js";
 import { cmdCheck } from "./check.js";
 
 /** Injected at build time by build.mjs (esbuild `define`). */
@@ -141,6 +143,10 @@ async function main(): Promise<void> {
   program.command("pull").requiredOption("-d, --doc <ref>").option("-w, --workspace <path>").action((o) => cmdPull(requireClient(), flags(o)));
   program.command("scan [path]").option("--fixture <name>").option("--github <repo>").action((path, o) => cmdScan(requireClient(), path ? [path] : [], flags(o)));
   program.command("check [paths...]").option("--doc <ref>").option("--base <range>").option("--staged").option("--strict").option("--record").option("--reason <reason>").option("--format <format>").option("--hook").action((paths, o) => cmdCheck(requireClient(), paths, flags(o)));
+  // Both were written, tested and left unregistered — and `fix` prints advice
+  // telling you to run `updates`, which also did not exist.
+  program.command("fix <blockId>").option("-d, --doc <ref>").action((blockId, o) => cmdFix(requireClient(), [blockId], flags(o)));
+  program.command("updates").option("-d, --doc <ref>").action((o) => cmdUpdates(requireClient(), flags(o)));
   const setup = program.command("setup").description("Install hooks or Cursor MCP rules");
   setup.command("cursor").option("-g, --global").option("-w, --workspace <path>").action((o) => cmdSetupCursor(flags(o)));
   setup.command("hooks").option("-d, --doc <ref>").option("--strict").action((o) => cmdSetupHooks(flags(o)));

@@ -584,10 +584,205 @@ function cmdSetupHooks(flags) {
   console.log("  blocksmith check --base @{u}..HEAD   # same as the hook when upstream is set");
 }
 
+// src/fix.ts
+var COLORS = {
+  dim: (s) => `\x1B[2m${s}\x1B[0m`,
+  bold: (s) => `\x1B[1m${s}\x1B[0m`,
+  cyan: (s) => `\x1B[36m${s}\x1B[0m`,
+  green: (s) => `\x1B[32m${s}\x1B[0m`,
+  red: (s) => `\x1B[31m${s}\x1B[0m`
+};
+async function cmdFix(client, positionals, _flags) {
+  const blockId = positionals[0];
+  if (!blockId) {
+    console.error("Usage: blocksmith fix <block-id>");
+    console.error("  Shows the wiki guideline for a block so you know what to fix.");
+    console.error("\n  Example: blocksmith fix button-primary");
+    process.exit(1);
+  }
+  try {
+    const result = await client.deviations.list({ status: "rejected" });
+    const match = result.deviations.find((d) => d.blockId === blockId);
+    console.log(`
+${COLORS.bold(`\u{1F4DD}  Wiki guideline for ${blockId}:`)}`);
+    console.log(COLORS.dim("\u2500".repeat(56)));
+    if (match) {
+      const diff = match.deviationDiff;
+      console.log(`    Field:    ${diff.field}`);
+      console.log(`    Wiki:     ${COLORS.green(diff.wikiValue)}`);
+      console.log(`    Yours:    ${COLORS.red(diff.pushedValue)}`);
+      console.log("");
+      if (match.fixSuggestion) {
+        console.log(`    ${COLORS.cyan(`Fix suggestion: "${match.fixSuggestion}"`)}`);
+        console.log("");
+      }
+      console.log(`    ${COLORS.dim("Suggested change:")}`);
+      console.log(`    ${COLORS.red(`-  ${diff.field}: ${diff.pushedValue};`)}`);
+      console.log(`    ${COLORS.green(`+  ${diff.field}: ${diff.wikiValue};`)}`);
+    } else {
+      console.log(
+        COLORS.dim(`    No active rejection found for "${blockId}".`)
+      );
+      console.log(
+        COLORS.dim("    Run `blocksmith updates` to see all deviations.")
+      );
+    }
+    console.log("");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${msg}`);
+    process.exit(1);
+  }
+}
+
+// src/updates.ts
+var COLORS2 = {
+  red: (s) => `\x1B[31m${s}\x1B[0m`,
+  yellow: (s) => `\x1B[33m${s}\x1B[0m`,
+  green: (s) => `\x1B[32m${s}\x1B[0m`,
+  dim: (s) => `\x1B[2m${s}\x1B[0m`,
+  bold: (s) => `\x1B[1m${s}\x1B[0m`,
+  cyan: (s) => `\x1B[36m${s}\x1B[0m`
+};
+function formatAgo(isoStr) {
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const hours = Math.floor(diff / 36e5);
+  if (hours < 1) {
+    const mins = Math.max(1, Math.floor(diff / 6e4));
+    return `${mins}m ago`;
+  }
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+function formatTimeLeft(expiresAt) {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "expiring\u2026";
+  const hours = Math.floor(diff / 36e5);
+  const mins = Math.floor(diff % 36e5 / 6e4);
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+function statusIcon(status) {
+  switch (status) {
+    case "approved":
+    case "auto_approved":
+      return COLORS2.green("\u2705");
+    case "rejected":
+      return COLORS2.red("\u274C");
+    case "pending":
+      return COLORS2.yellow("\u23F3");
+    case "resolved":
+      return COLORS2.dim("\u{1F527}");
+    default:
+      return "  ";
+  }
+}
+function statusLabel(d) {
+  switch (d.status) {
+    case "auto_approved":
+      return COLORS2.dim(`Auto-approved \xB7 ${formatAgo(d.resolvedAt ?? d.createdAt)}`);
+    case "approved":
+      return COLORS2.green(`Approved by @${d.reviewedBy ?? "?"} \xB7 ${formatAgo(d.resolvedAt ?? d.createdAt)}`);
+    case "rejected":
+      return COLORS2.red(`Rejected by @${d.reviewedBy ?? "?"} \xB7 ${formatAgo(d.resolvedAt ?? d.createdAt)}`);
+    case "pending":
+      return COLORS2.yellow(`Pending review \xB7 auto-approves in ${formatTimeLeft(d.expiresAt)}`);
+    case "resolved":
+      return COLORS2.dim(`Resolved \xB7 ${formatAgo(d.resolvedAt ?? d.createdAt)}`);
+    default:
+      return d.status;
+  }
+}
+async function cmdUpdates(client, flags) {
+  const pushedBy = flagStr(flags, "user", "u");
+  try {
+    const result = await client.deviations.list(
+      pushedBy ? { pushedBy } : void 0
+    );
+    const deviations = result.deviations;
+    if (deviations.length === 0) {
+      console.log(COLORS2.green("\u2713 No deviation updates."));
+      return;
+    }
+    const rejected = deviations.filter((d) => d.status === "rejected");
+    const pending = deviations.filter((d) => d.status === "pending");
+    const approved = deviations.filter(
+      (d) => d.status === "approved" || d.status === "auto_approved"
+    );
+    const resolved = deviations.filter((d) => d.status === "resolved");
+    const newCount = rejected.length + approved.length;
+    console.log(
+      `
+${COLORS2.bold("\u{1F4CB}  Deviation Updates")}  ${COLORS2.dim(`(${newCount} resolved, ${pending.length} pending)`)}`
+    );
+    console.log(COLORS2.dim("\u2500".repeat(56)));
+    for (const d of rejected) {
+      printDeviation(d);
+      if (d.fixSuggestion) {
+        console.log(
+          `    Fix: ${COLORS2.cyan(`"${d.fixSuggestion}"`)}`
+        );
+        console.log(
+          `    \u2192 Run: ${COLORS2.bold(`blocksmith fix ${d.blockId}`)}`
+        );
+      }
+      if (d.rejectionCount >= 2) {
+        console.log(
+          COLORS2.red("    \u26A0\uFE0F  This block is now locked until resolved.")
+        );
+      }
+      console.log("");
+    }
+    for (const d of pending) {
+      printDeviation(d);
+      console.log("");
+    }
+    for (const d of approved) {
+      printDeviation(d);
+      console.log(
+        COLORS2.dim("    Lock updated \u2014 no action needed.")
+      );
+      console.log("");
+    }
+    for (const d of resolved) {
+      printDeviation(d);
+      console.log("");
+    }
+    if (pushedBy) {
+      try {
+        const budget = await client.deviations.budget(pushedBy);
+        console.log(
+          COLORS2.dim("\u2500".repeat(56))
+        );
+        console.log(
+          `Budget: ${budget.openCount}/${budget.maxOpen} slots used${budget.budgetExceeded ? COLORS2.red(" \u2014 resolve one before pushing more.") : ""}`
+        );
+      } catch {
+      }
+    }
+    console.log(
+      COLORS2.dim(`
+Run ${COLORS2.bold("blocksmith pull")} to sync approved changes to your lock file.`)
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error fetching updates: ${msg}`);
+    process.exit(1);
+  }
+}
+function printDeviation(d) {
+  const diff = d.deviationDiff;
+  console.log(
+    `${statusIcon(d.status)}  ${COLORS2.bold(d.blockId)}    ${diff.field}: ${diff.wikiValue} \u2192 ${diff.pushedValue}`
+  );
+  console.log(`    ${statusLabel(d)}`);
+}
+
 // src/check.ts
 import { readFileSync as readFileSync7 } from "fs";
 import * as readline from "readline";
-var COLORS = {
+var COLORS3 = {
   red: (s) => `\x1B[31m${s}\x1B[0m`,
   yellow: (s) => `\x1B[33m${s}\x1B[0m`,
   green: (s) => `\x1B[32m${s}\x1B[0m`,
@@ -647,30 +842,30 @@ function promptInteractive(query) {
 }
 async function handleInteractiveDeviations(client, results, blockCount, warnCount, opts, docRef, meta) {
   if (results.length === 0) {
-    console.log(COLORS.green("\u2713 Governance clean \u2014 no violations in changed UI files."));
+    console.log(COLORS3.green("\u2713 Governance clean \u2014 no violations in changed UI files."));
     process.exit(0);
   }
   for (const { relPath, findings } of results) {
     console.log(`
-${COLORS.bold(relPath)}`);
+${COLORS3.bold(relPath)}`);
     for (const f of findings) {
-      const tag = f.tier === "block" ? COLORS.red("BLOCK") : COLORS.yellow("WARN ");
-      const loc = f.line ? COLORS.dim(`:${f.line}`) : "";
+      const tag = f.tier === "block" ? COLORS3.red("BLOCK") : COLORS3.yellow("WARN ");
+      const loc = f.line ? COLORS3.dim(`:${f.line}`) : "";
       console.log(`  ${tag} ${f.message}${loc}`);
-      if (f.snippet) console.log(`        ${COLORS.dim(f.snippet)}`);
+      if (f.snippet) console.log(`        ${COLORS3.dim(f.snippet)}`);
       if (f.ruleCitation) {
-        console.log(`        ${COLORS.dim(`rule: ${f.ruleCitation.slice(0, 120)}`)}`);
+        console.log(`        ${COLORS3.dim(`rule: ${f.ruleCitation.slice(0, 120)}`)}`);
       }
     }
   }
   console.log("");
   const parts = [];
-  if (blockCount) parts.push(COLORS.red(`${blockCount} blocking`));
-  if (warnCount) parts.push(COLORS.yellow(`${warnCount} warning${warnCount > 1 ? "s" : ""}`));
+  if (blockCount) parts.push(COLORS3.red(`${blockCount} blocking`));
+  if (warnCount) parts.push(COLORS3.yellow(`${warnCount} warning${warnCount > 1 ? "s" : ""}`));
   console.log(parts.join(" \xB7 "));
   if (blockCount) {
     console.log(
-      COLORS.red(
+      COLORS3.red(
         "\nBlocking violations must be fixed (off-token colors / lock). These never auto-pass."
       )
     );
@@ -684,20 +879,20 @@ ${COLORS.bold(relPath)}`);
     budget = await client.deviations.budget(meta.pushedBy);
     if (budget.budgetExceeded) {
       console.log(
-        COLORS.red(
+        COLORS3.red(
           `
 \u274C Budget exceeded: You have ${budget.openCount} unreviewed deviations (max: ${budget.maxOpen}).`
         )
       );
       console.log(
-        "Resolve existing deviations before pushing more. Run: " + COLORS.bold("blocksmith updates")
+        "Resolve existing deviations before pushing more. Run: " + COLORS3.bold("blocksmith updates")
       );
       process.exit(1);
     }
   } catch (err) {
   }
   console.log(
-    COLORS.yellow(
+    COLORS3.yellow(
       "\nThese warnings deviate from the wiki design guidelines."
     )
   );
@@ -717,7 +912,7 @@ ${COLORS.bold(relPath)}`);
     reason = await promptInteractive("Reason for deviation: ");
   }
   if (opts.record) {
-    console.log(COLORS.dim("Submitting deviations to the wiki queue..."));
+    console.log(COLORS3.dim("Submitting deviations to the wiki queue..."));
     for (const { relPath, findings } of results) {
       for (const f of findings) {
         if (f.tier === "warn" && f.ruleId) {
@@ -736,7 +931,7 @@ ${COLORS.bold(relPath)}`);
               reason
             });
           } catch (err) {
-            console.error(COLORS.red(`Failed to submit deviation: ${err instanceof Error ? err.message : String(err)}`));
+            console.error(COLORS3.red(`Failed to submit deviation: ${err instanceof Error ? err.message : String(err)}`));
           }
         }
       }
@@ -744,16 +939,16 @@ ${COLORS.bold(relPath)}`);
   }
   if (budget) {
     console.log(
-      COLORS.green(
+      COLORS3.green(
         `
 \u2713 Deviations pushed to queue (Budget: ${budget.openCount + warnCount}/${budget.maxOpen}).`
       )
     );
     console.log(
-      `Check status anytime with: ${COLORS.bold("blocksmith updates")}`
+      `Check status anytime with: ${COLORS3.bold("blocksmith updates")}`
     );
   } else {
-    console.log(COLORS.green("\n\u2713 Deviations pushed to queue."));
+    console.log(COLORS3.green("\n\u2713 Deviations pushed to queue."));
   }
   process.exit(0);
 }
@@ -821,7 +1016,7 @@ async function cmdCheck(client, positionals, flags) {
   if (files.length === 0) {
     if (format === "json") console.log(JSON.stringify({ ok: true, results: [] }));
     else if (format === "github") printGithub([], 0, 0);
-    else console.log(COLORS.green("\u2713 No changed UI files to check."));
+    else console.log(COLORS3.green("\u2713 No changed UI files to check."));
     return;
   }
   const pushedBy = process.env.USER || "local-dev";
@@ -945,6 +1140,8 @@ async function main() {
   program.command("pull").requiredOption("-d, --doc <ref>").option("-w, --workspace <path>").action((o) => cmdPull(requireClient(), flags(o)));
   program.command("scan [path]").option("--fixture <name>").option("--github <repo>").action((path, o) => cmdScan(requireClient(), path ? [path] : [], flags(o)));
   program.command("check [paths...]").option("--doc <ref>").option("--base <range>").option("--staged").option("--strict").option("--record").option("--reason <reason>").option("--format <format>").option("--hook").action((paths, o) => cmdCheck(requireClient(), paths, flags(o)));
+  program.command("fix <blockId>").option("-d, --doc <ref>").action((blockId, o) => cmdFix(requireClient(), [blockId], flags(o)));
+  program.command("updates").option("-d, --doc <ref>").action((o) => cmdUpdates(requireClient(), flags(o)));
   const setup = program.command("setup").description("Install hooks or Cursor MCP rules");
   setup.command("cursor").option("-g, --global").option("-w, --workspace <path>").action((o) => cmdSetupCursor(flags(o)));
   setup.command("hooks").option("-d, --doc <ref>").option("--strict").action((o) => cmdSetupHooks(flags(o)));

@@ -6,6 +6,7 @@ import {
   type WebMcpAnnotations,
   type WebMcpResult,
 } from "@/lib/webmcp/types";
+import { installDevPolyfill } from "@/lib/webmcp/dev-polyfill";
 
 export type WebMcpToolSpec = {
   name: string;
@@ -52,6 +53,10 @@ export function useWebMcp(tools: WebMcpToolSpec[]): WebMcpStatus {
   );
 
   useEffect(() => {
+    // `?agent=sim`, in development only. Two documents told readers this
+    // worked and nothing ever called it, so the flag was inert everywhere —
+    // including for anyone following our own testing instructions.
+    installDevPolyfill();
     if (!isWebMcpSupported()) {
       setStatus({ supported: false, registered: [], error: null });
       return;
