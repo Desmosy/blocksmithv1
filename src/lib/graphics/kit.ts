@@ -23,7 +23,7 @@ export type GraphicsPalette = {
 };
 
 export type Snippet = {
-  id: "svg-orb" | "canvas-field" | "shader-gradient" | "paper-mesh";
+  id: "svg-orb" | "svg-orbit" | "svg-dot-grid" | "canvas-field" | "shader-gradient" | "paper-mesh";
   title: string;
   language: "html" | "javascript" | "tsx";
   /** What it is for, in one line. */
@@ -123,6 +123,81 @@ export function svgOrb(p: GraphicsPalette, size = 320): Snippet {
     title: "Gradient orb (SVG)",
     language: "html",
     purpose: "Hero and card artwork. Resizes without loss; change a stop-color to re-theme.",
+    code,
+    runnable: true,
+  };
+}
+
+/**
+ * An orbit diagram: hairline ellipses with a few small dots riding them.
+ *
+ * This is the quiet spot graphic — the shape for "there is a system at work
+ * here" beside a hero or inside a media cell. Everything about it is
+ * deliberately faint: the ellipses are hairlines two steps off the ground,
+ * the dots are small punctuation, and at most one of them takes the accent.
+ * It is the counter-example to the clip-art sparkle: geometry the interface
+ * already speaks (circles, hairlines, dots), at whisper contrast, that a
+ * reader's eye passes over on the way to the content.
+ */
+export function svgOrbit(p: GraphicsPalette, size = 320): Snippet {
+  const line = mix(p.ink, p.ground, 0.78);
+  const dot = p.ink;
+  const accent = p.accent !== p.ink ? p.accent : mix(p.ink, p.ground, 0.35);
+  const code = `<svg width="${size}" height="${size}" viewBox="0 0 100 100" fill="none" role="img" aria-label="Orbit diagram">
+  <!-- Hairline orbits: stroke stays under 1 unit so it reads as a rule, not a shape. -->
+  <ellipse cx="50" cy="50" rx="44" ry="18" stroke="${line}" stroke-width="0.6" transform="rotate(-24 50 50)" />
+  <ellipse cx="50" cy="50" rx="34" ry="30" stroke="${line}" stroke-width="0.6" transform="rotate(38 50 50)" />
+  <circle cx="50" cy="50" r="10" stroke="${line}" stroke-width="0.6" />
+  <!-- Punctuation dots: small, few, mostly ink. One accent at most. -->
+  <circle cx="50" cy="50" r="3.2" fill="${dot}" />
+  <circle cx="13.8" cy="66.4" r="1.8" fill="${dot}" />
+  <circle cx="79.6" cy="26.2" r="1.4" fill="${dot}" />
+  <circle cx="63.5" cy="77.8" r="1.8" fill="${accent}" />
+</svg>`;
+  return {
+    id: "svg-orbit",
+    title: "Orbit diagram (SVG)",
+    language: "html",
+    purpose:
+      "Spot graphic beside a hero or inside its own media cell — never behind or over text. Rotate the ellipses and move the dots; keep strokes hairline and dots under 4 units.",
+    code,
+    runnable: true,
+  };
+}
+
+/**
+ * A dot lattice that fades out — the backdrop that stays a backdrop.
+ *
+ * For the corner of a section or the empty half of a card. The mask is the
+ * important part: the lattice dissolves before it reaches the content, so it
+ * can sit at z -1 without ever competing with a word of copy.
+ */
+export function svgDotGrid(p: GraphicsPalette): Snippet {
+  const dot = mix(p.ink, p.ground, 0.62);
+  const code = `<!-- Host element needs: position:relative; isolation:isolate — without the
+     isolation, z-index:-1 drops the lattice behind the host's own background
+     and it silently disappears. -->
+<svg width="480" height="360" viewBox="0 0 480 360" role="presentation" aria-hidden="true"
+     style="position:absolute; top:0; right:0; z-index:-1; pointer-events:none">
+  <defs>
+    <pattern id="lattice" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.6" fill="${dot}" />
+    </pattern>
+    <radialGradient id="fade" cx="85%" cy="12%" r="75%">
+      <stop offset="0%" stop-color="#fff" />
+      <stop offset="55%" stop-color="#fff" stop-opacity="0.35" />
+      <stop offset="90%" stop-color="#fff" stop-opacity="0" />
+    </radialGradient>
+    <mask id="dissolve"><rect width="480" height="360" fill="url(#fade)" /></mask>
+  </defs>
+  <rect width="480" height="360" fill="url(#lattice)" mask="url(#dissolve)" />
+</svg>`;
+  return {
+    id: "svg-dot-grid",
+    title: "Fading dot lattice (SVG)",
+    language: "html",
+    purpose:
+      "Backdrop for a section corner or a card's empty region, behind everything at z -1 — the host must set position:relative and isolation:isolate. The mask dissolves it before it reaches the copy; move the gradient centre to move the fade.",
     code,
     runnable: true,
   };
@@ -403,5 +478,15 @@ export function MeshBackground({ className, colors = MESH_COLORS, ...props }: Me
 
 export function graphicsKit(system: DesignSystem): { palette: GraphicsPalette; snippets: Snippet[] } {
   const palette = paletteForGraphics(system);
-  return { palette, snippets: [svgOrb(palette), canvasField(palette), shaderGradient(palette), paperMesh(palette)] };
+  return {
+    palette,
+    snippets: [
+      svgOrbit(palette),
+      svgDotGrid(palette),
+      svgOrb(palette),
+      canvasField(palette),
+      shaderGradient(palette),
+      paperMesh(palette),
+    ],
+  };
 }

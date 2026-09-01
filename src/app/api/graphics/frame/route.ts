@@ -41,9 +41,11 @@ export async function GET(request: NextRequest) {
     // because that is how it will be used. Centring a canvas shrinks it to
     // its content width and shows the graphic at two-thirds of the frame.
     const layout =
-      snippet.id === "svg-orb"
+      snippet.id === "svg-orb" || snippet.id === "svg-orbit"
         ? "display:grid;place-items:center;min-height:100vh"
-        : "display:block;height:100vh;overflow:hidden";
+        : snippet.id === "svg-dot-grid"
+          ? "position:relative;height:100vh;overflow:hidden"
+          : "display:block;height:100vh;overflow:hidden";
     const html =
       `<!doctype html><html><head><meta charset="utf-8">` +
       `<style>html,body{margin:0;background:${kit.palette.ground};${layout}}svg{max-width:100%;height:auto}canvas{width:100%!important;height:100vh!important;display:block}</style>` +
