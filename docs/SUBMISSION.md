@@ -121,14 +121,15 @@ await document.modelContext.registerTool({
 change to a tool's name, description, schema or annotations, aborts and
 re-registers. That is what makes the surface live rather than static.
 
-**Twelve server tools** answer questions about the design system and dispatch over
+**Thirteen server tools** answer questions about the design system and dispatch over
 HTTP — including `figma_token_drift` (Figma says X, code says Y, with renames and
-near misses told apart from real drift) and `audit_page_styles` (what a live page
-paints, judged against a system). **Three page tools** can only run in the browser:
+near misses told apart from real drift), `audit_page_styles` (what a live page
+paints, judged against a system) and `audit_site` (the same verdict for any
+public address, with nothing installed). **Three page tools** can only run in the browser:
 `propose_component` and `propose_design_change`, which put work on the human's
 screen for approval, and `get_current_context`, which reports the design system
 and page the reader has open — the thing a remote MCP server cannot answer.
-Fifteen in total. A bookmarklet or the extension registers **four tools on any
+Sixteen in total. A bookmarklet or the extension registers **four tools on any
 website** (`public/webmcp/blocksmith.js`), and `/.well-known/webmcp.json` is a
 discovery manifest generated from the registry.
 

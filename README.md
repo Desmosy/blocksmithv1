@@ -4,7 +4,7 @@
 
 Built for the **WebMCP Challenge**. BlockSmith exposes its design-system governance engine as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so an agent working alongside you in the browser can read your design system, propose changes, and *get told no* when a change breaks it.
 
-**Live:** **<https://blocksmithv1.vercel.app/wiki?doc=saas.md>** — open it in ChatGPT's in-app browser, or in Chrome with `chrome://flags/#enable-webmcp-testing` enabled, and the page hands your agent fifteen tools. No sign-in needed to read, check code, or capture a site.
+**Live:** **<https://blocksmithv1.vercel.app/wiki?doc=saas.md>** — open it in ChatGPT's in-app browser, or in Chrome with `chrome://flags/#enable-webmcp-testing` enabled, and the page hands your agent sixteen tools. No sign-in needed to read, check code, or capture a site.
 
 **Every tool, its schema and where it is registered:** [`/.well-known/webmcp.json`](https://blocksmithv1.vercel.app/.well-known/webmcp.json) · **How it works:** [`/protocol/webmcp`](https://blocksmithv1.vercel.app/protocol/webmcp) · **License:** [MIT](./LICENSE)
 
@@ -74,7 +74,8 @@ Registration is lifecycle-bound: `useWebMcp()` registers on mount and aborts the
 - **`readOnlyHint` split.** Every `get_*` and `check_*` tool is marked read-only so the agent knows which actions need confirmation.
 - **Composition is checked, not just values.** `check_governance` catches two primary actions in one view, a card nested inside itself, and a card missing its required label — rules about arrangement that no value-level linter can see.
 - **Every violation is citable.** Each carries a stable rule id (`off-token-color`, `banned-gradient`, `contract-max`).
-- **Fifteen tools in the page, not sixteen.** The remote MCP server exposes sixteen. Each tool costs context window and completion time, so the in-page surface is deliberately narrow. On any other website, the bookmarklet or extension registers four tools — capture this site, audit this page, read a system's rules, page context — backed by the same engine over CORS.
+- **The in-page surface is scoped to what a page can answer.** Sixteen tools are registered on a design system's page: its rules, its components, what it has ruled out, and checks against it. The remote MCP server carries a different sixteen — scanning a repository, generating a package, reading the lockfile — because those are questions about a codebase, not about the page in front of you. Each tool costs an agent context and completion time, so neither surface carries the other's.
+- **Auditing a site needs nothing installed.** `audit_site` judges any public address against a system from the server. The extension's version of the same question answers it for the page you are standing on, which is the only part that genuinely requires code running in that page.
 - **Discovery is generated, not written.** `/.well-known/webmcp.json` lists every tool, its schema, where it is registered and how it is invoked, built from the registry at request time.
 - **The tool surface is live.** `check_component`'s schema carries an enum of the active system's components. Switching design systems re-registers the tools and fires `toolchange`, so the agent's options change with the rules — it cannot name a component the current system doesn't have.
 - **Auto-fix stops where judgement starts.** `fix_violations` applies every mechanical repair and returns what it refused to touch: colours with no close token, and rules like "no gradients" whose fix changes the composition rather than a value.
