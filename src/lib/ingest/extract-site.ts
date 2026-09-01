@@ -40,6 +40,10 @@ export type Extracted = {
   typeSamples: TypeSample[];
   /** The page's vertical composition. Null for CSS-only captures. */
   anatomy: PageAnatomy | null;
+  /** CSS motion counted on real elements. Null for CSS-only captures. */
+  motionCensus: { animated: number; transitions: number; staged: number } | null;
+  /** What the page verifiably does at 390px. Null for CSS-only captures. */
+  responsive: Rendered["responsive"];
   fonts: CapturedFont[];
   radii: number[];
   spacing: number[];
@@ -508,6 +512,8 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
     typeSamples: rendered.typeSamples,
     anatomy: rendered.anatomy,
+    motionCensus: rendered.motion,
+    responsive: rendered.responsive,
     weights: sampleWeights.length ? sampleWeights : text.weights,
     fontSizes: sampleSizes.length ? sampleSizes : text.fontSizes,
     // Rendered shadows are resolved values; the text pass may carry var()s.
@@ -576,6 +582,8 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
     colors,
     typeSamples: [],
     anatomy: null,
+    motionCensus: null,
+    responsive: null,
     fonts: collectFonts(css),
     radii: collectNumbers(css, ["border-radius"]).slice(0, 8),
     spacing: collectNumbers(css, ["padding", "margin", "gap"]).slice(0, 10),

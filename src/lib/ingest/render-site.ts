@@ -84,6 +84,28 @@ export type Rendered = {
   hairline: { color: string; width: number; count: number } | null;
   /** The page's vertical composition — the thing a stock template erases. */
   anatomy: PageAnatomy | null;
+  /**
+   * How the nav behaves under scroll: pinned or not, and what it turns into.
+   * The floating bar that detaches on scroll is one of the most recognisable
+   * moves a site makes, and a capture that misses it hands agents a nav that
+   * just sits there.
+   */
+  navBehavior: {
+    position: "fixed" | "sticky";
+    atTop: { bg: string | null; radius: number; blur: boolean; inset: number };
+    scrolled: { bg: string | null; radius: number; blur: boolean; inset: number; shadow: string };
+  } | null;
+  /** CSS motion measured on real elements, not declared in a stylesheet. */
+  motion: { animated: number; transitions: number; staged: number } | null;
+  /** What the page verifiably does at a phone viewport. */
+  responsive: {
+    /** No horizontal overflow at 390px. */
+    cleanAt390: boolean;
+    /** Largest text at 390px vs at the desktop capture. */
+    displayPxAt390: number | null;
+    /** Visible top-band actions at 390px vs desktop — a collapse means a menu. */
+    navCollapsed: boolean | null;
+  } | null;
 };
 
 /**
@@ -246,9 +268,18 @@ const COLLECT_IN_PAGE = `(() => {
   const SVG_NS = "http://www.w3.org/2000/svg";
   const FIELD_TYPES = { text:1, email:1, search:1, url:1, tel:1, password:1, number:1, date:1 };
 
+  // Consent and cookie overlays are not the design. A fixed white banner with
+  // two black buttons entered the census as a major surface and a primary
+  // action on every site that runs one, and no reader would call that the
+  // brand. Anything fixed, sizeable and talking about cookies is excluded,
+  // subtree and all. Floating navs stay: they never carry that text.
+  const overlayRoots = [];
+  const motionCensus = { animated: 0, transitions: 0, staged: 0 };
+
   for (let i = 0; i < all.length; i++) {
     const el = all[i];
     const tag = el.tagName.toLowerCase();
+    if (overlayRoots.length && overlayRoots.some((r) => r.contains(el))) continue;
     // Shapes inside an <svg> are the icon's drawing, not components — but
     // their paint is still the brand's. A logo and an illustration are where
     // a lot of sites keep their one real colour, and reading only
@@ -280,7 +311,24 @@ const COLLECT_IN_PAGE = `(() => {
     const rect = el.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) continue;
     const cs = getComputedStyle(el);
-    if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) < 0.05) continue;
+    if (cs.visibility === "hidden" || cs.display === "none") continue;
+
+    if (cs.position === "fixed" && rect.height >= 100 && rect.width >= vw * 0.4) {
+      const probe = (el.textContent || "").slice(0, 600);
+      if (/cookie|consent|gdpr|privacy preferences/i.test(probe)) {
+        overlayRoots.push(el);
+        continue;
+      }
+    }
+
+    // The motion census. An element sitting at opacity 0 with a transform is
+    // staged for a scroll entrance — the pattern every "why is the page so
+    // alive" site is made of, and one no stylesheet regex can see.
+    if (cs.animationName && cs.animationName !== "none") motionCensus.animated++;
+    if (/transform|opacity|translate/.test(cs.transitionProperty) && parseFloat(cs.transitionDuration) > 0) motionCensus.transitions++;
+    if (Number(cs.opacity) < 0.05 && cs.transform && cs.transform !== "none" && rect.height >= 24) motionCensus.staged++;
+
+    if (Number(cs.opacity) < 0.05) continue;
 
     const size = rect.width * rect.height;
     const parentEl = el.parentElement;
@@ -464,6 +512,9 @@ const COLLECT_IN_PAGE = `(() => {
         display: cs.display, gap: px(cs.columnGap || cs.gap), children: children,
         columns: cs.display === "grid" ? (cs.gridTemplateColumns || "").split(" ").filter(Boolean).length : 0,
         bg: bg,
+        pos: cs.position,
+        radius: radius,
+        blur: cs.backdropFilter && cs.backdropFilter !== "none" ? 1 : 0,
       });
     }
 
@@ -530,6 +581,7 @@ const COLLECT_IN_PAGE = `(() => {
     candidates: candidates,
     containers: containers,
     hairlines: Array.from(hairlines.entries()).sort(byWeight).slice(0, 10),
+    motion: motionCensus,
     viewport: { w: vw, h: vh, docH: docH },
   };
 })()`;
@@ -595,6 +647,7 @@ type Container = {
   idx: number; tag: string; role: string; label: string;
   top: number; left: number; width: number; height: number;
   display: string; gap: number; children: number; columns: number; bg: string | null;
+  pos: string; radius: number; blur: number;
 };
 
 type RawPage = {
@@ -604,6 +657,7 @@ type RawPage = {
   candidates: Candidate[];
   containers: Container[];
   hairlines: [string, number][];
+  motion: { animated: number; transitions: number; staged: number };
   viewport: { w: number; h: number; docH: number };
 };
 
@@ -1331,6 +1385,81 @@ async function readHoverStates(
   return out;
 }
 
+/**
+ * Runs in the page: snapshot the pinned bar's appearance right now.
+ *
+ * Selection is by behaviour, not by tag — whatever is fixed or sticky, near
+ * the top, and wide enough to be a bar. Returns null when nothing is pinned.
+ */
+const READ_NAV_STATE = `(() => {
+  const vw = window.innerWidth;
+  const toHex = (v) => { const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/); if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null; const h = (n) => parseInt(n, 10).toString(16).padStart(2, "0"); return "#" + h(m[1]) + h(m[2]) + h(m[3]); };
+  const all = Array.prototype.slice.call(document.querySelectorAll("body *"), 0, 1200);
+  // The nav is the pinned bar that carries links — a promo strip is pinned
+  // too, and picking by width alone chose it over the nav it sits above.
+  let best = null, bestScore = 0;
+  for (const el of all) {
+    const cs = getComputedStyle(el);
+    if (cs.position !== "fixed" && cs.position !== "sticky") continue;
+    const r = el.getBoundingClientRect();
+    if (r.top > 140 || r.height < 36 || r.height > 220 || r.width < vw * 0.5) continue;
+    if (/cookie|consent/i.test((el.textContent || "").slice(0, 300))) continue;
+    const links = el.querySelectorAll("a, button").length;
+    const score = r.width * (links >= 3 ? 100 : 1);
+    if (score > bestScore) { best = { el, cs, r }; bestScore = score; }
+  }
+  if (!best) return null;
+  // The pinned element is often a transparent full-width wrapper; the bar a
+  // reader sees — the tinted, rounded, blurred pill — is a child. Descend to
+  // the largest visually-styled descendant and report that.
+  let { el, cs, r } = best;
+  if (!toHex(cs.backgroundColor)) {
+    const kids = el.querySelectorAll("*");
+    let pick = null, area = 0;
+    for (let i = 0; i < Math.min(kids.length, 80); i++) {
+      const k = kids[i];
+      const kcs = getComputedStyle(k);
+      const kr = k.getBoundingClientRect();
+      if (kr.height < 36 || kr.height > 200 || kr.width < vw * 0.4) continue;
+      const styled = toHex(kcs.backgroundColor) || (parseFloat(kcs.borderTopLeftRadius) || 0) >= 8 ||
+        (kcs.backdropFilter && kcs.backdropFilter !== "none");
+      if (styled && kr.width * kr.height > area) { pick = { el: k, cs: kcs, r: kr }; area = kr.width * kr.height; }
+    }
+    if (pick) { el = pick.el; cs = pick.cs; r = pick.r; }
+  }
+  const layers = (cs.boxShadow && cs.boxShadow !== "none" ? cs.boxShadow : "").split(/,(?![^(]*\\))/)
+    .map((s) => s.trim()).filter((l) => l && !/rgba?\\(\\d+,\\s*\\d+,\\s*\\d+,\\s*0\\)/.test(l));
+  return {
+    position: best.cs.position,
+    bg: toHex(cs.backgroundColor),
+    radius: Math.round(parseFloat(cs.borderTopLeftRadius) || 0),
+    blur: !!(cs.backdropFilter && cs.backdropFilter !== "none"),
+    inset: Math.round(r.left),
+    shadow: layers.join(", ").slice(0, 140),
+  };
+})()`;
+
+/** Runs in the page at a phone viewport: what actually happens down there. */
+const READ_MOBILE_STATE = `(() => {
+  const vw = window.innerWidth;
+  const overflow = document.documentElement.scrollWidth > vw * 1.05;
+  let maxFont = 0;
+  const all = Array.prototype.slice.call(document.querySelectorAll("body *"), 0, 1500);
+  let topActions = 0;
+  for (const el of all) {
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) continue;
+    let own = false;
+    for (const n of el.childNodes) if (n.nodeType === 3 && (n.textContent || "").trim()) { own = true; break; }
+    if (own) maxFont = Math.max(maxFont, parseFloat(cs.fontSize) || 0);
+    const tag = el.tagName.toLowerCase();
+    if ((tag === "a" || tag === "button") && r.top >= 0 && r.top <= 120) topActions++;
+  }
+  return { overflow, maxFont: Math.round(maxFont), topActions };
+})()`;
+
 export type RenderOptions = {
   /**
    * Wall-clock the render may spend, in ms. Every phase is sized to what is
@@ -1461,6 +1590,107 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
         : new Map<number, HoverState>();
     mark("hover:done");
 
+    // The nav under scroll: sample the pinned bar mid-page, then back at the
+    // top, and record what changed — that difference IS the floating-nav
+    // behaviour a reader remembers about a site.
+    type NavState = {
+      position: "fixed" | "sticky";
+      bg: string | null;
+      radius: number;
+      blur: boolean;
+      inset: number;
+      shadow: string;
+    } | null;
+    let navBehavior: Rendered["navBehavior"] = null;
+    if (left() > 3_000) {
+      try {
+        await page.evaluate("window.scrollTo(0, 900)");
+        await page.waitForTimeout(400);
+        const scrolled = (await page.evaluate(READ_NAV_STATE)) as NavState;
+        await page.evaluate("window.scrollTo(0, 0)");
+        await page.waitForTimeout(400);
+        const atTop = (await page.evaluate(READ_NAV_STATE)) as NavState;
+        if (scrolled) {
+          navBehavior = {
+            position: scrolled.position,
+            atTop: atTop
+              ? { bg: atTop.bg, radius: atTop.radius, blur: atTop.blur, inset: atTop.inset }
+              : { bg: null, radius: 0, blur: false, inset: 0 },
+            scrolled: {
+              bg: scrolled.bg,
+              radius: scrolled.radius,
+              blur: scrolled.blur,
+              inset: scrolled.inset,
+              shadow: scrolled.shadow,
+            },
+          };
+        }
+      } catch {
+        /* a page with no pinned bar simply records no nav behaviour */
+      }
+    }
+    mark("navscroll:done");
+
+    // The phone pass: not what the stylesheet promises at 390px, what the
+    // page verifiably does there — overflow, type step-down, nav collapse.
+    let responsive: Rendered["responsive"] = null;
+    if (left() > 4_000) {
+      try {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.waitForTimeout(650);
+        const m = (await page.evaluate(READ_MOBILE_STATE)) as {
+          overflow: boolean;
+          maxFont: number;
+          topActions: number;
+        } | null;
+        if (m) {
+          const desktopTopActions = raw.candidates.filter(
+            (c) => c.kind === "control" && c.top >= 0 && c.top <= 120,
+          ).length;
+          responsive = {
+            cleanAt390: !m.overflow,
+            displayPxAt390: m.maxFont || null,
+            navCollapsed:
+              desktopTopActions >= 4 ? m.topActions <= Math.ceil(desktopTopActions / 2) : null,
+          };
+        }
+      } catch {
+        /* responsive behaviour stays unrecorded rather than guessed */
+      }
+    }
+    mark("mobile:done");
+
+    const components = assemble(raw, { ground, ink, accent }, hovers);
+
+    // Fold the scroll behaviour into the nav's own spec, where a reader and
+    // an agent will actually see it.
+    if (navBehavior) {
+      const nav = components.find((c) => c.name === "Top Nav Bar");
+      if (nav) {
+        const s = navBehavior.scrolled;
+        const t = navBehavior.atTop;
+        // Describe what the pinned bar looks like, then what scrolling
+        // changes. A floating pill that is styled the same at rest and mid-
+        // page is still a floating pill — reporting only deltas erased it.
+        const look: string[] = [];
+        if (s.bg) look.push(`${s.bg} fill`);
+        if (s.radius >= 8) look.push(`${s.radius}px radius`);
+        if (s.inset >= 16) look.push(`floating ${s.inset}px in from the page edges`);
+        if (s.blur) look.push("backdrop blur");
+        if (s.shadow) look.push(`shadow \`${s.shadow}\``);
+        const changes: string[] = [];
+        if (s.bg && s.bg !== t.bg) changes.push(`takes its ${s.bg} fill`);
+        if (s.radius >= 8 && s.radius !== t.radius) changes.push(`rounds to ${s.radius}px`);
+        if (s.inset >= 16 && Math.abs(s.inset - t.inset) > 8) changes.push("detaches from the edges");
+        if (s.blur && !t.blur) changes.push("gains a backdrop blur");
+        nav.spec +=
+          ` ${navBehavior.position === "fixed" ? "Fixed" : "Sticky"} — stays pinned while the page scrolls` +
+          (look.length ? `, drawn as a bar with ${look.join(", ")}` : "") +
+          "." +
+          (changes.length ? ` Only on scroll does it ${changes.join(", ")}.` : "");
+      }
+    }
+
     return {
       colors,
       fonts: raw.fonts,
@@ -1469,7 +1699,10 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       radii,
       hairline,
       anatomy: pageAnatomy(raw, { ground, ink, accent }),
-      components: assemble(raw, { ground, ink, accent }, hovers),
+      navBehavior,
+      motion: raw.motion ?? null,
+      responsive,
+      components,
     };
   } catch (err) {
     // Any failure falls back to the text pass rather than failing the capture.

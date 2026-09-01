@@ -794,6 +794,34 @@ export function synthesizeDesignSystem(found: Extracted): {
     if (found.easings.length) parts.push(`easing \`${found.easings[0]}\``);
     layoutProse.push(`Motion is consistent: ${parts.join(", ")}.`);
   }
+  // Measured on elements, not declared in a stylesheet: how alive the page
+  // actually is, and by which mechanism — so a generated page moves the same
+  // way instead of arriving inert.
+  if (found.motionCensus && (found.motionCensus.animated || found.motionCensus.transitions || found.motionCensus.staged)) {
+    const m = found.motionCensus;
+    const bits: string[] = [];
+    if (m.animated) bits.push(`${m.animated} element(s) run CSS animations`);
+    if (m.transitions) bits.push(`${m.transitions} transition transform or opacity`);
+    if (m.staged) bits.push(`${m.staged} sit staged at opacity 0 awaiting a scroll entrance`);
+    layoutProse.push(
+      `Motion is real on this page: ${bits.join(", ")}. Pages built in this system should arrive the same way — content reveals on scroll, and interactive states transition.`,
+    );
+  }
+  if (found.responsive) {
+    const r = found.responsive;
+    const desktopMax = found.typeSamples.length ? Math.max(...found.typeSamples.map((s) => s.size)) : null;
+    const respBits: string[] = [
+      r.cleanAt390
+        ? "the page reflows with no horizontal overflow"
+        : "the page overflows horizontally — treat that as the source's bug, not a pattern",
+    ];
+    if (r.displayPxAt390 && desktopMax && r.displayPxAt390 < desktopMax) {
+      respBits.push(`display type steps down from ${desktopMax}px to ~${r.displayPxAt390}px`);
+    }
+    if (r.navCollapsed === true) respBits.push("the nav collapses to a menu control");
+    else if (r.navCollapsed === false) respBits.push("the nav keeps its links visible");
+    layoutProse.push(`Verified at a 390px viewport: ${respBits.join("; ")}.`);
+  }
   if (layoutProse.length || found.anatomy) {
     lines.push("## Layout", "");
     if (layoutProse.length) lines.push(layoutProse.join(" "), "");
