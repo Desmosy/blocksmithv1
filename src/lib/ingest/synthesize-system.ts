@@ -196,10 +196,28 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
   const usedEnough = (c: { count: number }) =>
     c.count >= ACCENT_MIN_COUNT && c.count / mostUsed >= ACCENT_MIN_SHARE;
 
+  /**
+   * An accent has to be visible against the page and able to carry a label.
+   *
+   * This asked for 3:1 against the ground, which is the rule for text *on* the
+   * ground — and an accent is usually a fill with a label on top of it. On a
+   * near-white page a bright brand colour scores about 1.7 and was thrown out
+   * every time: green, lime, cyan, yellow, most of what modern brands actually
+   * use. saucelabs.com came back with nine neutrals and no accent at all, and
+   * an agent given that palette cannot build anything that stands out, because
+   * nothing in the system does.
+   *
+   * So: distinct enough from the ground to read as a colour, and legible with
+   * either dark or light text on it. A bright green passes on ink; a deep
+   * indigo passes on white; a near-ground tint passes on neither.
+   */
+  const carriesText = (hex: string) =>
+    contrast(hex, ink.value) >= 3 || contrast(hex, "#ffffff") >= 3;
+
   const accentCandidates = usable
     .filter((c) => c.value !== ground.value && c.value !== ink.value)
     .filter((c) => chroma(c.value) >= ACCENT_MIN_CHROMA)
-    .filter((c) => contrast(c.value, ground.value) >= 3)
+    .filter((c) => contrast(c.value, ground.value) >= 1.2 && carriesText(c.value))
     .filter(usedEnough);
 
   // No fallback to "most saturated thing there is". A page can genuinely have
@@ -220,12 +238,43 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
     });
   }
 
-  // Remaining colours become neutrals, ordered light to dark, capped so the
-  // palette stays a palette rather than a dump of every value on the page.
+  /**
+   * The rest of the palette, capped so it stays a palette rather than a dump.
+   *
+   * This took the seven lightest, which is the same mistake the type scale
+   * made: sort on one axis, keep the head, lose everything at the other end.
+   * A page's second brand colour — a dark green, a deep red — sat below seven
+   * off-whites and never appeared. Colours that are plainly colours are kept
+   * first, by how much the page uses them; the neutrals then fill what is left,
+   * spread from light to dark rather than taken from the top.
+   */
   const claimed = new Set(out.map((c) => c.value));
-  const rest = byLuminance
-    .filter((c) => !claimed.has(c.value))
-    .slice(0, 7);
+  const remaining = byLuminance.filter((c) => !claimed.has(c.value));
+  const REST_MAX = 7;
+
+  const chromatics = remaining
+    .filter((c) => chroma(c.value) >= ACCENT_MIN_CHROMA)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+  const chromaticSet = new Set(chromatics.map((c) => c.value));
+
+  const neutrals = remaining.filter((c) => !chromaticSet.has(c.value));
+  const neutralSlots = Math.max(0, REST_MAX - chromatics.length);
+  const spread: typeof neutrals = [];
+  if (neutrals.length <= neutralSlots) {
+    spread.push(...neutrals);
+  } else if (neutralSlots > 0) {
+    const step = (neutrals.length - 1) / Math.max(1, neutralSlots - 1);
+    for (let i = 0; i < neutralSlots; i += 1) {
+      const pick = neutrals[Math.round(i * step)];
+      if (pick && !spread.includes(pick)) spread.push(pick);
+    }
+  }
+
+  // Back into light-to-dark order so the table still reads as a ramp.
+  const rest = [...chromatics, ...spread].sort(
+    (a, b) => luminance(b.value) - luminance(a.value),
+  );
 
   // Name each neutral for what it is. Two colours can legitimately land on the
   // same word — a page often carries several near-whites — so a repeat is
