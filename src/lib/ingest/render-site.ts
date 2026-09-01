@@ -48,6 +48,26 @@ export type TypeSample = {
   share: number;
 };
 
+/** One full-width band of the page, in document order. */
+export type PageBand = {
+  /** What the band is, e.g. "Hero", "Logo strip", "Card grid", "Footer". */
+  role: string;
+  /** Height in vh — 100 is one full viewport. */
+  vh: number;
+  /** How the band is grounded: the page itself, a tint, or an inversion. */
+  surface: "ground" | "tinted" | "dark";
+  /** What it holds, in words: "1 heading-scale visual, 2 actions, 3 cards". */
+  contents: string;
+};
+
+export type PageAnatomy = {
+  bands: PageBand[];
+  /** Vertical space between consecutive bands, px — the section rhythm. */
+  sectionGapPx: number | null;
+  /** Document height in viewports, so a reader knows how much page there is. */
+  pageVh: number;
+};
+
 export type Rendered = {
   /** Colours ranked by the screen area they cover, tagged by what painted them. */
   colors: { value: string; weight: number; src: ColorSource }[];
@@ -62,6 +82,8 @@ export type Rendered = {
   radii: number[];
   /** The page's hairline, when it draws one — as a border or a shadow ring. */
   hairline: { color: string; width: number; count: number } | null;
+  /** The page's vertical composition — the thing a stock template erases. */
+  anatomy: PageAnatomy | null;
 };
 
 /**
@@ -472,7 +494,13 @@ const COLLECT_IN_PAGE = `(() => {
       fontFamily: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
       weight: cs.fontWeight, transform: cs.textTransform,
       shadow: shadow,
-      media: (tag === "img" || tag === "svg" || tag === "canvas" || tag === "video") ? tag : bgImage ? bgImage.slice(0, 400) : "",
+      // A canvas that refuses a 2d context is running WebGL — the shader
+      // backgrounds sites like vercel.com are full of. Probing creates a 2d
+      // context on an untouched canvas, which is fine here: this page is our
+      // own throwaway render, not anyone's live browser.
+      media: tag === "canvas"
+        ? (() => { try { return el.getContext("2d") ? "canvas" : "canvas-gl"; } catch { return "canvas-gl"; } })()
+        : (tag === "img" || tag === "svg" || tag === "video") ? tag : bgImage ? bgImage.slice(0, 400) : "",
       label: text.slice(0, 28),
       children: children,
       hasImg: hasImgChild,
@@ -795,6 +823,12 @@ function visualName(c: Candidate): { name: string; role: string } {
       ? { name: "Icon", role: "Inline pictogram" }
       : { name: "Illustration", role: "Vector artwork" };
   }
+  if (c.media === "canvas-gl") {
+    return {
+      name: "Shader Canvas",
+      role: "Ambient WebGL graphic — rebuild from the shader recipes in the graphics kit, never as an image",
+    };
+  }
   if (c.media === "canvas") return { name: "Canvas Visual", role: "Programmatic graphic" };
   if (c.media === "video") return { name: "Video", role: "Motion media" };
   return { name: "Image", role: "Photography or illustration" };
@@ -906,7 +940,7 @@ function specFor(c: Candidate, hover?: HoverState): string {
   }
   if (c.kind === "visual" || c.kind === "avatar") {
     const shape = c.radius >= c.height / 2 - 1 ? "circular" : c.radius > 0 ? `${c.radius}px radius` : "square-cornered";
-    const paint = /gradient/i.test(c.media) ? "gradient fill" : c.media === "svg" ? "inline SVG" : c.media === "img" ? "raster image" : c.media === "canvas" ? "canvas" : c.media === "video" ? "video" : c.bg ? `${c.bg} fill` : "image fill";
+    const paint = /gradient/i.test(c.media) ? "gradient fill" : c.media === "svg" ? "inline SVG" : c.media === "img" ? "raster image" : c.media === "canvas-gl" ? "WebGL canvas" : c.media === "canvas" ? "canvas" : c.media === "video" ? "video" : c.bg ? `${c.bg} fill` : "image fill";
     let out = `${paint}, ${shape}, ${c.width}×${c.height}px.`;
     if (/gradient/i.test(c.media)) {
       // The gradient as it can be rebuilt: rgb() stops converted to hex so the
@@ -1101,6 +1135,99 @@ function foldHairlines(
     byColour.set(home, e);
   }
   return [...byColour.entries()].sort((a, b) => (b[1].edge + b[1].box) - (a[1].edge + a[1].box))[0];
+}
+
+/**
+ * Read the page's vertical composition off its full-width containers.
+ *
+ * Every generated landing page was coming out hero + marquee + three cards,
+ * whatever the source looked like — because the capture recorded tokens and
+ * components but nothing about how the source page is actually built. This
+ * walks the full-width bands top to bottom and records what each one is, how
+ * tall it is, what surface it sits on, and the rhythm between them: the part
+ * of a design a reader recognises from across the room.
+ */
+function pageAnatomy(raw: RawPage, palette: Palette): PageAnatomy | null {
+  const { w: vw, h: vh, docH } = raw.viewport;
+  if (!raw.containers.length) return null;
+
+  // Full-width, meaningfully tall, and no taller than a couple of viewports —
+  // above that it is a page wrapper, not a section, and taking one as a band
+  // swallowed the whole page into a single "Hero". At equal tops the taller
+  // remaining wrapper wins so a section beats its inner layout div.
+  const wide = raw.containers
+    .filter((c) => c.width >= vw * 0.85 && c.height >= 120 && c.height <= vh * 2.2)
+    .sort((a, b) => a.top - b.top || b.height - a.height);
+
+  // Greedy non-overlapping sweep: each accepted band pushes the floor down,
+  // so nested wrappers of the same section collapse into one band.
+  const bands: Container[] = [];
+  let floor = -1;
+  for (const c of wide) {
+    if (c.top >= floor - 40) {
+      bands.push(c);
+      floor = Math.max(floor, c.top + c.height);
+    }
+  }
+  if (bands.length < 2) return null;
+
+  const inside = (band: Container, c: Candidate) =>
+    c.top >= band.top - 4 && c.top < band.top + band.height;
+
+  const groundLum = palette.ground ? luminance(palette.ground) : 1;
+  const surfaceOf = (bg: string | null): PageBand["surface"] => {
+    if (!bg) return "ground";
+    const l = luminance(bg);
+    if (l < 0.3) return "dark";
+    return Math.abs(l - groundLum) < 0.04 ? "ground" : "tinted";
+  };
+
+  let heroSeen = false;
+  const out: PageBand[] = bands.slice(0, 12).map((band, i) => {
+    const kids = raw.candidates.filter((c) => inside(band, c));
+    const controls = kids.filter((c) => c.kind === "control").length;
+    const cards = kids.filter((c) => c.kind === "card").length;
+    const visuals = kids.filter((c) => c.kind === "visual");
+    const smallVisuals = visuals.filter((c) => Math.max(c.width, c.height) <= 220).length;
+    const bigVisuals = visuals.length - smallVisuals;
+    const surface = surfaceOf(band.bg);
+
+    let role: string;
+    if (i === 0 && band.top <= 120 && band.height <= 160) role = "Nav";
+    else if (!heroSeen && i <= 1 && band.height >= vh * 0.5) { role = "Hero"; heroSeen = true; }
+    else if (smallVisuals >= 4 && cards === 0 && band.height <= vh * 0.6) role = "Logo strip";
+    else if (cards >= 2) role = "Card grid";
+    else if (bigVisuals >= 1 && band.height >= vh * 0.5) role = "Feature with media";
+    else if (i === bands.length - 1 || band.top + band.height >= docH - vh * 0.5) role = "Footer";
+    else if (surface === "dark") role = "Inverted band";
+    else role = "Content band";
+
+    const parts: string[] = [];
+    if (controls) parts.push(`${controls} action${controls > 1 ? "s" : ""}`);
+    if (cards) parts.push(`${cards} card${cards > 1 ? "s" : ""}`);
+    if (bigVisuals) parts.push(`${bigVisuals} large visual${bigVisuals > 1 ? "s" : ""}`);
+    if (smallVisuals) parts.push(`${smallVisuals} small visual${smallVisuals > 1 ? "s" : ""}`);
+
+    return {
+      role,
+      vh: Math.round((band.height / vh) * 100),
+      surface,
+      contents: parts.join(", ") || "text",
+    };
+  });
+
+  // The rhythm. Bands are a sample, not a partition — uncaptured wrappers
+  // leave holes, and a hole read as "the section gap" would teach agents to
+  // strand sections in 400px of nothing. The smallest real gap between
+  // captured neighbours is the honest estimate of the rhythm.
+  const gaps: number[] = [];
+  for (let i = 1; i < bands.length; i++) {
+    const gap = bands[i].top - (bands[i - 1].top + bands[i - 1].height);
+    if (gap >= 8 && gap <= 240) gaps.push(gap);
+  }
+  const sectionGapPx = gaps.length ? Math.round(Math.min(...gaps)) : null;
+
+  return { bands: out, sectionGapPx, pageVh: Math.round((docH / vh) * 10) / 10 };
 }
 
 function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState>): RenderedComponent[] {
@@ -1341,6 +1468,7 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       shadows,
       radii,
       hairline,
+      anatomy: pageAnatomy(raw, { ground, ink, accent }),
       components: assemble(raw, { ground, ink, accent }, hovers),
     };
   } catch (err) {

@@ -794,7 +794,36 @@ export function synthesizeDesignSystem(found: Extracted): {
     if (found.easings.length) parts.push(`easing \`${found.easings[0]}\``);
     layoutProse.push(`Motion is consistent: ${parts.join(", ")}.`);
   }
-  if (layoutProse.length) lines.push("## Layout", "", layoutProse.join(" "), "");
+  if (layoutProse.length || found.anatomy) {
+    lines.push("## Layout", "");
+    if (layoutProse.length) lines.push(layoutProse.join(" "), "");
+    /**
+     * The composition, band by band. Tokens say what a page is made of;
+     * this says how the source page is *built* — which is what stops every
+     * generated landing page collapsing into the same stock template.
+     */
+    if (found.anatomy) {
+      const a = found.anatomy;
+      lines.push(
+        `### Page anatomy — measured from ${host}`,
+        "",
+        `The captured page is ~${a.pageVh} viewports tall, composed as:`,
+        "",
+        ...a.bands.map((b, i) => {
+          const surface =
+            b.surface === "ground" ? "on the page ground" : b.surface === "dark" ? "inverted (dark surface)" : "on a tinted band";
+          return `${i + 1}. **${b.role}** — ~${b.vh}vh, ${surface}; holds ${b.contents}.`;
+        }),
+        "",
+        a.sectionGapPx !== null
+          ? `Consecutive bands are separated by ~${a.sectionGapPx}px. Composition changes` +
+            ` from band to band — height, surface, and layout all vary; that variation` +
+            ` is the design, not an accident to normalise away.`
+          : "Composition changes from band to band; that variation is the design.",
+        "",
+      );
+    }
+  }
 
   // No Components and no Capabilities section on purpose: a page's CSS says
   // nothing about which components a team maintains or which patterns they
