@@ -167,7 +167,42 @@ function neutralName(hex: string): string {
   return words[temperature(hex)][band];
 }
 
-function nameColors(colors: { value: string; count: number }[]): Named[] {
+/**
+ * A role from where the colour was painted, not from its position in a list.
+ *
+ * The census tags each colour with what used it most — a card fill, body
+ * text, an SVG mark, a border. "Observed on the page 40 time(s)" told an
+ * agent nothing; "Body and secondary text" is a decision it can follow.
+ */
+function inferredRole(
+  c: { value: string; count: number; src?: string },
+): string | null {
+  const l = luminance(c.value);
+  switch (c.src) {
+    case "border":
+      return "Hairline borders and separators";
+    case "svg":
+      return l < 0.35 ? "Logo and icon fills" : "Illustration and artwork fills";
+    case "text":
+      return l < 0.35
+        ? "Body and secondary text"
+        : l < 0.7
+          ? "Muted text and captions"
+          : "Text on dark fills";
+    case "fill":
+      return l > 0.9
+        ? "Raised surfaces and cards"
+        : l > 0.7
+          ? "Tinted bands and hover fills"
+          : l < 0.25
+            ? "Dark fills and inverted panels"
+            : "Mid-tone fills";
+    default:
+      return null;
+  }
+}
+
+function nameColors(colors: { value: string; count: number; src?: string }[]): Named[] {
   const usable = colors.filter((c) => /^#[0-9a-f]{6}$/.test(c.value));
   if (!usable.length) return [];
 
@@ -270,15 +305,34 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
     .slice(0, 3);
   const chromaticSet = new Set(chromatics.map((c) => c.value));
 
-  const neutrals = remaining.filter((c) => !chromaticSet.has(c.value));
+  let neutrals = remaining.filter((c) => !chromaticSet.has(c.value));
   const neutralSlots = Math.max(0, REST_MAX - chromatics.length);
+  // When there are more neutrals than slots, the ones seen a couple of times
+  // are measurement noise — a 2-use grey must not take a slot from the
+  // hairline or the text colour. Structural colours (borders, text) stay
+  // regardless of count; a border colour never covers area, so its count is
+  // honest and small.
+  if (neutrals.length > neutralSlots) {
+    const substantial = neutrals.filter(
+      (c) => c.count >= 3 || c.src === "border" || c.src === "text",
+    );
+    if (substantial.length >= Math.min(neutralSlots, 3)) neutrals = substantial;
+  }
   const spread: typeof neutrals = [];
   if (neutrals.length <= neutralSlots) {
     spread.push(...neutrals);
   } else if (neutralSlots > 0) {
-    const step = (neutrals.length - 1) / Math.max(1, neutralSlots - 1);
-    for (let i = 0; i < neutralSlots; i += 1) {
-      const pick = neutrals[Math.round(i * step)];
+    // Structural colours first: the hairline and the text greys are tokens a
+    // page cannot be rebuilt without, and an even spread across the luminance
+    // ramp was happy to skip them for a decorative near-white.
+    for (const c of neutrals) {
+      if ((c.src === "border" || c.src === "text") && spread.length < neutralSlots) spread.push(c);
+    }
+    const rest = neutrals.filter((c) => !spread.includes(c));
+    const slots = neutralSlots - spread.length;
+    const step = (rest.length - 1) / Math.max(1, slots - 1);
+    for (let i = 0; i < slots; i += 1) {
+      const pick = rest[Math.round(i * step)];
       if (pick && !spread.includes(pick)) spread.push(pick);
     }
   }
@@ -306,7 +360,7 @@ function nameColors(colors: { value: string; count: number }[]): Named[] {
       value: c.value,
       role: chromatic
         ? `Decorative — seen ${c.count} time(s), in artwork rather than UI chrome`
-        : `Observed on the page ${c.count} time(s)`,
+        : inferredRole(c) ?? `Observed on the page ${c.count} time(s)`,
     });
   });
   return out;
@@ -349,17 +403,35 @@ function scale(values: number[], max: number, floor = 8): number[] {
 }
 
 const SPACING_NAMES = ["2xs", "xs", "sm", "md", "lg", "xl", "2xl", "3xl", "4xl", "5xl"];
-const TYPE_ROLES = [
-  "meta",
-  "caption",
-  "body-sm",
-  "body",
-  "body-lg",
-  "subheading",
-  "heading",
-  "heading-lg",
-  "display",
-];
+
+/**
+ * A role from the size itself, not from its position in the list.
+ *
+ * Positional names meant a page whose smallest measured size was 14px called
+ * it "meta" and its 56px hero "body" — and an agent asked for body text set
+ * it at 56px. 16px is body wherever it falls in the list.
+ */
+function typeRoleFor(n: number): string {
+  if (n <= 12) return "meta";
+  if (n <= 13.5) return "caption";
+  if (n <= 15) return "body-sm";
+  if (n <= 18) return "body";
+  if (n <= 22) return "body-lg";
+  if (n <= 30) return "subheading";
+  if (n <= 42) return "heading";
+  if (n <= 58) return "heading-lg";
+  return "display";
+}
+
+function typeRoles(sizes: number[]): string[] {
+  const used = new Map<string, number>();
+  return sizes.map((n) => {
+    const base = typeRoleFor(n);
+    const seen = used.get(base) ?? 0;
+    used.set(base, seen + 1);
+    return seen ? `${base}-${seen + 1}` : base;
+  });
+}
 
 export function synthesizeDesignSystem(found: Extracted): {
   markdown: string;
@@ -384,11 +456,55 @@ export function synthesizeDesignSystem(found: Extracted): {
   const short = segments.find((s) => s.split(/\s+/).length <= 3);
   const title = named ?? short ?? (brand ? brand[0].toUpperCase() + brand.slice(1) : host);
   const colors = nameColors(found.colors);
+
+  /**
+   * Chart series colours, from the system itself.
+   *
+   * Charts are where a generated page most easily goes off-system: an agent
+   * reaches for a chart library and gets its default rainbow. The ladder
+   * below is the palette re-ordered for data — darkest first, because in a
+   * designed chart importance is carried by darkness, not by hue — so a
+   * dashboard drawn from these tokens looks like the site it came from.
+   */
+  const chartLadder = (() => {
+    const out: string[] = [];
+    const pool = colors
+      .filter((c) => c.name !== "Ground" && c.name !== "Accent")
+      .filter((c) => luminance(c.value) <= 0.82)
+      .sort((a, b) => luminance(a.value) - luminance(b.value));
+    for (const c of pool) {
+      if (!out.includes(c.value)) out.push(c.value);
+      if (out.length >= 6) break;
+    }
+    return out;
+  })();
+  const accentColor = colors.find((c) => c.name === "Accent")?.value;
   // Floors differ by what the values are. 6.79px is not a type size, but 4px
   // is a real spacing step and 2px is a real radius.
   const spacing = scale(found.spacing, 9, 2);
-  const sizes = scale(found.fontSizes, 9, 8);
+  // Sizes from the census where there is one: what the page set its text in,
+  // with one-off oddities dropped — except at the top, where a display size
+  // used once on the hero is the most deliberate value on the page.
+  const sampleShareBySize = new Map<number, number>();
+  for (const s of found.typeSamples) {
+    sampleShareBySize.set(s.size, (sampleShareBySize.get(s.size) ?? 0) + s.share);
+  }
+  const sizeCandidates = found.typeSamples.length
+    ? [...sampleShareBySize.entries()]
+        .filter(([n, share]) => share >= 0.004 || n >= 28)
+        .map(([n]) => n)
+    : found.fontSizes;
+  const sizes = scale(sizeCandidates, 9, 8);
   const radii = scale(found.radii, 5, 1);
+
+  /** The heaviest-used sample at a given size — its line height and tracking. */
+  const dominantAt = (n: number) =>
+    found.typeSamples
+      .filter((s) => Math.abs(s.size - n) <= 0.5)
+      .sort((a, b) => b.share - a.share)[0];
+  /** Census rows for one family, for per-face weights and sizes. */
+  const samplesFor = (name: string) =>
+    found.typeSamples.filter((s) => s.family.toLowerCase() === name.toLowerCase());
 
   const lines: string[] = [
     `# ${title} — Style Reference`,
@@ -436,25 +552,44 @@ export function synthesizeDesignSystem(found: Extracted): {
   if (found.fonts.length || sizes.length) {
     lines.push("## Tokens — Typography", "");
     found.fonts.slice(0, 3).forEach((font, i) => {
-      const role =
-        i === 0
+      const mono = /mono|code/i.test(font.name);
+      const role = mono
+        ? "Monospace face for labels, code and metadata"
+        : i === 0
           ? "Primary typeface observed on the page"
           : i === 1
             ? "Secondary typeface observed on the page"
             : "Third typeface observed on the page";
+      // Weights and sizes for *this* face, from the census. The stylesheet
+      // route declared every weight a variable font supports — nine of them —
+      // for every family on the page, which is a fabrication an agent then
+      // builds with.
+      const own = samplesFor(font.name);
+      const ownWeights = [...new Set(own.map((s) => s.weight))].sort((a, b) => a - b).slice(0, 6);
+      const ownSizes = [...new Set(own.map((s) => s.size))]
+        .filter((n) => n >= 8)
+        .sort((a, b) => a - b)
+        .slice(0, 10);
+      const weights = ownWeights.length
+        ? ownWeights
+        : found.weights.length
+          ? found.weights
+          : [400, 500, 700];
+      const faceSizes = ownSizes.length ? ownSizes : sizes.length ? sizes : [16];
       lines.push(
         `### ${font.name} — ${role}. · \`--font-${slug(font.name)}\``,
         // The substitute is what a reader can actually load. Where the real
         // face has no free counterpart it repeats the name, which is honest:
         // the system says what it saw and what you can use instead.
         `- **Substitute:** ${font.substitute}`,
-        `- **Weights:** ${(found.weights.length ? found.weights : [400, 500, 700]).join(", ")}`,
-        `- **Sizes:** ${(sizes.length ? sizes : [16]).map((n) => `${n}px`).join(", ")}`,
+        `- **Weights:** ${weights.join(", ")}`,
+        `- **Sizes:** ${faceSizes.map((n) => `${n}px`).join(", ")}`,
         "",
       );
     });
   }
 
+  const roleNames = typeRoles(sizes);
   if (sizes.length) {
     lines.push(
       "### Type Scale",
@@ -462,10 +597,16 @@ export function synthesizeDesignSystem(found: Extracted): {
       "| Role | Size | Line Height | Letter Spacing | Token |",
       "|------|------|-------------|----------------|-------|",
       ...sizes.map((n, i) => {
-        const role = TYPE_ROLES[i] ?? `size-${i + 1}`;
-        // Use a line height and tracking the page actually states. Larger text
-        // gets the tightest observed ratio, body text the roomiest — which is
-        // how type scales behave — rather than one invented multiplier.
+        const role = roleNames[i];
+        // Measured, where the page was rendered: the line height and tracking
+        // of the text most set at this size. A 64px hero at line-height 1 and
+        // -3.8px tracking is the system's whole voice; a distribution guess
+        // gave every size 1.5 and one tracking value, and pages built from
+        // that read nothing like the site.
+        const sample = dominantAt(n);
+        if (sample && sample.lineHeight >= 0.8 && sample.lineHeight <= 2.5) {
+          return `| ${role} | ${n}px | ${sample.lineHeight} | ${sample.letterSpacing} | \`--text-${role}\` |`;
+        }
         const ratios = found.lineHeights
           .map((v) => (/^[\d.]+$/.test(v) ? Number(v) : null))
           .filter((v): v is number => v !== null && v >= 1 && v <= 2.2)
@@ -474,7 +615,7 @@ export function synthesizeDesignSystem(found: Extracted): {
           ? ratios[Math.min(Math.floor((i / Math.max(sizes.length - 1, 1)) * ratios.length), ratios.length - 1)]
           : 1.5;
         const tracking = n >= 32 ? (found.letterSpacings[0] ?? "0px") : "0px";
-        return `| ${role} | ${n}px | ${Math.round(n * ratio)} | ${tracking} | \`--text-${role}\` |`;
+        return `| ${role} | ${n}px | ${ratio} | ${tracking} | \`--text-${role}\` |`;
       }),
       "",
     );
@@ -503,12 +644,17 @@ export function synthesizeDesignSystem(found: Extracted): {
   }
 
   if (radii.length) {
+    // "Pill" is a shape, not a position: only a radius that actually renders
+    // as one gets the name. Calling the largest of five small radii "Pill"
+    // told agents a 16px corner was a fully-rounded button.
+    const radiusName = (n: number, i: number) =>
+      n >= 999 ? "Pill" : ["Small", "Control", "Card", "Panel", "Large"][i] ?? `Radius ${i + 1}`;
     lines.push(
       "### Border Radius",
       "",
       "| Element | Value |",
       "|---------|-------|",
-      ...radii.map((n, i) => `| ${["Small", "Control", "Card", "Panel", "Pill"][i] ?? `Radius ${i + 1}`} | ${n}px |`),
+      ...radii.map((n, i) => `| ${radiusName(n, i)} | ${n}px |`),
       "",
     );
   }
@@ -572,8 +718,20 @@ export function synthesizeDesignSystem(found: Extracted): {
 
   // Surfaces: the light end of the palette, ordered. These are the planes a
   // page is built from, and naming them is most of what "surface" means.
+  // A colour has to actually cover something to be a plane — a grey seen
+  // twice is not "alternating bands", and publishing it as one taught agents
+  // to build zebra-striped pages out of measurement noise.
+  const countOf = new Map(found.colors.map((c) => [c.value, c.count] as const));
+  const srcOf = new Map(found.colors.map((c) => [c.value, c.src] as const));
+  const topFill = Math.max(1, ...found.colors.map((c) => c.count));
   const surfaceCandidates = colors
     .filter((c) => luminance(c.value) > 0.55)
+    .filter(
+      (c) =>
+        c.name === "Ground" ||
+        ((countOf.get(c.value) ?? 0) >= topFill * 0.01 &&
+          (srcOf.get(c.value) ?? "fill") === "fill"),
+    )
     .slice(0, 4);
   if (surfaceCandidates.length) {
     lines.push(
@@ -587,7 +745,7 @@ export function synthesizeDesignSystem(found: Extracted): {
             ? "The page itself"
             : i === 1
               ? "Cards and raised panels"
-              : "Alternating bands and hover states";
+              : "Tinted bands and hover states";
         return `| ${i} | ${c.name} | \`${c.value}\` | ${purpose} |`;
       }),
       "",
@@ -660,13 +818,25 @@ export function synthesizeDesignSystem(found: Extracted): {
   dos.push(
     "Build decorative graphics — orbs, gradients, ambient motion — as SVG, Canvas or shader code from the tokens above, so they re-theme and resize with the system.",
   );
+  if (chartLadder.length >= 2) {
+    dos.push(
+      `Draw charts as inline SVG from the chart tokens: series take \`--chart-1\` through \`--chart-${chartLadder.length}\` in order of importance — the most important series is the darkest — with hairline grid lines and every label in the system's own typeface.`,
+    );
+  }
   const donts: string[] = [
     "Do not treat this as a finished design system. It records what one page does, not what your team has decided.",
     "Do not add colours outside the palette without deciding what they are for first.",
   ];
   donts.push(
     "Do not ship decorative artwork as PNG, JPEG or a generated image; raster files are for photography and screenshots only.",
+    "Do not draw clip-art glyphs — stars, sparkles, bolts, blobs — and never let decoration overlap text or controls. Decoration sits behind or beside content, in hairline geometry at whisper contrast.",
   );
+  if (chartLadder.length >= 2) {
+    donts.push(
+      "Do not use a chart library's default theme or palette; a chart that ignores the tokens is off-system even when the rest of the page is not.",
+      "Do not present invented numbers as measurements. A demo chart says it is illustrative, keeps honest units and axes, and carries a source line whenever the data is real.",
+    );
+  }
   if (sizes.length) {
     donts.push(
       `Do not use type sizes outside the scale. Intermediate sizes flatten the hierarchy the scale exists to create.`,
@@ -697,6 +867,11 @@ export function synthesizeDesignSystem(found: Extracted): {
     found.shadows.length
       ? "- Elevation is listed in order of use. Reach for level 1; anything deeper needs a reason."
       : "- No shadows were observed. Separate surfaces with borders and space.",
+    ...(chartLadder.length >= 2
+      ? [
+          "- Charts are components of this system, not add-ons: build them from the `--chart-*` tokens, grid them with the hairline, and typeset labels in the system's faces. Say when data is illustrative.",
+        ]
+      : []),
     "",
     "## Similar Brands",
     "",
@@ -716,6 +891,11 @@ export function synthesizeDesignSystem(found: Extracted): {
   const varLines: string[] = [];
   varLines.push("  /* Colours */");
   for (const c of colors) varLines.push(`  --color-${slug(c.name)}: ${c.value};`);
+  if (chartLadder.length >= 2) {
+    varLines.push("", "  /* Chart series — assign by importance; darkest carries the headline series */");
+    chartLadder.forEach((v, i) => varLines.push(`  --chart-${i + 1}: ${v};`));
+    if (accentColor) varLines.push(`  --chart-accent: ${accentColor};`);
+  }
   if (found.fonts.length) {
     varLines.push("", "  /* Typefaces */");
     // The substitute is the fallback: a reader without the licensed face still
@@ -743,7 +923,7 @@ export function synthesizeDesignSystem(found: Extracted): {
   if (radii.length) {
     varLines.push("", "  /* Radii */");
     radii.forEach((n, i) =>
-      varLines.push(`  --radius-${(["sm", "control", "card", "panel", "pill"][i] ?? `r${i + 1}`)}: ${n}px;`),
+      varLines.push(`  --radius-${n >= 999 ? "pill" : (["sm", "control", "card", "panel", "lg"][i] ?? `r${i + 1}`)}: ${n}px;`),
     );
   }
 

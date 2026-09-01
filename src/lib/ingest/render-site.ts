@@ -33,12 +33,35 @@ export type RenderedComponent = {
   count: number;
 };
 
+export type ColorSource = "fill" | "text" | "svg" | "border";
+
+/** One run of text as the page actually set it, weighted by how much. */
+export type TypeSample = {
+  family: string;
+  size: number;
+  weight: number;
+  /** Line height as a ratio of the size; 0 when it could not be read. */
+  lineHeight: number;
+  /** Computed letter-spacing, e.g. "-3.36px"; "0px" when normal. */
+  letterSpacing: string;
+  /** Share of all measured text, 0..1. */
+  share: number;
+};
+
 export type Rendered = {
-  /** Colours ranked by the screen area they cover. */
-  colors: { value: string; weight: number }[];
+  /** Colours ranked by the screen area they cover, tagged by what painted them. */
+  colors: { value: string; weight: number; src: ColorSource }[];
   components: RenderedComponent[];
   /** Font stacks as actually applied, most-used first. */
   fonts: string[];
+  /** The type census: real weights, line heights and tracking, per size. */
+  typeSamples: TypeSample[];
+  /** Shadows as rendered (transparent layers stripped), most-used first. */
+  shadows: string[];
+  /** Corner radii as rendered on controls and cards, most-used first. */
+  radii: number[];
+  /** The page's hairline, when it draws one — as a border or a shadow ring. */
+  hairline: { color: string; width: number; count: number } | null;
 };
 
 /**
@@ -155,12 +178,44 @@ const COLLECT_IN_PAGE = `(() => {
   const vw = window.innerWidth, vh = window.innerHeight;
   const docH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
 
+  // Colours by where they are painted, not just how much. A palette entry
+  // that carried body text is "text"; one that filled cards is "fill"; one
+  // that only exists inside a logo is "svg". The synthesis names roles from
+  // this, instead of publishing "observed N times" and calling it a role.
   const area = new Map();
+  const areaBySrc = { fill: new Map(), text: new Map(), svg: new Map() };
+  const bump = (src, hex, w) => {
+    area.set(hex, (area.get(hex) || 0) + w);
+    const m = areaBySrc[src];
+    m.set(hex, (m.get(hex) || 0) + w);
+  };
   const fontUse = new Map();
+  const typo = new Map();
   const hairlines = new Map();
   const candidates = [];
   const containers = [];
   const pushed = new Map();
+
+  // A computed box-shadow keeps every declared layer, including the fully
+  // transparent ones sites leave as hover slots. Truncating the raw string
+  // kept exactly those layers and cut off the real one — a card whose only
+  // visible edge is "rgba(0,0,0,.08) 0 0 0 1px" published three invisible
+  // layers and lost the ring. Drop transparent layers, keep the rest whole.
+  const splitLayers = (v) => v.split(/,(?![^(]*\\))/).map((s) => s.trim()).filter(Boolean);
+  const transparentLayer = (l) => /rgba?\\(\\d+,\\s*\\d+,\\s*\\d+,\\s*0\\)/.test(l);
+  const cleanShadow = (v) => {
+    if (!v || v === "none") return "";
+    const kept = splitLayers(v).filter((l) => !transparentLayer(l));
+    let out = "";
+    for (const l of kept) {
+      if (out && (out.length + l.length + 2) > 180) break;
+      out = out ? out + ", " + l : l;
+    }
+    return out;
+  };
+  // "rgba(...) 0px 0px 0px 1px" — no offset, no blur, a hairline of spread.
+  // It is how a lot of modern sites draw every border they have.
+  const ringLayer = (l) => l.match(/^(rgba?\\([^)]+\\)|#[0-9a-fA-F]{3,8})\\s+0px\\s+0px\\s+0px\\s+([12])px(\\s+inset)?$/);
 
   const all = Array.prototype.slice.call(document.querySelectorAll("body *"), 0, 6000);
   const index = new Map();
@@ -193,7 +248,7 @@ const COLLECT_IN_PAGE = `(() => {
             const raw = paints[p];
             if (!raw || raw === "none") continue;
             const hex = rgbToHex(raw);
-            if (hex) area.set(hex, (area.get(hex) || 0) + a);
+            if (hex) bump("svg", hex, a);
           }
         }
       }
@@ -209,7 +264,7 @@ const COLLECT_IN_PAGE = `(() => {
     const parentEl = el.parentElement;
     const parentBgRaw = parentEl ? rgbToHex(getComputedStyle(parentEl).backgroundColor) : null;
     const bg = rgbToHexOver(cs.backgroundColor, parentBgRaw);
-    if (bg) area.set(bg, (area.get(bg) || 0) + size);
+    if (bg) bump("fill", bg, size);
 
     let own = false;
     for (const n of el.childNodes) {
@@ -217,8 +272,11 @@ const COLLECT_IN_PAGE = `(() => {
     }
     // innerText respects visibility; textContent does not, and hidden
     // localised copies of a label sit in the DOM on many sites.
+    // Leaf elements are always cheap to read; the height gate is for
+    // containers, where innerText walks the whole subtree — and it must not
+    // skip a hero heading, which is exactly the text the type census needs.
     let text = "";
-    if (rect.height <= 200) {
+    if (rect.height <= 200 || el.children.length === 0) {
       text = (el.innerText || "").replace(/\\s+/g, " ").trim();
       const half = text.slice(0, Math.floor(text.length / 2));
       if (half && text === half + half) text = half;
@@ -226,9 +284,22 @@ const COLLECT_IN_PAGE = `(() => {
     if (own && text) {
       const fg = rgbToHex(cs.color);
       const w = Math.min(text.length, 400) * px(cs.fontSize);
-      if (fg) area.set(fg, (area.get(fg) || 0) + w);
+      if (fg) bump("text", fg, w);
       const fam = cs.fontFamily.split(",")[0].replace(/["']/g, "").trim();
       if (fam) fontUse.set(fam, (fontUse.get(fam) || 0) + w);
+      // The type census: what this run of text is actually set in. This is
+      // the only honest source for weights, line heights and tracking — the
+      // stylesheet declares every weight a variable font *can* be, not the
+      // three the page uses, and its line heights arrive as px strings that
+      // mean nothing without the size they belong to.
+      const fs = px(cs.fontSize);
+      const lh = parseFloat(cs.lineHeight);
+      const ratio = fs && lh ? Math.round((lh / fs) * 100) / 100 : 0;
+      const ls = !cs.letterSpacing || cs.letterSpacing === "normal" ? "0px" : cs.letterSpacing;
+      if (fam && fs >= 6 && typo.size < 500) {
+        const tkey = fam + "|" + fs + "|" + cs.fontWeight + "|" + ratio + "|" + ls;
+        typo.set(tkey, (typo.get(tkey) || 0) + w);
+      }
     }
 
     const role = el.getAttribute("role") || "";
@@ -251,11 +322,9 @@ const COLLECT_IN_PAGE = `(() => {
     const sides = borderColEarly ? sidesRaw : 0;
     const bordered = sides > 0;
     const bgImage = cs.backgroundImage && cs.backgroundImage !== "none" ? cs.backgroundImage : "";
-    // A shadow whose every layer is fully transparent is a shadow in name
-    // only; sites leave these in place as a hover slot. Counting it as
-    // elevation made a flat white pill "Elevated" and split its cluster.
-    const rawShadow = cs.boxShadow && cs.boxShadow !== "none" ? cs.boxShadow : "";
-    const shadow = rawShadow && !/^(rgba?\([^)]*,\s*0\)\s*[-\d.px ]+,?\s*)+$/.test(rawShadow) ? rawShadow : "";
+    // Transparent layers stripped: what remains is the shadow the eye sees,
+    // and an empty result means the element is flat.
+    const shadow = cleanShadow(cs.boxShadow);
     const ringCol = px(cs.outlineWidth) > 0 && cs.outlineStyle !== "none" ? rgbToHexOver(cs.outlineColor, over) : null;
     const ring = ringCol ? px(cs.outlineWidth) + "px " + ringCol : "";
     const hasImgChild = !!el.querySelector(":scope > img, :scope > svg, :scope > picture, :scope > video");
@@ -272,6 +341,21 @@ const COLLECT_IN_PAGE = `(() => {
       if (col && col !== bg) {
         const key = col + "|" + Math.max.apply(null, bw) + "px|" + (sides === 1 ? "edge" : "box");
         hairlines.set(key, (hairlines.get(key) || 0) + 1);
+      }
+    }
+    // Sites that draw their borders as box-shadow rings — no offset, no blur,
+    // 1px of spread — have hairlines the border census can never see. On
+    // vercel.com every card edge and button outline is such a ring, and the
+    // capture published "no hairlines" for a site made of them.
+    if (shadow && rect.width >= 60) {
+      for (const l of splitLayers(shadow)) {
+        const ring = ringLayer(l);
+        if (!ring) continue;
+        const col = ring[1].startsWith("#") ? ring[1] : rgbToHexOver(ring[1], over);
+        if (col && col !== bg) {
+          const key = col + "|" + ring[2] + "px|box";
+          hairlines.set(key, (hairlines.get(key) || 0) + 1);
+        }
       }
     }
     // Rules drawn with ::before/::after never appear in querySelectorAll.
@@ -387,7 +471,7 @@ const COLLECT_IN_PAGE = `(() => {
       fontSize: px(cs.fontSize),
       fontFamily: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
       weight: cs.fontWeight, transform: cs.textTransform,
-      shadow: shadow ? shadow.slice(0, 80) : "",
+      shadow: shadow,
       media: (tag === "img" || tag === "svg" || tag === "canvas" || tag === "video") ? tag : bgImage ? bgImage.slice(0, 400) : "",
       label: text.slice(0, 28),
       children: children,
@@ -401,9 +485,20 @@ const COLLECT_IN_PAGE = `(() => {
   }
 
   const byWeight = (a, b) => b[1] - a[1];
+  // Each colour leaves with the source that painted most of it, so the
+  // synthesis can tell a text grey from a card fill from a logo colour.
+  const srcOf = (hex) => {
+    let best = "fill", bestW = -1;
+    for (const src of ["fill", "text", "svg"]) {
+      const w = areaBySrc[src].get(hex) || 0;
+      if (w > bestW) { best = src; bestW = w; }
+    }
+    return best;
+  };
   return {
-    colors: Array.from(area.entries()).sort(byWeight).slice(0, 40),
+    colors: Array.from(area.entries()).sort(byWeight).slice(0, 40).map((e) => [e[0], e[1], srcOf(e[0])]),
     fonts: Array.from(fontUse.entries()).sort(byWeight).map((e) => e[0]).slice(0, 6),
+    typo: Array.from(typo.entries()).sort(byWeight).slice(0, 160),
     candidates: candidates,
     containers: containers,
     hairlines: Array.from(hairlines.entries()).sort(byWeight).slice(0, 10),
@@ -475,8 +570,9 @@ type Container = {
 };
 
 type RawPage = {
-  colors: [string, number][];
+  colors: [string, number, string][];
   fonts: string[];
+  typo: [string, number][];
   candidates: Candidate[];
   containers: Container[];
   hairlines: [string, number][];
@@ -665,13 +761,23 @@ function controlName(c: Candidate, palette: Palette, monochrome: boolean): { nam
   }
 }
 
+/**
+ * A shadow that is only rings — no offset, no blur — is a drawn border, not
+ * elevation. Naming it "Elevated" sent agents building drop-shadow cards for
+ * sites whose whole idea is that nothing floats.
+ */
+const RING_LAYER = /^(rgba?\([^)]+\)|#[0-9a-fA-F]{3,8})\s+0px\s+0px\s+0px\s+[12]px(\s+inset)?$/;
+function ringOnlyShadow(s: string): boolean {
+  return Boolean(s) && s.split(/,(?![^(]*\))/).every((l) => RING_LAYER.test(l.trim()));
+}
+
 function cardName(c: Candidate, palette: Palette, vw: number): { name: string; role: string } {
   const large = c.height >= 360 || c.width >= vw * 0.55;
   const onGround = !c.bg || nearlySame(c.bg, palette.ground);
   let base: string;
   let role: string;
-  if (c.shadow) { base = "Elevated Card"; role = "Content that sits above the page"; }
-  else if (onGround && c.border) { base = "Outlined Card"; role = "Content separated by a border, not a fill"; }
+  if (c.shadow && !ringOnlyShadow(c.shadow)) { base = "Elevated Card"; role = "Content that sits above the page"; }
+  else if (onGround && (c.border || ringOnlyShadow(c.shadow))) { base = "Outlined Card"; role = "Content separated by a border, not a fill"; }
   else if (!onGround && c.bg && luminance(c.bg) < 0.3) { base = "Dark Card"; role = "An inverted panel for emphasis"; }
   else if (!onGround) { base = "Tinted Card"; role = "Content grouped on a tinted surface"; }
   else { base = "Panel"; role = "A padded region on the page ground"; }
@@ -830,7 +936,7 @@ function specFor(c: Candidate, hover?: HoverState): string {
   parts.push(`${c.padY}px ${c.padX}px padding`);
   if (c.kind === "card") parts.push(`${c.width}×${c.height}px`);
   else parts.push(`height ~${c.height}px`);
-  if (c.shadow) parts.push(`shadow ${c.shadow}`);
+  if (c.shadow) parts.push(ringOnlyShadow(c.shadow) ? `hairline ring \`${c.shadow}\`` : `shadow ${c.shadow}`);
   let out = parts.join(", ") + ".";
   if (hover) {
     const changes: string[] = [];
@@ -973,6 +1079,30 @@ function findPatterns(
 
 /* ---------------------------------------------------------------- assemble */
 
+/**
+ * Thin borders, by colour, across the whole page. The commonest one is a
+ * token: the rule on rows and sections when drawn one-sided or as a
+ * pseudo-element, the edge on cards and inputs when drawn all round or as a
+ * shadow ring. The same rgba rule reads #ebe8e4 over eggshell and #f2f2f2
+ * over a white card; they are one token. Fold colours within a few units
+ * together and report the one seen most.
+ */
+function foldHairlines(
+  hairlines: [string, number][],
+): [string, { edge: number; box: number; width: string; n: number }] | undefined {
+  const byColour = new Map<string, { edge: number; box: number; width: string; n: number }>();
+  for (const [key, n] of [...hairlines].sort((a, b) => b[1] - a[1])) {
+    const [col, width, how] = key.split("|");
+    let home = col;
+    for (const k of byColour.keys()) if (colourDist(k, col) <= 14) { home = k; break; }
+    const e = byColour.get(home) ?? { edge: 0, box: 0, width, n: 0 };
+    if (how === "box") e.box += n; else e.edge += n;
+    e.n += n;
+    byColour.set(home, e);
+  }
+  return [...byColour.entries()].sort((a, b) => (b[1].edge + b[1].box) - (a[1].edge + a[1].box))[0];
+}
+
 function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState>): RenderedComponent[] {
   const { candidates, containers, viewport } = raw;
   const clusters = clusterAll(candidates);
@@ -987,13 +1117,22 @@ function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState
   named.forEach((n, i) => nameOf.set(n.k, finalNames[i]));
   for (const k of clusters) { const h = hovers.get(k.rep.idx); if (h) k.hover = h; }
 
+  // A dark or brand-coloured filled button is the page's primary action.
+  // It often exists exactly once or twice ("Sign Up" in the nav, "Deploy" in
+  // the hero, each a different shape) — and dropping count-1 controls threw
+  // away the single most system-defining component a landing page has.
+  const primaryLike = (k: Cluster) =>
+    k.kind === "control" && Boolean(k.rep.bg) &&
+    (luminance(k.rep.bg as string) < 0.3 || chroma(k.rep.bg as string) >= 60);
+
   const significance = (k: Cluster) =>
     k.count * Math.log2(2 + (k.rep.width * k.rep.height) / 1000) *
-    (k.kind === "control" && k.count === 1 ? 0.3 : 1);
+    (k.kind === "control" && k.count === 1 && !primaryLike(k) ? 0.3 : 1) *
+    (primaryLike(k) ? 3 : 1);
 
   const alwaysKeep = new Set<Kind>(["table", "code", "quote", "progress", "field", "switch", "checkbox", "radio"]);
   const ranked = clusters
-    .filter((k) => k.count >= 2 || alwaysKeep.has(k.kind) || (k.kind === "card" && k.rep.height >= 200) || (k.kind === "visual" && Math.max(k.rep.width, k.rep.height) >= 200))
+    .filter((k) => k.count >= 2 || alwaysKeep.has(k.kind) || primaryLike(k) || (k.kind === "card" && k.rep.height >= 200) || (k.kind === "visual" && Math.max(k.rep.width, k.rep.height) >= 200))
     .sort((a, b) => significance(b) - significance(a));
 
   const leaves: RenderedComponent[] = ranked.slice(0, 20).map((k) => ({
@@ -1005,23 +1144,7 @@ function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState
 
   const patterns = findPatterns(candidates, clusters, containers, viewport, nameOf);
 
-  // Thin borders, by colour, across the whole page. The commonest one is a
-  // token: the rule on rows and sections when drawn one-sided or as a
-  // pseudo-element, the edge on cards and inputs when drawn all round.
-  // The same rgba rule reads #ebe8e4 over eggshell and #f2f2f2 over a white
-  // card; they are one token. Fold colours within a few units together and
-  // report the one seen most.
-  const byColour = new Map<string, { edge: number; box: number; width: string; n: number }>();
-  for (const [key, n] of [...raw.hairlines].sort((a, b) => b[1] - a[1])) {
-    const [col, width, how] = key.split("|");
-    let home = col;
-    for (const k of byColour.keys()) if (colourDist(k, col) <= 14) { home = k; break; }
-    const e = byColour.get(home) ?? { edge: 0, box: 0, width, n: 0 };
-    if (how === "box") e.box += n; else e.edge += n;
-    e.n += n;
-    byColour.set(home, e);
-  }
-  const top = [...byColour.entries()].sort((a, b) => (b[1].edge + b[1].box) - (a[1].edge + a[1].box))[0];
+  const top = foldHairlines(raw.hairlines);
   const hairline: RenderedComponent[] = [];
   if (top && top[1].edge + top[1].box >= 3 && !leaves.some((l) => l.name === "Hairline Divider")) {
     const [col, { edge, box, width }] = top;
@@ -1153,7 +1276,45 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       writeFileSync(out, JSON.stringify(raw, null, 1));
     }
     const total = raw.colors.reduce((sum, [, w]) => sum + w, 0) || 1;
-    const colors = raw.colors.map(([value, w]) => ({ value, weight: w / total }));
+    const colors = raw.colors.map(([value, w, src]) => ({
+      value,
+      weight: w / total,
+      src: (src === "text" || src === "svg" ? src : "fill") as ColorSource,
+    }));
+
+    // The type census, decoded: family|size|weight|line-height ratio|tracking.
+    const typoTotal = raw.typo.reduce((sum, [, w]) => sum + w, 0) || 1;
+    const typeSamples: TypeSample[] = raw.typo
+      .map(([key, w]) => {
+        const [family, size, weight, lineHeight, letterSpacing] = key.split("|");
+        const ls = parseFloat(letterSpacing);
+        return {
+          family,
+          size: Math.round(Number(size)),
+          weight: Number(weight) || 400,
+          lineHeight: Number(lineHeight) || 0,
+          letterSpacing: Number.isFinite(ls) ? `${Math.round(ls * 100) / 100}px` : "0px",
+          share: w / typoTotal,
+        };
+      })
+      .filter((s) => s.family && s.size >= 6);
+
+    // Shadows and radii as rendered — resolved values, not var() indirection.
+    const shadowUse = new Map<string, number>();
+    const radiusUse = new Map<number, number>();
+    for (const c of raw.candidates) {
+      if (c.shadow) shadowUse.set(c.shadow, (shadowUse.get(c.shadow) ?? 0) + 1);
+      if ((c.kind === "control" || c.kind === "card" || c.kind === "field" || c.kind === "badge") && c.radius >= 1) {
+        const r = c.radius >= 999 || c.radius >= c.height / 2 ? 9999 : c.radius;
+        radiusUse.set(r, (radiusUse.get(r) ?? 0) + 1);
+      }
+    }
+    const shadows = [...shadowUse.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s);
+    const radii = [...radiusUse.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([r]) => r);
+    const hairTop = foldHairlines(raw.hairlines);
+    const hairline = hairTop
+      ? { color: hairTop[0], width: parseFloat(hairTop[1].width) || 1, count: hairTop[1].n }
+      : null;
 
     // Ground is what covers the screen; ink is the darkest heavily-used
     // colour; accent is the most chromatic thing that is neither.
@@ -1176,6 +1337,10 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
     return {
       colors,
       fonts: raw.fonts,
+      typeSamples,
+      shadows,
+      radii,
+      hairline,
       components: assemble(raw, { ground, ink, accent }, hovers),
     };
   } catch (err) {

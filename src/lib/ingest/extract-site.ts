@@ -12,7 +12,13 @@
  * `untrustedContentHint`.
  */
 
-import { renderSiteDesign, type RenderedComponent, type Rendered } from "./render-site";
+import {
+  renderSiteDesign,
+  type ColorSource,
+  type Rendered,
+  type RenderedComponent,
+  type TypeSample,
+} from "./render-site";
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_BYTES = 1_500_000;
@@ -23,7 +29,14 @@ const MAX_STYLESHEETS = 16;
 export type Extracted = {
   url: string;
   title: string | null;
-  colors: { value: string; count: number }[];
+  /** `src` says what painted the colour most — set only on rendered captures. */
+  colors: { value: string; count: number; src?: ColorSource }[];
+  /**
+   * The type census from the rendered page: real weights, line-height
+   * ratios and letter-spacing, per size and family. Empty for CSS-only
+   * captures, where none of that can be known.
+   */
+  typeSamples: TypeSample[];
   fonts: CapturedFont[];
   radii: number[];
   spacing: number[];
@@ -452,13 +465,27 @@ function stylesheetUrls(html: string, base: URL): string[] {
 function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
   // Rendered colours lead, weighted by painted area; text-only finds follow.
   const seen = new Set(rendered.colors.map((c) => c.value));
-  const colors = [
+  const colors: Extracted["colors"] = [
     ...rendered.colors.map((c, i) => ({
       value: c.value,
       count: Math.round(c.weight * 10_000) + (rendered.colors.length - i),
+      src: c.src,
     })),
     ...text.colors.filter((c) => !seen.has(c.value)).slice(0, 4),
   ].slice(0, 14);
+
+  // The hairline is a token even when it is painted nowhere else — a border
+  // colour never covers area, so the census alone can never surface it.
+  if (rendered.hairline && !colors.some((c) => c.value === rendered.hairline!.color)) {
+    colors.push({
+      value: rendered.hairline.color,
+      count: rendered.hairline.count,
+      src: "border",
+    });
+  } else if (rendered.hairline) {
+    const entry = colors.find((c) => c.value === rendered.hairline!.color);
+    if (entry && entry.src !== "text") entry.src = "border";
+  }
 
   const renderedFonts = rendered.fonts
     .map((name) => text.fonts.find((f) => f.name.toLowerCase() === name.toLowerCase()) ?? {
@@ -467,10 +494,23 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     })
     .filter((f) => !/^(ui-|system-|-apple)/i.test(f.name));
 
+  // Weights and sizes from the census, not the stylesheet: CSS declares every
+  // weight a variable font can be, the census records the ones the page set.
+  const sampleWeights = [...new Set(rendered.typeSamples.map((s) => s.weight))].sort((a, b) => a - b);
+  const sampleSizes = [...new Set(rendered.typeSamples.map((s) => s.size))];
+
   return {
     ...text,
     colors,
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
+    typeSamples: rendered.typeSamples,
+    weights: sampleWeights.length ? sampleWeights : text.weights,
+    fontSizes: sampleSizes.length ? sampleSizes : text.fontSizes,
+    // Rendered shadows are resolved values; the text pass may carry var()s.
+    shadows: [...rendered.shadows, ...text.shadows.filter((s) => !rendered.shadows.includes(s))].slice(0, 5),
+    radii: rendered.radii.length
+      ? [...rendered.radii, ...text.radii.filter((r) => !rendered.radii.includes(r))].slice(0, 8)
+      : text.radii,
     components: rendered.components,
     readFrom: "rendered",
   };
@@ -530,6 +570,7 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
     url: url.href,
     title,
     colors,
+    typeSamples: [],
     fonts: collectFonts(css),
     radii: collectNumbers(css, ["border-radius"]).slice(0, 8),
     spacing: collectNumbers(css, ["padding", "margin", "gap"]).slice(0, 10),
@@ -542,9 +583,10 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
       /box-shadow\s*:\s*([^;{}]+)/gi,
       5,
       (v) => {
-        const t = v.trim();
-        // "none" and variable indirection say nothing about elevation.
-        if (!t || /^(none|inherit|initial|unset)$/i.test(t) || t.startsWith("var(")) return null;
+        const t = v.replace(/\s*!important\s*/gi, "").trim();
+        // "none" and variable indirection say nothing about elevation — and a
+        // var() anywhere in the value leaves a token the reader cannot resolve.
+        if (!t || /^(none|inherit|initial|unset)$/i.test(t) || t.includes("var(")) return null;
         return t.length > 90 ? null : t;
       },
     ),
@@ -581,9 +623,12 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
       },
     ),
     easings: byFrequency(css, /(cubic-bezier\([^)]{1,40}\))/gi, 3),
+    // Parens balanced one level deep, so a colour-function stop stays inside
+    // the match and a trailing ")" from the surrounding rule stays outside —
+    // the old pattern captured "linear-gradient(in lab, red, red))".
     gradients: byFrequency(
       css,
-      /(linear-gradient\([^;{}]{10,120}\))/gi,
+      /(linear-gradient\((?:[^();]|\([^()]*\)){10,160}\))/gi,
       3,
       (v) => (v.includes("var(") ? null : v.trim()),
     ),

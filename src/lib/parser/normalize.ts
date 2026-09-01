@@ -16,6 +16,11 @@ export function isTableHeaderRow(cells: string[]): boolean {
     first === "role" ||
     first === "level" ||
     first === "value" ||
-    first === "token"
+    first === "token" ||
+    // The radius and layout tables head their first column with these; the
+    // wiki export was re-emitting "| Element | Value |" as a data row.
+    first === "element" ||
+    first === "label" ||
+    first === "property"
   );
 }
