@@ -458,6 +458,42 @@ export function synthesizeDesignSystem(found: Extracted): {
   const colors = nameColors(found.colors);
 
   /**
+   * The site's own names for the values we captured.
+   *
+   * A page that says `var(--color-primary)` has already named its accent;
+   * publishing our invented "Accent" while discarding theirs loses the most
+   * durable fact a capture can carry. Where a resolved custom property lands
+   * on a captured value, the doc says both names.
+   */
+  const varsByHex = new Map<string, string[]>();
+  const varsByPx = new Map<number, string[]>();
+  for (const v of found.siteVars) {
+    if (v.hex) {
+      const arr = varsByHex.get(v.hex) ?? [];
+      if (arr.length < 4) arr.push(v.name);
+      varsByHex.set(v.hex, arr);
+    }
+    const px = v.value.match(/^(\d+(?:\.\d+)?)px$/);
+    if (px) {
+      const n = Math.round(Number(px[1]));
+      const arr = varsByPx.get(n) ?? [];
+      if (arr.length < 4) arr.push(v.name);
+      varsByPx.set(n, arr);
+    }
+  }
+  /** The canonical-looking name: the shortest one that maps to the value. */
+  const siteNameFor = (hex: string): string | null => {
+    const names = varsByHex.get(hex.toLowerCase());
+    if (!names?.length) return null;
+    return [...names].sort((a, b) => a.length - b.length)[0];
+  };
+  const siteNameForPx = (n: number): string | null => {
+    const names = varsByPx.get(n);
+    if (!names?.length) return null;
+    return [...names].sort((a, b) => a.length - b.length)[0];
+  };
+
+  /**
    * Chart series colours, from the system itself.
    *
    * Charts are where a generated page most easily goes off-system: an agent
@@ -538,9 +574,11 @@ export function synthesizeDesignSystem(found: Extracted): {
       "",
       "| Name | Value | Token | Role |",
       "|------|-------|-------|------|",
-      ...colors.map(
-        (c) => `| ${c.name} | \`${c.value}\` | \`--color-${slug(c.name)}\` | ${c.role} |`,
-      ),
+      ...colors.map((c) => {
+        const own = siteNameFor(c.value);
+        const role = own ? `${c.role} · the site names it \`${own}\`` : c.role;
+        return `| ${c.name} | \`${c.value}\` | \`--color-${slug(c.name)}\` | ${role} |`;
+      }),
       "",
     );
   }
@@ -641,6 +679,15 @@ export function synthesizeDesignSystem(found: Extracted): {
       ),
       "",
     );
+    const owned = spacing
+      .map((n) => ({ n, own: siteNameForPx(n) }))
+      .filter((s): s is { n: number; own: string } => s.own !== null);
+    if (owned.length >= 2) {
+      lines.push(
+        `The site's own names for these steps: ${owned.map((s) => `\`${s.own}\` = ${s.n}px`).join(" · ")}.`,
+        "",
+      );
+    }
   }
 
   if (radii.length) {
@@ -947,8 +994,11 @@ export function synthesizeDesignSystem(found: Extracted): {
    * hexes — which is where a captured system usually dies.
    */
   const varLines: string[] = [];
-  varLines.push("  /* Colours */");
-  for (const c of colors) varLines.push(`  --color-${slug(c.name)}: ${c.value};`);
+  varLines.push("  /* Colours — trailing comments are the site's own names */");
+  for (const c of colors) {
+    const own = siteNameFor(c.value);
+    varLines.push(`  --color-${slug(c.name)}: ${c.value};${own ? ` /* site: ${own} */` : ""}`);
+  }
   if (chartLadder.length >= 2) {
     varLines.push("", "  /* Chart series — assign by importance; darkest carries the headline series */");
     chartLadder.forEach((v, i) => varLines.push(`  --chart-${i + 1}: ${v};`));

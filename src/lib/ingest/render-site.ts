@@ -68,6 +68,16 @@ export type PageAnatomy = {
   pageVh: number;
 };
 
+/** One of the site's own CSS custom properties, resolved in the live page. */
+export type SiteVar = {
+  /** The name the site's authors chose, e.g. "--color-primary". */
+  name: string;
+  /** The resolved value as the page computes it. */
+  value: string;
+  /** Canonical #rrggbb when the value is a colour; null otherwise. */
+  hex: string | null;
+};
+
 export type Rendered = {
   /** Colours ranked by the screen area they cover, tagged by what painted them. */
   colors: { value: string; weight: number; src: ColorSource }[];
@@ -84,6 +94,16 @@ export type Rendered = {
   hairline: { color: string; width: number; count: number } | null;
   /** The page's vertical composition — the thing a stock template erases. */
   anatomy: PageAnatomy | null;
+  /**
+   * The site's own design tokens, by their authored names.
+   *
+   * Computed styles destroy the most valuable information a page carries:
+   * `var(--color-primary)` reaches the census as a bare hex, and the capture
+   * invents a name for it. The var names are harvested from the stylesheets
+   * and resolved here in the live page, so the doc can say what the site's
+   * own authors called each value.
+   */
+  siteVars: SiteVar[];
   /**
    * How the nav behaves under scroll: pinned or not, and what it turns into.
    * The floating bar that detaches on scroll is one of the most recognisable
@@ -1384,6 +1404,101 @@ function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState
   return all.slice(0, 28);
 }
 
+/**
+ * Read hover states by forcing the pseudo-state over CDP.
+ *
+ * This is DevTools' ":hov" toggle, driven programmatically: mark the element,
+ * find its node, force :hover, read the computed styles the page now shows,
+ * clear. No scrolling into view, no pointer movement, no settle waits — the
+ * whole page's control set can be read in the time the mouse path spent on
+ * two buttons.
+ */
+async function readHoverStatesViaCdp(
+  page: import("playwright-core").Page,
+  raw: RawPage,
+  limit: number,
+  deadline: number,
+): Promise<Map<number, HoverState>> {
+  const out = new Map<number, HoverState>();
+  const clusters = clusterAll(raw.candidates)
+    .filter((k) => k.kind === "control" || k.kind === "field")
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+  if (!clusters.length) return out;
+
+  let cdp: import("playwright-core").CDPSession | null = null;
+  try {
+    cdp = await page.context().newCDPSession(page);
+    await cdp.send("DOM.enable");
+    await cdp.send("CSS.enable");
+    const { root } = (await cdp.send("DOM.getDocument", { depth: 1 })) as {
+      root: { nodeId: number };
+    };
+
+    for (const k of clusters) {
+      if (Date.now() > deadline) break;
+      const idx = k.rep.idx;
+      try {
+        await page.evaluate(
+          `document.querySelectorAll("body *")[${idx}]?.setAttribute("data-bs-probe", "1")`,
+        );
+        const { nodeId } = (await cdp.send("DOM.querySelector", {
+          nodeId: root.nodeId,
+          selector: '[data-bs-probe="1"]',
+        })) as { nodeId: number };
+        if (nodeId) {
+          const pseudo = k.kind === "field" ? ["focus"] : ["hover"];
+          await cdp.send("CSS.forcePseudoState", {
+            nodeId,
+            forcedPseudoClasses: pseudo,
+          });
+          const st = (await page.evaluate(`(() => {
+            const el = document.querySelector('[data-bs-probe="1"]');
+            if (!el) return null;
+            const cs = getComputedStyle(el);
+            const nctx = (() => { try { const c = document.createElement("canvas"); c.width = 1; c.height = 1; return c.getContext("2d", { willReadFrequently: true }); } catch { return null; } })();
+            const toHex = (raw) => {
+              let v = raw;
+              if (v && !v.startsWith("rgb") && !v.startsWith("#") && nctx) {
+                try {
+                  nctx.fillStyle = "#010203"; nctx.fillStyle = v;
+                  if (String(nctx.fillStyle) === "#010203" && v !== "#010203") return null;
+                  nctx.clearRect(0, 0, 1, 1); nctx.fillRect(0, 0, 1, 1);
+                  const d = nctx.getImageData(0, 0, 1, 1).data;
+                  if (d[3] < 13) return null;
+                  const h = (n) => n.toString(16).padStart(2, "0");
+                  return "#" + h(d[0]) + h(d[1]) + h(d[2]);
+                } catch { return null; }
+              }
+              if (v && v[0] === "#") return v.length === 7 ? v.toLowerCase() : null;
+              const m = v && v.match(/rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)/);
+              if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null;
+              const h = (n) => parseInt(n, 10).toString(16).padStart(2, "0");
+              return "#" + h(m[1]) + h(m[2]) + h(m[3]);
+            };
+            const bw = Math.round(parseFloat(cs.borderTopWidth) || 0);
+            return { bg: toHex(cs.backgroundColor), fg: toHex(cs.color), border: bw > 0 ? bw + "px " + (toHex(cs.borderTopColor) || "") : "" };
+          })()`)) as HoverState | null;
+          await cdp.send("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: [] });
+          if (st) out.set(idx, st);
+        }
+      } catch {
+        /* a node that cannot be probed simply has no recorded state */
+      } finally {
+        await page
+          .evaluate(`document.querySelector('[data-bs-probe="1"]')?.removeAttribute("data-bs-probe")`)
+          .catch(() => {});
+      }
+    }
+  } catch {
+    // No CDP session (an unusual provider): the mouse path takes over.
+    return new Map();
+  } finally {
+    await cdp?.detach().catch(() => {});
+  }
+  return out;
+}
+
 /** Read hover states for the representatives of the most-used controls. */
 async function readHoverStates(
   page: import("playwright-core").Page,
@@ -1513,6 +1628,41 @@ const READ_NAV_STATE = `(() => {
   };
 })()`;
 
+/**
+ * Runs in the page: resolve the site's own custom properties.
+ *
+ * Names arrive harvested from the stylesheets' text; the page resolves each
+ * against the root element, so var chains collapse to the value that actually
+ * paints. Colours are normalised through a canvas pixel, which is the only
+ * conversion the browser guarantees for lab(), oklch() and friends.
+ */
+function resolveVarsScript(names: string[]): string {
+  return `((names) => {
+  const cs = getComputedStyle(document.documentElement);
+  const nctx = (() => { try { const c = document.createElement("canvas"); c.width = 1; c.height = 1; return c.getContext("2d", { willReadFrequently: true }); } catch { return null; } })();
+  const toHex = (v) => {
+    if (!v || !nctx) return null;
+    try {
+      nctx.fillStyle = "#010203"; nctx.fillStyle = v;
+      if (String(nctx.fillStyle) === "#010203" && v !== "#010203") return null;
+      nctx.clearRect(0, 0, 1, 1); nctx.fillRect(0, 0, 1, 1);
+      const d = nctx.getImageData(0, 0, 1, 1).data;
+      if (d[3] < 0.05 * 255) return null;
+      const h = (n) => n.toString(16).padStart(2, "0");
+      return "#" + h(d[0]) + h(d[1]) + h(d[2]);
+    } catch { return null; }
+  };
+  const out = [];
+  for (const name of names) {
+    const value = cs.getPropertyValue(name).trim();
+    if (!value || value.length > 200) continue;
+    out.push({ name, value, hex: toHex(value) });
+    if (out.length >= 400) break;
+  }
+  return out;
+})(${JSON.stringify(names.slice(0, 600))})`;
+}
+
 /** Runs in the page at a phone viewport: what actually happens down there. */
 const READ_MOBILE_STATE = `(() => {
   const vw = window.innerWidth;
@@ -1541,6 +1691,13 @@ export type RenderOptions = {
    * slow remote browser degrades to a thinner capture instead of a timeout.
    */
   budgetMs?: number;
+  /**
+   * Custom-property names harvested from the site's stylesheets by the text
+   * pass, e.g. ["--color-primary", "--space-4"]. The page resolves each to
+   * the value that actually paints, so the capture can keep the site's own
+   * token names instead of inventing its own.
+   */
+  varNames?: string[];
   /**
    * Called as each phase begins and ends, with elapsed ms. A capture that
    * runs out the clock on a remote browser cannot be debugged from outside;
@@ -1655,13 +1812,32 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       .filter((c) => chroma(c.value) >= 60)
       .sort((a, b) => b.weight - a.weight)[0]?.value;
 
-    // Hover states are the most expensive thing here and the least essential;
-    // they get whatever time is left, and none if there is little.
+    // The site's own token names, resolved in the live page. One evaluate,
+    // and the doc stops inventing names for values the site already named.
+    let siteVars: SiteVar[] = [];
+    if (opts.varNames?.length && left() > 2_000) {
+      try {
+        const resolved = (await page.evaluate(resolveVarsScript(opts.varNames))) as SiteVar[];
+        siteVars = Array.isArray(resolved) ? resolved : [];
+      } catch {
+        /* the invented names remain the fallback */
+      }
+    }
+    mark("vars:done");
+
+    // Hover states. The CDP path forces the :hover pseudo-state the way
+    // DevTools' ":hov" toggle does — no scrolling, no mouse choreography, no
+    // 220ms settles — so it covers more controls in a fraction of the time.
+    // The mouse path stays as the fallback for browsers that refuse the CDP
+    // session.
     const hoverBudget = left();
-    const hovers =
-      hoverBudget > 6_000
-        ? await readHoverStates(page, raw, Math.min(10, Math.floor(hoverBudget / 1_200)), deadline - 1_000)
-        : new Map<number, HoverState>();
+    let hovers = new Map<number, HoverState>();
+    if (hoverBudget > 2_500) {
+      hovers = await readHoverStatesViaCdp(page, raw, 20, deadline - 800);
+      if (hovers.size === 0 && left() > 6_000) {
+        hovers = await readHoverStates(page, raw, Math.min(10, Math.floor(left() / 1_200)), deadline - 1_000);
+      }
+    }
     mark("hover:done");
 
     // The nav under scroll: sample the pinned bar mid-page, then back at the
@@ -1773,6 +1949,7 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       radii,
       hairline,
       anatomy: pageAnatomy(raw, { ground, ink, accent }),
+      siteVars,
       navBehavior,
       motion: raw.motion ?? null,
       responsive,

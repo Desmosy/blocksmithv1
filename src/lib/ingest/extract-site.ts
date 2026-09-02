@@ -16,6 +16,7 @@ import {
   renderSiteDesign,
   type ColorSource,
   type PageAnatomy,
+  type SiteVar,
   type Rendered,
   type RenderedComponent,
   type TypeSample,
@@ -40,6 +41,8 @@ export type Extracted = {
   typeSamples: TypeSample[];
   /** The page's vertical composition. Null for CSS-only captures. */
   anatomy: PageAnatomy | null;
+  /** The site's own design tokens, by their authored names. */
+  siteVars: SiteVar[];
   /** CSS motion counted on real elements. Null for CSS-only captures. */
   motionCensus: { animated: number; transitions: number; staged: number } | null;
   /** What the page verifiably does at 390px. Null for CSS-only captures. */
@@ -512,6 +515,7 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
     typeSamples: rendered.typeSamples,
     anatomy: rendered.anatomy,
+    siteVars: rendered.siteVars,
     motionCensus: rendered.motion,
     responsive: rendered.responsive,
     weights: sampleWeights.length ? sampleWeights : text.weights,
@@ -566,7 +570,21 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
   const t1 = Date.now();
   const renderBudget = opts.renderBudgetMs ?? 40_000;
   const rendered = await Promise.race<Rendered | null>([
-    renderSiteDesign(url.href, { budgetMs: renderBudget, onPhase: opts.onPhase }),
+    renderSiteDesign(url.href, {
+      budgetMs: renderBudget,
+      onPhase: opts.onPhase,
+      // Every custom-property name the stylesheets declare — minus framework
+      // plumbing. Tailwind alone declares dozens of --tw-* runtime slots per
+      // rule, and taking names in stylesheet order filled the whole budget
+      // with them before the first real token appeared.
+      varNames: [...new Set([...css.matchAll(/(--[\w-]{2,60})\s*:/g)].map((m) => m[1]))]
+        .filter(
+          (n) =>
+            !/^--(tw|un|radix|reach|cdk|headlessui|chakra|mui|mdc|ant|rt|kb|v)-/.test(n) &&
+            !/^--(value|index|n|i|x|y)$/.test(n),
+        )
+        .slice(0, 600),
+    }),
     new Promise<null>((resolve) => setTimeout(() => { timings.renderTimedOut = true; resolve(null); }, renderBudget + 4_000)),
   ]);
   timings.render = Date.now() - t1;
@@ -582,6 +600,7 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
     colors,
     typeSamples: [],
     anatomy: null,
+    siteVars: [],
     motionCensus: null,
     responsive: null,
     fonts: collectFonts(css),
