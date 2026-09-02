@@ -89,24 +89,27 @@ If that purple is not in the system, the agent gets told no, with the rule quote
 
 #### And then it leaves the browser
 
-That is one page, in one browser, and on its own a wiki is just another document
-nobody reads. What makes it a design system is that the same rules reach the
-place the code is actually written.
+So far this is one page in one browser. On its own that is not much. A wiki
+nobody opens is just another document.
 
-Connect the wiki to your editor over MCP and the agent in Cursor or Claude Code
-reads those rules *before* it writes a line — so the gradient-and-drop-shadow
-version never gets typed in the first place. Install the commit hook and anything
-that slips through fails the commit the way a type error does, instead of
-arriving in a pull request for a human to catch by eye.
+What matters is that the same rules reach your editor, where the code is
+actually written.
 
-And nobody quietly redefines the system on the way through. An agent can propose
-a new colour; only a person can approve one. Until somebody does, every agent and
-every CI run keeps building against the version that was approved — not against
-whatever the document happens to say today.
+Connect the wiki to Cursor or Claude Code over MCP. Now the AI reads your rules
+*before* it writes any code. It does not write the gradient version and then get
+corrected. It never writes it.
 
-That is the difference between a style guide and a design system that actually
-holds. [Section 5](#5-in-your-editor-your-package-manager-and-your-commits) is how
-you wire it up.
+Then install the commit check. If something wrong still gets through, the commit
+fails on your own machine. You find out there, not in a code review three days
+later.
+
+And nobody changes the rules by accident. An AI can ask for a new colour. Only a
+person can say yes. Until someone does, every AI and every build keeps using the
+rules that were approved, not whatever the document says today.
+
+That is the difference between a style guide and a design system people actually
+follow. [Section 5](#5-in-your-editor-your-package-manager-and-your-commits)
+shows you how to set it up.
 
 ### What it looks like inside
 
