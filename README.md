@@ -28,6 +28,23 @@ Built for the **WebMCP Challenge**. The whole governance engine lives on the pag
 
 ---
 
+## Getting a design system in
+
+Everything below governs a design system, so first you need one. There are four
+ways in, and they all end at the same place: a browsable wiki with tokens,
+components and rules, and a set of tools an agent can call against it.
+
+| From | How | Sign-in |
+|---|---|---|
+| **A live website** | Type an address into the dashboard's prompt bar — or ask an agent to `capture_site_design`. BlockSmith reads what the page actually paints: colours ranked by how much of the screen they cover, type and spacing scales, radii, and the repeated components it can find | not needed |
+| **Your codebase** | **Dashboard → Connectors → GitHub → Scan a repository.** Reads every component, its props and variants, and every CSS custom property. Locally: `blocksmith scan /path/to/repo` | GitHub |
+| **Figma** | **Dashboard → Connectors → Figma → Connect a file.** Imports variables and published components, then reports where they have drifted from the code that ships | Figma token |
+| **A document you already wrote** | Paste markdown into the prompt bar, or **Upload .md** | not needed |
+
+A repository scan is the one that unlocks the release side — versions, promote,
+rollback and the lockfile. Captured, pasted and uploaded systems stay in preview,
+because there is no codebase behind them to promote to.
+
 ## How to use BlockSmith
 
 ### 1. With ChatGPT (easiest, nothing to install)
@@ -80,7 +97,27 @@ Decorative graphics come out as quiet, token-driven SVG instead of clip art, bec
 
 No sign-in is needed to read a system, check code, or capture a site.
 
-### 3. Run it on your machine
+### 3. On any website, with the extension
+
+BlockSmith's tools normally live on BlockSmith's own pages. The extension puts
+four of them on *every* page you visit, so an agent can capture or audit a site
+that has never heard of BlockSmith.
+
+1. `chrome://extensions` → **Developer mode** → **Load unpacked** → the
+   `extension/` folder in this repo.
+2. Open any website. A badge appears: *"BlockSmith · 4 agent tools live on this
+   page."*
+
+`blocksmith_capture_this_site`, `blocksmith_audit_this_page`,
+`blocksmith_get_rules` and `blocksmith_page_context`. The content script runs in
+the page's main world, so a site's Content-Security-Policy cannot block it —
+which the bookmarklet version at [`/protocol/webmcp`](https://blocksmithv1.vercel.app/protocol/webmcp)
+cannot claim.
+
+If you would rather install nothing, `audit_site` answers the same question from
+an address alone, on any BlockSmith page.
+
+### 4. Run it on your machine
 
 ```bash
 npm install
@@ -97,13 +134,22 @@ BLOCKSMITH_BROWSER_WS=wss://your-browser-host/?token=...
 
 Without it, capture falls back to reading the site's CSS. You get a thinner result, and the tool tells you which kind you got.
 
-### 4. In your editor
+### 5. In your editor, your package manager, and your commits
 
 The rules can follow you out of the browser:
 
 - **Export a skill.** Ask the agent to `export_skill`, or download it from the wiki. Your coding agent in Cursor or Claude Code then writes compliant code from the start.
-- **Remote MCP.** Run `npm run mcp`, or point an MCP client at `/api/mcp`. Same tools, same registry.
+- **Remote MCP.** Run `npm run mcp`, or point an MCP client at `/api/mcp`. Same tools, same registry. `blocksmith setup cursor` writes the config for you.
+- **Generate a package.** `blocksmith codegen --doc <ref>` emits an installable
+  `@blocksmith/<slug>`: `tokens.css`, typed tokens, and components. `/demo/pulse`
+  renders a generated package to prove the output compiles.
+- **Fail the build.** `blocksmith setup hooks` installs a pre-commit check that
+  exits non-zero, so a violation stops a commit the way a type error does.
+- **Compile it off the web.** `npm run compile:device` emits a watch/HMI profile
+  and a C `tokens.h` stamped with the lock hash.
 - **Two-way sync.** Save a file in `docs/designs.md/` and the wiki refreshes. Edit in the wiki and hit **Finalize**, and it writes back to the markdown.
+
+The CLI is published: `npx @block-smith/cli --help`.
 
 ---
 
