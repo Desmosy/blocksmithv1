@@ -1,6 +1,6 @@
 # BlockSmith
 
-**Turn any website's design into rules your coding agent must follow. When the agent breaks a rule, BlockSmith tells it no, and tells it how to fix it.**
+**Turn any website's design into rules your coding agent must follow. When the agent breaks a rule, BlockSmith says no, quotes the rule, and hands it the fix.**
 
 <p align="center">
   <img alt="Version" src="https://img.shields.io/badge/VERSION-0.1.0-3fb950?style=flat-square&labelColor=24292f">
@@ -16,7 +16,11 @@
   <img alt="Agent SKILL.md" src="https://img.shields.io/badge/Agent-SKILL.md-3b5bd9?style=flat-square&labelColor=24292f">
 </p>
 
-Built for the **WebMCP Challenge**. BlockSmith puts its design-system governance engine on the page as [WebMCP](https://github.com/webmachinelearning/webmcp) tools. An agent working in your browser can read your design system, build against it, and get corrected the moment it drifts.
+You know how big tech companies have a whole floor of designers guarding a design system, which is why their buttons never come out weird? Guess what: now you have that floor too. Name a site you like, and BlockSmith reads its colors, type, and spacing off the live page and hands you a governed design system with its own wiki. Total headcount: zero.
+
+Already have a design system because you work on one of those fancy teams? Even better. Bring it in, and BlockSmith becomes the strict design reviewer who never sleeps, never blinks, and never approves a random purple. Your agent asks before it builds, gets rejected when it freelances, and fixes its own work while you watch.
+
+Built for the **WebMCP Challenge**. The whole governance engine lives on the page as [WebMCP](https://github.com/webmachinelearning/webmcp) tools, so you and the agent in your browser are looking at the same rules at the same time. It reads your system, builds against it, and gets corrected the moment it drifts.
 
 **Live app:** <https://blocksmithv1.vercel.app>
 
