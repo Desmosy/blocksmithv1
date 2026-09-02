@@ -2,6 +2,20 @@
 
 **Turn any website's design into rules your coding agent must follow. When the agent breaks a rule, BlockSmith tells it no, and tells it how to fix it.**
 
+<p align="center">
+  <img alt="Version" src="https://img.shields.io/badge/VERSION-0.1.0-3fb950?style=flat-square&labelColor=24292f">
+  <img alt="WebMCP tools" src="https://img.shields.io/badge/WEBMCP_TOOLS-16-3fb950?style=flat-square&labelColor=24292f">
+  <img alt="GitHub stars" src="https://img.shields.io/github/stars/Desmosy/blocksmithv1?style=flat-square&label=STARS&color=e8963a&labelColor=24292f">
+  <a href="https://github.com/Desmosy/blocksmithv1/actions/workflows/protocol-conformance.yml"><img alt="Protocol conformance" src="https://img.shields.io/github/actions/workflow/status/Desmosy/blocksmithv1/protocol-conformance.yml?style=flat-square&logo=github&label=protocol%20conformance&labelColor=24292f"></a>
+  <img alt="License" src="https://img.shields.io/badge/LICENSE-AGPL--3.0-8957e5?style=flat-square&labelColor=24292f">
+</p>
+
+<p align="center">
+  <img alt="ChatGPT WebMCP" src="https://img.shields.io/badge/ChatGPT-WebMCP-10a37f?style=flat-square&logo=openai&logoColor=white&labelColor=24292f">
+  <img alt="Claude Code skill" src="https://img.shields.io/badge/Claude_Code-Skill-e07a5f?style=flat-square&logo=claude&logoColor=white&labelColor=24292f">
+  <img alt="Agent SKILL.md" src="https://img.shields.io/badge/Agent-SKILL.md-3b5bd9?style=flat-square&labelColor=24292f">
+</p>
+
 Built for the **WebMCP Challenge**. BlockSmith puts its design-system governance engine on the page as [WebMCP](https://github.com/webmachinelearning/webmcp) tools. An agent working in your browser can read your design system, build against it, and get corrected the moment it drifts.
 
 **Live app:** <https://blocksmithv1.vercel.app>
