@@ -35,7 +35,7 @@ The ChatGPT desktop app has a built-in browser that supports WebMCP out of the b
 3. Talk to it in plain words. Some things to try, in order:
 
 ```
-Capture the design system from stripe.com
+Capture the design system from cohere.com
 ```
 ChatGPT calls BlockSmith's capture tool. BlockSmith reads the live site, pulls out its colors, type, spacing and components, and saves it as a design system with its own wiki.
 
@@ -45,14 +45,28 @@ Open the wiki for the system you just captured
 You get a full design-system site: tokens, components, do's and don'ts, and a guide written for agents.
 
 ```
-Build me a landing page for a coffee brand using this design system
+Build me a landing page for a marketing company using this design system's rules. Use SVG for any decorative graphics.
 ```
 ChatGPT writes the page, runs it through `check_governance`, fixes what gets rejected, and shows you the result rendered in the system's own tokens. You can open it full page, view the code, or download the HTML.
 
 ```
-Change the primary button to bright red
+Can you build a launch banner using #7c3aed and show it to me on the page or not?
 ```
-If red is not in the system, the agent gets told no, with the rule quoted and the closest allowed color suggested. That is the whole point.
+If that purple is not in the system, the agent gets told no, with the rule quoted and the closest allowed color suggested. That is the whole point.
+
+### What it looks like
+
+The wiki BlockSmith builds from a captured or written design system:
+
+![The design system wiki](docs/assets/wiki.png)
+
+A landing page an agent generated against a captured system (perk.com), checked and corrected by governance:
+
+![A generated landing page](docs/assets/generated-landing.png)
+
+Decorative graphics come out as quiet, token-driven SVG instead of clip art, because the rules say so:
+
+![SVG decorative graphics](docs/assets/svg-graphics.png)
 
 ### 2. With Chrome
 
