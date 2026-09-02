@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     pushedValue: "",
   };
 
+  try {
   // Resolve org — use the actor's default org
   let orgId: string;
   if (body.orgId) {
@@ -99,6 +100,12 @@ export async function POST(request: NextRequest) {
     },
     expiresIn: `${settings.ttlHours}h`,
   });
+  } catch (err) {
+    // The CLI needs a message it can print, not a bare 500.
+    const message = err instanceof Error ? err.message : "Could not record the deviation.";
+    console.error("[api/v1/deviations] create failed:", err);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 /** GET — list deviations for the current org (wiki queue + CLI updates). */
@@ -115,27 +122,39 @@ export async function GET(request: NextRequest) {
     Math.max(1, Number(request.nextUrl.searchParams.get("limit") ?? 50) || 50),
   );
 
-  // Resolve org
-  let orgId: string;
-  const reqOrgId = request.nextUrl.searchParams.get("orgId");
-  if (reqOrgId) {
-    orgId = reqOrgId;
-  } else {
-    const userId = actor ? actorUserId(actor) : null;
-    const login = actor?.kind === "user" ? actor.login : null;
-    if (userId) {
-      const org = await ensureDefaultOrg(userId, login);
-      orgId = org.id;
+  // A queue that cannot be read renders as an empty queue with a note, not
+  // as a 500 — this feeds a status panel, and the panel degrading beats the
+  // console filling with server errors on every Sync page visit.
+  try {
+    // Resolve org
+    let orgId: string;
+    const reqOrgId = request.nextUrl.searchParams.get("orgId");
+    if (reqOrgId) {
+      orgId = reqOrgId;
     } else {
-      orgId = "local";
+      const userId = actor ? actorUserId(actor) : null;
+      const login = actor?.kind === "user" ? actor.login : null;
+      if (userId) {
+        const org = await ensureDefaultOrg(userId, login);
+        orgId = org.id;
+      } else {
+        orgId = "local";
+      }
     }
+
+    const deviations = await listDeviations(orgId, {
+      status: status ?? undefined,
+      pushedBy: pushedBy ?? undefined,
+      limit,
+    });
+
+    return NextResponse.json({ orgId, deviations });
+  } catch (err) {
+    console.error("[api/v1/deviations] list failed:", err);
+    return NextResponse.json({
+      orgId: null,
+      deviations: [],
+      error: "Deviation queue is unavailable right now.",
+    });
   }
-
-  const deviations = await listDeviations(orgId, {
-    status: status ?? undefined,
-    pushedBy: pushedBy ?? undefined,
-    limit,
-  });
-
-  return NextResponse.json({ orgId, deviations });
 }

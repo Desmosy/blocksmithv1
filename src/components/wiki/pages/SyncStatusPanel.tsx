@@ -29,37 +29,46 @@ export function SyncStatusPanel() {
     const supabase = createBrowserSupabase();
 
     // ── Production path: Supabase Realtime Broadcast ──────────────────────
+    // Wrapped because the WebSocket constructor can throw *synchronously* —
+    // Safari raises "The operation is insecure" when a CSP or Lockdown Mode
+    // blocks wss — and an unhandled throw here didn't degrade the panel, it
+    // took the entire Sync page to the error boundary. Live status is an
+    // ornament; it fails quiet and falls back to SSE.
     if (supabase) {
-      const channel = supabase
-        .channel(REALTIME_CHANNEL)
-        .on(
-          "broadcast",
-          { event: "blocks.updated" },
-          ({ payload }: { payload: Record<string, string | undefined> }) => {
+      try {
+        const channel = supabase
+          .channel(REALTIME_CHANNEL)
+          .on(
+            "broadcast",
+            { event: "blocks.updated" },
+            ({ payload }: { payload: Record<string, string | undefined> }) => {
+              setState((s) => ({
+                connected: true,
+                lastEvent: {
+                  type: payload.type,
+                  docRef: payload.docRef,
+                  timestamp: payload.timestamp,
+                },
+                eventsReceived: s.eventsReceived + 1,
+              }));
+            },
+          )
+          .subscribe((status) => {
             setState((s) => ({
-              connected: true,
-              lastEvent: {
-                type: payload.type,
-                docRef: payload.docRef,
-                timestamp: payload.timestamp,
-              },
-              eventsReceived: s.eventsReceived + 1,
+              ...s,
+              connected: status === "SUBSCRIBED",
             }));
-          },
-        )
-        .subscribe((status) => {
-          setState((s) => ({
-            ...s,
-            connected: status === "SUBSCRIBED",
-          }));
-        });
+          });
 
-      return () => {
-        void supabase.removeChannel(channel);
-      };
+        return () => {
+          void supabase.removeChannel(channel);
+        };
+      } catch (err) {
+        console.warn("[sync] realtime unavailable — falling back to SSE", err);
+      }
     }
 
-    // ── Local dev fallback: SSE ────────────────────────────────────────────
+    // ── SSE fallback: local dev, or a browser that blocks WebSockets ──────
     const es = new EventSource("/api/sync/events");
 
     es.onopen = () => setState((s) => ({ ...s, connected: true }));

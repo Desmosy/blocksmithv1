@@ -62,7 +62,11 @@ function securedNext(request: NextRequest): NextResponse {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' blob: data: https:",
     "font-src 'self' data: https://fonts.gstatic.com https:",
-    "connect-src 'self' https://*.supabase.co https://*.upstash.io https://*.sentry.io https://api.github.com https://api.figma.com",
+    // wss: is not implied by https: — Supabase realtime connects over a
+    // WebSocket, and without the wss entry Safari refuses the connection,
+    // supabase-js throws "The operation is insecure", and the unhandled
+    // throw took the whole wiki down to the error boundary.
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.upstash.io https://*.sentry.io https://api.github.com https://api.figma.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
