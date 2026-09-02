@@ -87,6 +87,27 @@ If that purple is not in the system, the agent gets told no, with the rule quote
 
 ![BlockSmith rejecting an off-token color, then staging it as a proposal](docs/assets/governance-refusal.png)
 
+#### And then it leaves the browser
+
+That is one page, in one browser, and on its own a wiki is just another document
+nobody reads. What makes it a design system is that the same rules reach the
+place the code is actually written.
+
+Connect the wiki to your editor over MCP and the agent in Cursor or Claude Code
+reads those rules *before* it writes a line — so the gradient-and-drop-shadow
+version never gets typed in the first place. Install the commit hook and anything
+that slips through fails the commit the way a type error does, instead of
+arriving in a pull request for a human to catch by eye.
+
+And nobody quietly redefines the system on the way through. An agent can propose
+a new colour; only a person can approve one. Until somebody does, every agent and
+every CI run keeps building against the version that was approved — not against
+whatever the document happens to say today.
+
+That is the difference between a style guide and a design system that actually
+holds. [Section 5](#5-in-your-editor-your-package-manager-and-your-commits) is how
+you wire it up.
+
 ### What it looks like inside
 
 The wiki BlockSmith builds from a capture. Palette, overview, components, all read off the live site, with the model's rationale citing the measured values:
