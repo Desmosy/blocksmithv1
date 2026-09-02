@@ -29,7 +29,7 @@
     "access": "public"
   },
   "keywords": ["blocksmith", "design-system", "mcp"],
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "engines": {
     "node": ">=18"
   }

@@ -6,7 +6,7 @@ Built for the **WebMCP Challenge**. BlockSmith exposes its design-system governa
 
 **Live:** **<https://blocksmithv1.vercel.app/wiki?doc=saas.md>** — open it in ChatGPT's in-app browser, or in Chrome with `chrome://flags/#enable-webmcp-testing` enabled, and the page hands your agent sixteen tools. No sign-in needed to read, check code, or capture a site.
 
-**Every tool, its schema and where it is registered:** [`/.well-known/webmcp.json`](https://blocksmithv1.vercel.app/.well-known/webmcp.json) · **How it works:** [`/protocol/webmcp`](https://blocksmithv1.vercel.app/protocol/webmcp) · **License:** [MIT](./LICENSE)
+**Every tool, its schema and where it is registered:** [`/.well-known/webmcp.json`](https://blocksmithv1.vercel.app/.well-known/webmcp.json) · **How it works:** [`/protocol/webmcp`](https://blocksmithv1.vercel.app/protocol/webmcp) · **License:** [AGPL-3.0](./LICENSE)
 
 ---
 
@@ -162,4 +162,8 @@ npm run build:packages
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+[AGPL-3.0-only](./LICENSE) — use it, self-host it, build on it; if you modify
+it and offer it to others (including as a network service), your modified
+source must be shared under the same license. See [LICENSING.md](./LICENSING.md).
+
+The BlockSmith name and logo are not part of the license grant.
