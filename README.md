@@ -63,29 +63,43 @@ Open the wiki for the system you just captured
 ```
 You get a full design-system site: tokens, components, do's and don'ts, and a guide written for agents.
 
+Here is that exact flow, one conversation, under a minute to a governed system:
+
+![ChatGPT capturing mode.com through BlockSmith](docs/assets/chatgpt-capture.png)
+
 ```
 Build me a landing page for a marketing company using this design system's rules. Use SVG for any decorative graphics.
 ```
 ChatGPT writes the page, runs it through `check_governance`, fixes what gets rejected, and shows you the result rendered in the system's own tokens. You can open it full page, view the code, or download the HTML.
 
-```
-Can you build a launch banner using #7c3aed and show it to me on the page or not?
-```
-If that purple is not in the system, the agent gets told no, with the rule quoted and the closest allowed color suggested. That is the whole point.
-
-### What it looks like
-
-The wiki BlockSmith builds from a captured or written design system:
-
-![The design system wiki](docs/assets/wiki.png)
-
-A landing page an agent generated against a captured design system, checked and corrected by governance. Every color, face, and radius on it comes from the captured tokens:
+Pages agents have generated this way, each in a different captured system:
 
 ![A generated landing page](docs/assets/generated-landing.png)
 
-Decorative graphics come out as quiet, token-driven SVG instead of clip art, because the rules say so:
+![A generated finance dashboard](docs/assets/generated-dashboard.png)
 
-![SVG decorative graphics](docs/assets/svg-graphics.png)
+![Generated charts drawn from the system's chart tokens](docs/assets/generated-charts.png)
+
+```
+Can you build a launch banner using #7c3aed and show it to me on the page or not?
+```
+If that purple is not in the system, the agent gets told no, with the rule quoted and the closest allowed color suggested. That is the whole point. Watch it happen, including the agent proposing the purple as a new token for human approval instead of sneaking it in:
+
+![BlockSmith rejecting an off-token color, then staging it as a proposal](docs/assets/governance-refusal.png)
+
+### What it looks like inside
+
+The wiki BlockSmith builds from a capture. Palette, overview, components, all read off the live site, with the model's rationale citing the measured values:
+
+![The design system wiki](docs/assets/wiki.png)
+
+The governance report for a generated page: verdict, fidelity score, and every check it ran:
+
+![The governance report](docs/assets/governance-report.png)
+
+The Component Playground, where every edit snaps to the system's tokens and the CSS follows along:
+
+![The component playground](docs/assets/playground.png)
 
 ### 2. With Chrome
 
