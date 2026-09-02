@@ -1,5 +1,5 @@
 {
-  "$comment": "WebMCP evals for BlockSmith. Format per developer.chrome.com/docs/ai/webmcp/evals: each case sends `messages` to a model with our tool surface registered and asserts the model chose `expectedCall`. These test tool SELECTION — whether the model reaches for the right tool with the right arguments — which manual testing in the DevTools panel cannot catch. Run against a deployed instance with the evals CLI from GoogleChromeLabs/webmcp-tools.",
+  "$comment": "WebMCP evals for BlockSmith. Format per developer.chrome.com/docs/ai/webmcp/evals: each case sends `messages` to a model with our tool surface registered and asserts the model chose `expectedCall`. These test tool SELECTION \u2014 whether the model reaches for the right tool with the right arguments \u2014 which manual testing in the DevTools panel cannot catch. Run against a deployed instance with the evals CLI from GoogleChromeLabs/webmcp-tools.",
   "url": "https://blocksmithv1.vercel.app/wiki?doc=saas.md",
   "evals": [
     {
@@ -11,8 +11,14 @@
         }
       ],
       "expectedCall": [
-        { "functionName": "get_governance_rules", "arguments": {} },
-        { "functionName": "propose_component", "arguments": {} }
+        {
+          "functionName": "get_governance_rules",
+          "arguments": {}
+        },
+        {
+          "functionName": "propose_component",
+          "arguments": {}
+        }
       ]
     },
     {
@@ -26,7 +32,9 @@
       "expectedCall": [
         {
           "functionName": "check_capability",
-          "arguments": { "pattern": "Tooltip" }
+          "arguments": {
+            "pattern": "Tooltip"
+          }
         }
       ]
     },
@@ -38,7 +46,12 @@
           "content": "What design system am I using right now?"
         }
       ],
-      "expectedCall": [{ "functionName": "get_current_context", "arguments": {} }]
+      "expectedCall": [
+        {
+          "functionName": "get_current_context",
+          "arguments": {}
+        }
+      ]
     },
     {
       "name": "repairs rather than re-explaining",
@@ -48,7 +61,12 @@
           "content": "This got rejected. Just fix whatever you can automatically."
         }
       ],
-      "expectedCall": [{ "functionName": "fix_violations", "arguments": {} }]
+      "expectedCall": [
+        {
+          "functionName": "fix_violations",
+          "arguments": {}
+        }
+      ]
     },
     {
       "name": "explains a specific rejection",
@@ -61,20 +79,25 @@
       "expectedCall": [
         {
           "functionName": "explain_violation",
-          "arguments": { "hex": "#3b82f6" }
+          "arguments": {
+            "hex": "#3b82f6"
+          }
         }
       ]
     },
     {
-      "name": "switches the governing system on request",
+      "name": "offers the systems available when asked to switch",
       "messages": [
         {
           "role": "user",
-          "content": "Actually, build this against the SaaS design system instead."
+          "content": "I want to build against a different design system. What are my options?"
         }
       ],
       "expectedCall": [
-        { "functionName": "use_preset", "arguments": { "preset": "saas.md" } }
+        {
+          "functionName": "list_presets",
+          "arguments": {}
+        }
       ]
     },
     {
@@ -85,7 +108,12 @@
           "content": "I don't have a design system. What can I start from?"
         }
       ],
-      "expectedCall": [{ "functionName": "list_presets", "arguments": {} }]
+      "expectedCall": [
+        {
+          "functionName": "list_presets",
+          "arguments": {}
+        }
+      ]
     },
     {
       "name": "captures a reference site rather than guessing at it",
@@ -98,7 +126,9 @@
       "expectedCall": [
         {
           "functionName": "capture_site_design",
-          "arguments": { "url": "https://stripe.com" }
+          "arguments": {
+            "url": "https://stripe.com"
+          }
         }
       ]
     },
@@ -110,7 +140,12 @@
           "content": "What can I use to show someone's job title and the year?"
         }
       ],
-      "expectedCall": [{ "functionName": "list_components", "arguments": {} }]
+      "expectedCall": [
+        {
+          "functionName": "list_components",
+          "arguments": {}
+        }
+      ]
     },
     {
       "name": "validates pasted code on request",
@@ -120,7 +155,12 @@
           "content": "Does this match our design system? <div className=\"p-5 rounded-xl\">Hi</div>"
         }
       ],
-      "expectedCall": [{ "functionName": "check_governance", "arguments": {} }]
+      "expectedCall": [
+        {
+          "functionName": "check_governance",
+          "arguments": {}
+        }
+      ]
     }
   ]
 }
