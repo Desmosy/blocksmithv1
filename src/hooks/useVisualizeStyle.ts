@@ -63,6 +63,18 @@ export function useVisualizeStyle(
   const applyingRef = useRef(false);
   const appliedHashRef = useRef<string | null>(null);
   const aiRunningRef = useRef(false);
+  /**
+   * Whether the preview is on *right now*, readable from inside an await.
+   *
+   * The AI refine runs in the background for up to ninety seconds. Reading
+   * the `applied` state after that await sees the value the closure captured
+   * when the fetch began — so a reader who exited the preview (or never had
+   * it on) still got the theme slammed back onto the page whenever the slow
+   * response finally landed. That is the "it randomly applies the design out
+   * of nowhere" bug, verbatim.
+   */
+  const appliedRef = useRef(false);
+  const aiAbortRef = useRef<AbortController | null>(null);
 
   const hasTokens = canVisualizeSystem(ir);
   const canVisualize = hasTokens;
@@ -102,9 +114,11 @@ export function useVisualizeStyle(
 
   const fetchAndApplyAiLayout = useCallback(async (): Promise<void> => {
     if (aiConfigured !== true || aiRunningRef.current) return;
+    if (!appliedRef.current) return;
 
     aiRunningRef.current = true;
     const controller = new AbortController();
+    aiAbortRef.current = controller;
     const timeout = setTimeout(() => controller.abort(), AI_LAYOUT_TIMEOUT_MS);
 
     try {
@@ -123,6 +137,10 @@ export function useVisualizeStyle(
         summary?: string;
         error?: string;
       };
+
+      // The preview may have been exited while the model worked. A refine
+      // for a preview nobody is in is discarded, never applied.
+      if (!appliedRef.current) return;
 
       if (res.ok && data.layout) {
         await applyAiTheme(data.layout);
@@ -144,12 +162,14 @@ export function useVisualizeStyle(
     } finally {
       clearTimeout(timeout);
       aiRunningRef.current = false;
+      if (aiAbortRef.current === controller) aiAbortRef.current = null;
     }
   }, [fileName, ir.contentHash, aiConfigured, applyAiTheme]);
 
   useEffect(() => {
     const wasApplied = loadVisualizePreference(fileName);
     if (wasApplied && canVisualize) {
+      appliedRef.current = true;
       setApplied(true);
       appliedHashRef.current = ir.contentHash;
       void applyDeterministicTheme();
@@ -202,6 +222,11 @@ export function useVisualizeStyle(
   }, [applied, hydrated]);
 
   const clear = useCallback(() => {
+    // Exit means exit: a background refine still in flight must not land
+    // after the reader has left the preview.
+    appliedRef.current = false;
+    aiAbortRef.current?.abort();
+    aiAbortRef.current = null;
     clearThemeFromDocument(
       getInlineThemeKeysFromIR(ir),
       LAYOUT_EXTRA_KEYS,
@@ -218,6 +243,7 @@ export function useVisualizeStyle(
     const started = Date.now();
     setLoading(true);
     setAiWarning(null);
+    appliedRef.current = true;
     setApplied(true);
 
     try {

@@ -30,7 +30,6 @@ interface WikiShellProps {
 
 function WikiShellInner({
   system,
-  sources,
   currentFileName,
   lifecycle,
   children,
@@ -52,8 +51,6 @@ function WikiShellInner({
     applied,
     loading,
     loadingStage,
-    summary,
-    aiWarning,
     toggle,
   } = useVisualizeStyle(system, currentFileName);
 
@@ -107,23 +104,6 @@ function WikiShellInner({
         onSearchChange={setSearchQuery}
         systemName={system.name}
         lifecycle={lifecycle}
-        sources={sources}
-        currentFileName={currentFileName}
-        parser={
-          system.mode === "workspace-scan" ||
-          system.mode === "apollo" ||
-          system.mode === "generic"
-            ? system.mode
-            : "generic"
-        }
-        styleApplied={applied}
-        summary={
-          aiWarning
-            ? aiWarning
-            : applied && canVisualize
-              ? (summary ?? "Your design theme applied")
-              : null
-        }
         visualizeControl={
           <VisualizeStyleButton
             canVisualize={canVisualize}

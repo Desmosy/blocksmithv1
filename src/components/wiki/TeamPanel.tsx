@@ -140,7 +140,7 @@ export function TeamPanel() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-lg bg-[var(--wiki-accent)] px-4 py-2 text-xs font-semibold text-black disabled:opacity-50"
+            className="rounded-lg bg-[var(--wiki-cta-fill,var(--wiki-accent))] px-4 py-2 text-xs font-semibold text-[color:var(--wiki-cta-on-accent,#fff)] disabled:opacity-50"
           >
             {isSubmitting ? "Inviting…" : "Invite"}
           </button>

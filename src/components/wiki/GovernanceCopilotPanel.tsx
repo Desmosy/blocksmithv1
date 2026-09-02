@@ -139,7 +139,7 @@ export function GovernanceCopilotPanel({
           type="button"
           onClick={() => void requestDraft()}
           disabled={loading || !prompt.trim()}
-          className="rounded-lg bg-[var(--wiki-accent)] px-4 py-2 text-xs font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-[var(--wiki-cta-fill,var(--wiki-accent))] px-4 py-2 text-xs font-semibold text-[color:var(--wiki-cta-on-accent,#fff)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Drafting…" : "Draft rules"}
         </button>

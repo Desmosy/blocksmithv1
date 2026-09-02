@@ -20,18 +20,28 @@ export function AuthChrome({ variant = "home" }: { variant?: "home" | "wiki" }) 
   }
 
   if (status === "authed" && user) {
+    const identity = user.login ?? user.email ?? "?";
     return (
       <span className={`auth-chrome auth-chrome--${variant}`}>
-        <Link href="/wiki/sync?doc=apollo.md" className="auth-chrome__identity" title="Team workspace">
+        <Link
+          href="/wiki/sync?doc=apollo.md"
+          className="auth-chrome__identity"
+          title={`${identity} — team workspace`}
+        >
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatarUrl} alt="" className="auth-chrome__avatar" width={24} height={24} />
           ) : (
             <span className="auth-chrome__avatar auth-chrome__avatar--fallback" aria-hidden>
-              {(user.login ?? user.email ?? "?").slice(0, 1).toUpperCase()}
+              {identity.slice(0, 1).toUpperCase()}
             </span>
           )}
-          <span className="auth-chrome__login">{user.login ?? user.email}</span>
+          {/* The wiki rail is 84px wide; a login rendered there arrives
+              cropped mid-name, which reads as a bug. The avatar or initial
+              is the identity; the full name lives in the tooltip. */}
+          {variant === "wiki" ? null : (
+            <span className="auth-chrome__login">{identity}</span>
+          )}
         </Link>
         <button type="button" className="auth-chrome__btn" onClick={() => void signOut()}>
           Sign out

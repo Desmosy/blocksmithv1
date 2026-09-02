@@ -1,8 +1,6 @@
 "use client";
 
 import type { DocLifecycle } from "@/lib/wiki/doc-lifecycle";
-import { SourceSwitcher } from "./SourceSwitcher";
-import type { DocSource } from "@/lib/clients/registry";
 import { IconSearch } from "@/components/icons";
 
 const LIFECYCLE_COPY: Record<
@@ -23,26 +21,23 @@ const LIFECYCLE_COPY: Record<
   },
 };
 
+/**
+ * The bar carries the system's name, its lifecycle, search, and the one
+ * control that matters — nothing else. It used to also print the source
+ * file path, a parser badge, and a sentence describing the applied theme;
+ * three readers in a row asked what all that text was for, which is the
+ * answer to whether it belonged there.
+ */
 export function WikiWorkspaceBar({
   systemName,
   lifecycle,
-  sources,
-  currentFileName,
-  parser,
   visualizeControl,
-  styleApplied,
-  summary,
   searchQuery,
   onSearchChange,
 }: {
   systemName: string;
   lifecycle: DocLifecycle;
-  sources: DocSource[];
-  currentFileName: string;
-  parser: "apollo" | "generic" | "workspace-scan";
   visualizeControl?: React.ReactNode;
-  styleApplied?: boolean;
-  summary?: string | null;
   searchQuery: string;
   onSearchChange: (q: string) => void;
 }) {
@@ -71,9 +66,6 @@ export function WikiWorkspaceBar({
           >
             {status.label}
           </span>
-          {styleApplied && summary ? (
-            <span className="text-xs text-[var(--wiki-muted)]">{summary}</span>
-          ) : null}
         </div>
       </div>
 
@@ -99,11 +91,6 @@ export function WikiWorkspaceBar({
       </label>
 
       <div className="flex shrink-0 flex-wrap items-center gap-3">
-        <SourceSwitcher
-          sources={sources}
-          currentFileName={currentFileName}
-          parser={parser}
-        />
         {visualizeControl}
       </div>
     </div>

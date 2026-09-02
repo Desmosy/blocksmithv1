@@ -108,7 +108,7 @@ function EventRow({
           <button
             type="button"
             onClick={() => onStatus(event.id, "resolved")}
-            className="rounded-md bg-[var(--wiki-accent)] px-2 py-1 text-[10px] font-semibold text-black hover:opacity-90"
+            className="rounded-md bg-[var(--wiki-cta-fill,var(--wiki-accent))] px-2 py-1 text-[10px] font-semibold text-[color:var(--wiki-cta-on-accent,#fff)] hover:opacity-90"
           >
             Mark resolved
           </button>
@@ -176,14 +176,14 @@ export function GovernanceViolationsPanel({ docFileName }: { docFileName: string
           <button
             type="button"
             onClick={() => setFilter("open")}
-            className={`rounded-md px-2 py-1 font-medium ${filter === "open" ? "bg-[var(--wiki-accent)] text-black" : "border border-[var(--wiki-border)]"}`}
+            className={`rounded-md px-2 py-1 font-medium ${filter === "open" ? "bg-[var(--wiki-cta-fill,var(--wiki-accent))] text-[color:var(--wiki-cta-on-accent,#fff)]" : "border border-[var(--wiki-border)]"}`}
           >
             Open{openCount ? ` (${openCount})` : ""}
           </button>
           <button
             type="button"
             onClick={() => setFilter("all")}
-            className={`rounded-md px-2 py-1 font-medium ${filter === "all" ? "bg-[var(--wiki-accent)] text-black" : "border border-[var(--wiki-border)]"}`}
+            className={`rounded-md px-2 py-1 font-medium ${filter === "all" ? "bg-[var(--wiki-cta-fill,var(--wiki-accent))] text-[color:var(--wiki-cta-on-accent,#fff)]" : "border border-[var(--wiki-border)]"}`}
           >
             All
           </button>

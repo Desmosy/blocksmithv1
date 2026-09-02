@@ -103,7 +103,7 @@ export function ApiKeysPanel() {
         type="button"
         onClick={() => void createKey()}
         disabled={creating}
-        className="rounded-lg bg-[var(--wiki-accent)] px-4 py-2 text-xs font-semibold text-black hover:opacity-90 disabled:opacity-50"
+        className="rounded-lg bg-[var(--wiki-cta-fill,var(--wiki-accent))] px-4 py-2 text-xs font-semibold text-[color:var(--wiki-cta-on-accent,#fff)] hover:opacity-90 disabled:opacity-50"
       >
         {creating ? "Creating…" : "Create API key"}
       </button>
