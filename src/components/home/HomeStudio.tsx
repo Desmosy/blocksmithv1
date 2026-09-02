@@ -15,6 +15,7 @@ import { HomeHeroChat, type HeroTabId } from "./HomeHeroChat";
 import { HomeUseCases } from "./HomeUseCases";
 import { CodeBlock } from "@/components/ui/code-block";
 import HeroAscii from "@/components/ui/hero-ascii";
+import MoireHero from "@/components/home/MoireHero";
 import { motion, useInView, animate, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import Lenis from "lenis";
 
@@ -511,6 +512,8 @@ export function HomeStudio() {
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             className="w-full h-full flex items-end justify-end relative pt-8 pb-16 px-6 lg:px-12 border-l border-solid border-white [border-image:repeating-linear-gradient(to_bottom,#ffffff_0,#ffffff_6px,transparent_6px,transparent_12px)_1] lg:border-l-0 overflow-hidden"
           >
+            {/* Interference field — remixes itself, cursor joins as a source */}
+            <MoireHero className="absolute inset-0 z-0 hidden lg:block" />
             {/* Swapped Subtext Cell */}
             <div className="max-w-[500px] z-10 mb-8 text-right translate-x-[5%]">
               <p className="font-plain text-[20px] leading-[1.6] text-white/90 tracking-[-0.005em]">
