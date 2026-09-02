@@ -1,16 +1,16 @@
-import Link from "next/link";
 import { listPublishedDocuments } from "@/lib/cloud/documents";
 import { saasDbEnabled } from "@/lib/cloud/saas";
 import {
   loadDesignSystem,
   prepareDesignSystemDoc,
 } from "@/lib/clients/registry";
-import { hrefWithDoc } from "@/lib/wiki/doc-param";
+import { CommunityCard } from "./ProjectGrid";
 
-type CommunityCard = {
+type CommunityEntry = {
   docRef: string;
   name: string;
   tagline: string;
+  updatedAt: string | null;
   colors: number;
   components: number;
 };
@@ -27,12 +27,12 @@ type CommunityCard = {
 export async function CommunitySection() {
   if (!saasDbEnabled()) return null;
 
-  let cards: CommunityCard[] = [];
+  let cards: CommunityEntry[] = [];
   try {
     const docs = await listPublishedDocuments(12);
     cards = (
       await Promise.all(
-        docs.map(async (d): Promise<CommunityCard | null> => {
+        docs.map(async (d): Promise<CommunityEntry | null> => {
           try {
             await prepareDesignSystemDoc(d.docRef);
             const system = loadDesignSystem(d.docRef);
@@ -40,6 +40,7 @@ export async function CommunitySection() {
               docRef: d.docRef,
               name: system.name,
               tagline: system.tagline || "A published design system",
+              updatedAt: d.updatedAt ?? null,
               colors: system.colors.length,
               components: system.components.length,
             };
@@ -49,7 +50,7 @@ export async function CommunitySection() {
           }
         }),
       )
-    ).filter((c): c is CommunityCard => c !== null);
+    ).filter((c): c is CommunityEntry => c !== null);
   } catch {
     return null;
   }
@@ -66,23 +67,17 @@ export async function CommunitySection() {
           published by their owners · use as templates
         </span>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {cards.map((c) => (
-          <Link
+          <CommunityCard
             key={c.docRef}
-            href={hrefWithDoc("/wiki", c.docRef)}
-            className="group rounded-xl border border-[var(--dash-border,#e5e7eb)] bg-[var(--dash-surface,#fff)] p-4 transition hover:border-[var(--dash-foreground,#111)]/30"
-          >
-            <p className="text-[15px] font-semibold text-[var(--dash-foreground,#111)]">
-              {c.name}
-            </p>
-            <p className="mt-1 line-clamp-2 text-[13px] text-[var(--dash-muted-fg,#6b7280)]">
-              {c.tagline}
-            </p>
-            <p className="mt-3 text-[12px] text-[var(--dash-muted-fg,#6b7280)]">
-              {c.colors} tokens · {c.components} components
-            </p>
-          </Link>
+            docRef={c.docRef}
+            name={c.name}
+            tagline={c.tagline}
+            updatedAt={c.updatedAt}
+            tokens={c.colors}
+            components={c.components}
+          />
         ))}
       </div>
     </section>

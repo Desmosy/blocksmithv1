@@ -294,6 +294,93 @@ function ProjectCard({
   );
 }
 
+/**
+ * A published system on the Community shelf — the project card's exact look,
+ * read-only: no select, no rename, no delete. Someone else's published work
+ * is a thing to open, not a thing to manage.
+ */
+export function CommunityCard({
+  docRef,
+  name,
+  tagline,
+  updatedAt,
+  tokens,
+  components,
+}: {
+  docRef: string;
+  name: string;
+  tagline?: string;
+  updatedAt?: string | null;
+  tokens: number;
+  components: number;
+}) {
+  return (
+    <CutoutCard
+      className={`group relative flex flex-col transition-colors ${cutoutCardSurfaceClassName} border-[var(--dash-border)] hover:border-[var(--dash-border-strong)]`}
+    >
+      <Link
+        href={`/wiki?doc=${encodeURIComponent(docRef)}`}
+        className="absolute inset-0 z-0"
+        aria-label={`Open ${name}`}
+      />
+      <CutoutCardMedia
+        className={`flex h-32 items-center justify-center border-b border-[var(--dash-border)] ${getGradient(name)}`}
+      >
+        <IconColorPalette
+          size={32}
+          className="pointer-events-none z-10 text-white/90 drop-shadow-md transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110"
+        />
+        <CutoutCardOverlay />
+        <CutoutCardInsetLabel className="bottom-0 left-0 rounded-tr-[20px] bg-[var(--dash-surface)] px-4 py-2">
+          <span className="font-gtstandardmono text-[10px] uppercase tracking-wider text-[var(--dash-muted-fg)]/70">
+            Community
+          </span>
+          <CutoutCorner className="absolute -right-[31.5px] -bottom-px rotate-90 text-[var(--dash-surface)]" />
+          <CutoutCorner className="absolute -top-[31.5px] -left-px rotate-90 text-[var(--dash-surface)]" />
+        </CutoutCardInsetLabel>
+      </CutoutCardMedia>
+
+      <CutoutCardContent className="flex flex-1 flex-col rounded-b-[28px] bg-[var(--dash-surface)] p-4">
+        {updatedAt ? (
+          <div className="pointer-events-none mb-1">
+            <span className="font-gtstandardmono text-[10px] uppercase tracking-wider text-[var(--dash-muted-fg)]/50">
+              Updated {relativeTime(updatedAt)}
+            </span>
+          </div>
+        ) : null}
+        <h3 className="pointer-events-none mb-2 line-clamp-2 font-sans text-[16px] font-medium leading-snug tracking-tight text-[var(--dash-foreground)]">
+          {name}
+        </h3>
+        {tagline ? (
+          <p className="pointer-events-none mb-3 line-clamp-2 text-[12px] text-[var(--dash-muted-fg)]">
+            {tagline}
+          </p>
+        ) : null}
+        <div className="pointer-events-none mt-auto flex items-center gap-4 text-[12px] text-[var(--dash-muted-fg)]">
+          {tokens + components > 0 ? (
+            <>
+              {tokens > 0 && (
+                <span>
+                  {tokens} token{tokens === 1 ? "" : "s"}
+                </span>
+              )}
+              {components > 0 && (
+                <span>
+                  {components} component{components === 1 ? "" : "s"}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-[var(--dash-subtle-fg)] transition-colors group-hover:text-[var(--dash-foreground)]">
+              Open →
+            </span>
+          )}
+        </div>
+      </CutoutCardContent>
+    </CutoutCard>
+  );
+}
+
 export function ProjectGrid({ projects }: { projects: DashboardProject[] }) {
   const [items, setItems] = useState(projects);
   const [selected, setSelected] = useState<Set<string>>(new Set());
