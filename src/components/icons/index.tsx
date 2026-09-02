@@ -33,6 +33,7 @@ import {
   SearchNormal1,
   DocumentUpload,
   Home2,
+  LogoutCurve,
 } from "iconsax-react";
 
 export type StreamlineIconProps = SVGProps<SVGSVGElement> & {
@@ -95,6 +96,7 @@ export const IconPaperclip = sized(Paperclip2 as IconsaxComponent, "IconPapercli
 export const IconSearch = sized(SearchNormal1 as IconsaxComponent, "IconSearch");
 export const IconUpload = sized(DocumentUpload as IconsaxComponent, "IconUpload");
 export const IconHome = sized(Home2 as IconsaxComponent, "IconHome");
+export const IconSignOut = sized(LogoutCurve as IconsaxComponent, "IconSignOut");
 
 /** Block type → glyph */
 export const BLOCK_TYPE_ICON: Record<string, FC<StreamlineIconProps>> = {
