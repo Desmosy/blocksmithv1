@@ -43,6 +43,13 @@ export type Extracted = {
   anatomy: PageAnatomy | null;
   /** The site's own design tokens, by their authored names. */
   siteVars: SiteVar[];
+  /** The tokens under prefers-color-scheme: dark, when theming was detected. */
+  darkMode: Rendered["darkMode"];
+  /**
+   * Set when the capture should not be trusted as the visual site — the page
+   * served to the automated browser was a reduced or machine version.
+   */
+  degraded: string | null;
   /** CSS motion counted on real elements. Null for CSS-only captures. */
   motionCensus: { animated: number; transitions: number; staged: number } | null;
   /** What the page verifiably does at 390px. Null for CSS-only captures. */
@@ -516,6 +523,13 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     typeSamples: rendered.typeSamples,
     anatomy: rendered.anatomy,
     siteVars: rendered.siteVars,
+    darkMode: rendered.darkMode,
+    degraded:
+      rendered.reducedPage
+        ? "the page served to the automated browser was nearly empty — a reduced or bot-specific version, not the visual site"
+        : /machine version|text.only version|reader version/i.test(text.title ?? "")
+          ? `the page announced itself as "${text.title}" — a version served to machines, not the visual site`
+          : null,
     motionCensus: rendered.motion,
     responsive: rendered.responsive,
     weights: sampleWeights.length ? sampleWeights : text.weights,
@@ -601,6 +615,8 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
     typeSamples: [],
     anatomy: null,
     siteVars: [],
+    darkMode: null,
+    degraded: null,
     motionCensus: null,
     responsive: null,
     fonts: collectFonts(css),

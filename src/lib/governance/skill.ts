@@ -200,6 +200,24 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
    */
   // No /m flag: with it, `$` matches the first line-end and the capture
   // stops after one line, silently dropping the page anatomy.
+  // The measured dark palette rides along verbatim when the capture found
+  // one — an agent asked for dark mode should use measured values, not
+  // invert colours by guesswork.
+  const darkSection = markdown
+    .match(/\n### Dark mode[^\n]*\n([\s\S]*?)(?=\n#{2,3} |$)/)?.[1]
+    ?.trim();
+  if (darkSection) {
+    out.push(
+      "## Dark mode",
+      "",
+      "Measured under `prefers-color-scheme: dark` — use these values, never",
+      "an inverted guess:",
+      "",
+      darkSection,
+      "",
+    );
+  }
+
   const layoutSection = markdown.match(/\n## Layout\s*\n([\s\S]*?)(?=\n## |$)/)?.[1]?.trim();
   const sectionGap =
     layoutSection?.match(/separated by ~(\d+)px/)?.[1] ??

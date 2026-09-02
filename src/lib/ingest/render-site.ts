@@ -105,6 +105,23 @@ export type Rendered = {
    */
   siteVars: SiteVar[];
   /**
+   * The same tokens under prefers-color-scheme: dark, when the site themes
+   * through them. Null when emulating dark changed nothing — the site either
+   * has no dark mode or switches it by class, which emulation cannot see.
+   */
+  darkMode: {
+    vars: SiteVar[];
+    bodyBg: string | null;
+    bodyFg: string | null;
+  } | null;
+  /**
+   * The page arrived suspiciously empty — a handful of elements, no real
+   * containers. Some sites deliberately serve automated browsers a reduced
+   * "machine version"; publishing its palette as the brand would be
+   * confidently wrong, so the caller must distrust this capture.
+   */
+  reducedPage: boolean;
+  /**
    * How the nav behaves under scroll: pinned or not, and what it turns into.
    * The floating bar that detaches on scroll is one of the most recognisable
    * moves a site makes, and a capture that misses it hands agents a nav that
@@ -1344,7 +1361,12 @@ function pageAnatomy(raw: RawPage, palette: Palette): PageAnatomy | null {
   return { bands: out, sectionGapPx, pageVh: Math.round((docH / vh) * 10) / 10 };
 }
 
-function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState>): RenderedComponent[] {
+function assemble(
+  raw: RawPage,
+  palette: Palette,
+  hovers: Map<number, HoverState>,
+  tokenUse: Map<number, Record<string, string>> = new Map(),
+): RenderedComponent[] {
   const { candidates, containers, viewport } = raw;
   const clusters = clusterAll(candidates);
   const vw = viewport.w;
@@ -1376,12 +1398,23 @@ function assemble(raw: RawPage, palette: Palette, hovers: Map<number, HoverState
     .filter((k) => k.count >= 2 || alwaysKeep.has(k.kind) || primaryLike(k) || (k.kind === "card" && k.rep.height >= 200) || (k.kind === "visual" && Math.max(k.rep.width, k.rep.height) >= 200))
     .sort((a, b) => significance(b) - significance(a));
 
-  const leaves: RenderedComponent[] = ranked.slice(0, 20).map((k) => ({
-    name: nameOf.get(k)!,
-    role: named.find((n) => n.k === k)!.role,
-    spec: specFor(k.rep, k.hover),
-    count: k.count,
-  }));
+  const leaves: RenderedComponent[] = ranked.slice(0, 20).map((k) => {
+    let spec = specFor(k.rep, k.hover);
+    // The authored layer: which of the site's own tokens this component is
+    // built from. An agent writing against the real codebase reaches for
+    // `var(--ds-gray-1000)`, not a transcribed hex.
+    const uses = tokenUse.get(k.rep.idx);
+    if (uses && Object.keys(uses).length) {
+      const parts = Object.entries(uses).map(([prop, name]) => `${prop} \`var(${name})\``);
+      spec += ` Site tokens: ${parts.join(", ")}.`;
+    }
+    return {
+      name: nameOf.get(k)!,
+      role: named.find((n) => n.k === k)!.role,
+      spec,
+      count: k.count,
+    };
+  });
 
   const patterns = findPatterns(candidates, clusters, containers, viewport, nameOf);
 
@@ -1418,13 +1451,26 @@ async function readHoverStatesViaCdp(
   raw: RawPage,
   limit: number,
   deadline: number,
-): Promise<Map<number, HoverState>> {
+): Promise<{ hovers: Map<number, HoverState>; tokenUse: Map<number, Record<string, string>> }> {
   const out = new Map<number, HoverState>();
+  const tokenUse = new Map<number, Record<string, string>>();
   const clusters = clusterAll(raw.candidates)
-    .filter((k) => k.kind === "control" || k.kind === "field")
+    .filter((k) => k.kind === "control" || k.kind === "field" || k.kind === "card")
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
-  if (!clusters.length) return out;
+  if (!clusters.length) return { hovers: out, tokenUse };
+
+  // Which declared properties are worth attributing, and what the spec
+  // calls them. A component whose fill is `var(--ds-gray-1000)` teaches an
+  // agent the site's own vocabulary; a bare hex teaches it nothing.
+  const ATTRIBUTE: Record<string, string> = {
+    "background-color": "fill",
+    background: "fill",
+    color: "text",
+    "border-color": "border",
+    "border-radius": "radius",
+  };
+  const JUNK_VAR = /^--(tw|un|radix|reach|cdk|headlessui|chakra|mui|mdc|ant)-/;
 
   let cdp: import("playwright-core").CDPSession | null = null;
   try {
@@ -1447,6 +1493,33 @@ async function readHoverStatesViaCdp(
           selector: '[data-bs-probe="1"]',
         })) as { nodeId: number };
         if (nodeId) {
+          // The authored cascade: which custom property each visual property
+          // actually comes from. Matched rules arrive least- to most-specific,
+          // so a later var() for the same property overwrites an earlier one.
+          try {
+            const matched = (await cdp.send("CSS.getMatchedStylesForNode", { nodeId })) as {
+              matchedCSSRules?: {
+                rule: {
+                  selectorList?: { text?: string };
+                  style?: { cssProperties?: { name: string; value: string }[] };
+                };
+              }[];
+            };
+            const uses: Record<string, string> = {};
+            for (const m of matched.matchedCSSRules ?? []) {
+              const selector = m.rule.selectorList?.text ?? "";
+              if (/:hover|:focus|:active/.test(selector)) continue;
+              for (const p of m.rule.style?.cssProperties ?? []) {
+                const label = ATTRIBUTE[p.name];
+                if (!label) continue;
+                const varName = p.value.match(/var\(\s*(--[\w-]+)/)?.[1];
+                if (varName && !JUNK_VAR.test(varName)) uses[label] = varName;
+              }
+            }
+            if (Object.keys(uses).length) tokenUse.set(idx, uses);
+          } catch {
+            /* attribution is enrichment; the spec keeps its hex values */
+          }
           const pseudo = k.kind === "field" ? ["focus"] : ["hover"];
           await cdp.send("CSS.forcePseudoState", {
             nodeId,
@@ -1492,11 +1565,11 @@ async function readHoverStatesViaCdp(
     }
   } catch {
     // No CDP session (an unusual provider): the mouse path takes over.
-    return new Map();
+    return { hovers: new Map(), tokenUse };
   } finally {
     await cdp?.detach().catch(() => {});
   }
-  return out;
+  return { hovers: out, tokenUse };
 }
 
 /** Read hover states for the representatives of the most-used controls. */
@@ -1832,8 +1905,11 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
     // session.
     const hoverBudget = left();
     let hovers = new Map<number, HoverState>();
+    let tokenUse = new Map<number, Record<string, string>>();
     if (hoverBudget > 2_500) {
-      hovers = await readHoverStatesViaCdp(page, raw, 20, deadline - 800);
+      const viaCdp = await readHoverStatesViaCdp(page, raw, 20, deadline - 800);
+      hovers = viaCdp.hovers;
+      tokenUse = viaCdp.tokenUse;
       if (hovers.size === 0 && left() > 6_000) {
         hovers = await readHoverStates(page, raw, Math.min(10, Math.floor(left() / 1_200)), deadline - 1_000);
       }
@@ -1910,7 +1986,50 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
     }
     mark("mobile:done");
 
-    const components = assemble(raw, { ground, ink, accent }, hovers);
+    // Dark mode, read the way the OS would ask for it. Sites that theme
+    // through custom properties hand us their whole dark palette as a diff of
+    // resolved values; sites that switch by class stay undetected, and the
+    // doc simply says nothing rather than guessing.
+    let darkMode: Rendered["darkMode"] = null;
+    if (opts.varNames?.length && siteVars.length && left() > 2_500) {
+      try {
+        await page.emulateMedia({ colorScheme: "dark" });
+        await page.waitForTimeout(400);
+        const darkVars = (await page.evaluate(resolveVarsScript(opts.varNames))) as SiteVar[];
+        const body = (await page.evaluate(`(() => {
+          const cs = getComputedStyle(document.body);
+          const nctx = (() => { try { const c = document.createElement("canvas"); c.width = 1; c.height = 1; return c.getContext("2d", { willReadFrequently: true }); } catch { return null; } })();
+          const toHex = (v) => {
+            if (!v || !nctx) return null;
+            try {
+              nctx.fillStyle = "#010203"; nctx.fillStyle = v;
+              if (String(nctx.fillStyle) === "#010203" && v !== "#010203") return null;
+              nctx.clearRect(0, 0, 1, 1); nctx.fillRect(0, 0, 1, 1);
+              const d = nctx.getImageData(0, 0, 1, 1).data;
+              if (d[3] < 13) return null;
+              const h = (n) => n.toString(16).padStart(2, "0");
+              return "#" + h(d[0]) + h(d[1]) + h(d[2]);
+            } catch { return null; }
+          };
+          return { bg: toHex(cs.backgroundColor), fg: toHex(cs.color) };
+        })()`)) as { bg: string | null; fg: string | null };
+        await page.emulateMedia({ colorScheme: "light" }).catch(() => {});
+
+        // Only claim a dark mode when something actually changed.
+        const lightByName = new Map(siteVars.map((v) => [v.name, v.hex]));
+        const changed = (Array.isArray(darkVars) ? darkVars : []).filter(
+          (v) => v.hex && lightByName.get(v.name) && lightByName.get(v.name) !== v.hex,
+        );
+        if (changed.length >= 3) {
+          darkMode = { vars: changed.slice(0, 120), bodyBg: body?.bg ?? null, bodyFg: body?.fg ?? null };
+        }
+      } catch {
+        /* no dark reading beats a wrong one */
+      }
+    }
+    mark("dark:done");
+
+    const components = assemble(raw, { ground, ink, accent }, hovers, tokenUse);
 
     // Fold the scroll behaviour into the nav's own spec, where a reader and
     // an agent will actually see it.
@@ -1950,6 +2069,8 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       hairline,
       anatomy: pageAnatomy(raw, { ground, ink, accent }),
       siteVars,
+      darkMode,
+      reducedPage: raw.candidates.length < 8 && raw.containers.length < 6,
       navBehavior,
       motion: raw.motion ?? null,
       responsive,

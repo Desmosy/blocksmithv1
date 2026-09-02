@@ -392,6 +392,15 @@ export const WEBMCP_TOOLS: WebMcpToolDef[] = [
         const lines = [
           `Captured **${title}** from ${found.url}.`,
           "",
+          // Said here as well as in the doc: the agent relaying this result
+          // is the only chance the human has to hear it before building.
+          ...(found.degraded
+            ? [
+                `⚠️ **Treat this capture with suspicion:** ${found.degraded}. ` +
+                  `Tell the user, and suggest capturing a different page on the same site.`,
+                "",
+              ]
+            : []),
           `- ${found.colors.length} colours · ${found.fonts.length} typefaces · ` +
             `${found.fontSizes.length} type sizes · ${found.spacing.length} spacing steps`,
           `- Saved as \`${saved.docRef}\``,

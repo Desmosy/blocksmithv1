@@ -548,6 +548,16 @@ export function synthesizeDesignSystem(found: Extracted): {
     "",
     "**Theme:** light",
     "",
+    // Say it before anything else: a capture of a bot-served page is not a
+    // capture of the brand, and every table below inherits that doubt.
+    ...(found.degraded
+      ? [
+          `> ⚠️ **Treat this capture with suspicion:** ${found.degraded}.`,
+          "> Try a different page on the same site, or capture a screenshot",
+          "> with the browser extension to read what you actually see.",
+          "",
+        ]
+      : []),
     found.readFrom === "rendered"
       ? `This design system was read from ${found.url} as it renders. Colours are` +
         ` ranked by how much of the screen they actually cover, type and spacing` +
@@ -581,6 +591,47 @@ export function synthesizeDesignSystem(found: Extracted): {
       }),
       "",
     );
+
+    /**
+     * Dark mode, as the OS would request it.
+     *
+     * When emulating prefers-color-scheme: dark changed the site's own
+     * custom properties, the diff IS the dark palette — measured, not
+     * inferred. Rows pair each captured colour with what its site token
+     * becomes in the dark; the two-column body ground/ink lead because they
+     * are what a dark build reaches for first.
+     */
+    if (found.darkMode) {
+      const darkByName = new Map(found.darkMode.vars.map((v) => [v.name, v.hex] as const));
+      const rows: string[] = [];
+      if (found.darkMode.bodyBg) {
+        rows.push(`| Page ground | \`${colors.find((c) => c.name === "Ground")?.value ?? "—"}\` | \`${found.darkMode.bodyBg}\` |`);
+      }
+      if (found.darkMode.bodyFg) {
+        rows.push(`| Body text | \`${colors.find((c) => c.name === "Ink")?.value ?? "—"}\` | \`${found.darkMode.bodyFg}\` |`);
+      }
+      for (const c of colors) {
+        const own = siteNameFor(c.value);
+        if (!own) continue;
+        const dark = darkByName.get(own);
+        if (!dark || dark === c.value) continue;
+        rows.push(`| ${c.name} (\`${own}\`) | \`${c.value}\` | \`${dark}\` |`);
+        if (rows.length >= 12) break;
+      }
+      if (rows.length >= 2) {
+        lines.push(
+          "### Dark mode — measured under `prefers-color-scheme: dark`",
+          "",
+          "The site themes through its custom properties; these values were",
+          "resolved with the dark scheme emulated, not guessed.",
+          "",
+          "| Token | Light | Dark |",
+          "|-------|-------|------|",
+          ...rows,
+          "",
+        );
+      }
+    }
   }
 
   // The Type Scale is a subsection of Typography, so this header has to be
