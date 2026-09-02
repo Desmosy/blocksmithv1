@@ -64,7 +64,7 @@ The wiki BlockSmith builds from a captured or written design system:
 
 ![The design system wiki](docs/assets/wiki.png)
 
-A landing page an agent generated against a captured system (perk.com), checked and corrected by governance:
+A landing page an agent generated against a captured design system, checked and corrected by governance. Every color, face, and radius on it comes from the captured tokens:
 
 ![A generated landing page](docs/assets/generated-landing.png)
 
