@@ -47,9 +47,7 @@ because there is no codebase behind them to promote to.
 
 ## How to use BlockSmith
 
-### 1. With ChatGPT (easiest, nothing to install)
-
-The ChatGPT desktop app has a built-in browser that supports WebMCP out of the box.
+### 1. With ChatGPT (easiest, that's what i feel)
 
 1. Open the ChatGPT desktop app.
 2. Ask it to open `https://blocksmithv1.vercel.app/dashboard` in its browser.
