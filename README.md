@@ -16,7 +16,7 @@
   <img alt="Agent SKILL.md" src="https://img.shields.io/badge/Agent-SKILL.md-3b5bd9?style=flat-square&labelColor=24292f">
 </p>
 
-You know how big tech companies have a whole floor of designers guarding a design system, which is why their buttons never come out weird? Guess what: now you have that floor too. Name a site you like, and BlockSmith reads its colors, type, and spacing off the live page and hands you a governed design system with its own wiki. Total headcount: zero.
+You know how big tech companies have a whole floor of designers guarding a design system, which is why their buttons never come out weird? Guess what: now you have that too. (womp womp..) Name a site you like, stripe, cohere, openai whatever and BlockSmith reads its colors, type, and spacing off the live page and hands you a governed design system with its own wiki. Total headcount: 0, NADA.
 
 Already have a design system because you work on one of those fancy teams? Even better. Bring it in, and BlockSmith becomes the strict design reviewer who never sleeps, never blinks, and never approves a random purple. Your agent asks before it builds, gets rejected when it freelances, and fixes its own work while you watch.
 
