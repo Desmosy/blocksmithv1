@@ -3,6 +3,8 @@
  */
 
 import Link from "next/link";
+import { ScanWorkspaceCard } from "@/components/home/ScanWorkspaceCard";
+import { FigmaConnectCard } from "@/components/figma/FigmaConnectCard";
 import { getSupabaseUser } from "@/lib/auth/session";
 import { supabaseAnonKey, supabaseStorageEnabled, supabaseUrl } from "@/lib/supabase/env";
 import { isNvidiaConfigured } from "@/lib/ai/nvidia";
@@ -111,6 +113,38 @@ export default async function ConnectorsPage() {
           What this server is wired to, read live.
         </p>
       </header>
+
+      {/*
+        "Scan a repo" on the dashboard links here with #codebase, and this
+        anchor did not exist — so the button navigated to a page with nothing
+        on it to click. The scan form itself was only ever mounted on the
+        logged-out home page, which a signed-in user is redirected away from,
+        so signing in removed the only route to the feature.
+      */}
+      <section id="codebase" className="mb-8 scroll-mt-24">
+        <h2 className="text-[17px] font-medium text-[var(--dash-foreground)]">
+          Scan a codebase
+        </h2>
+        <p className="mb-4 mt-1 text-[14px] leading-relaxed text-[var(--dash-muted-fg)]">
+          Read a repository into a governed design system — every component, its
+          props and variants, and every CSS custom property it declares.
+        </p>
+        <ScanWorkspaceCard />
+      </section>
+
+      {/* Same dead end as #codebase: the dashboard linked here and the anchor
+          never existed, while the form itself sat on /figma, a route with no
+          inbound link anywhere in the app. */}
+      <section id="figma" className="mb-8 scroll-mt-24">
+        <h2 className="text-[17px] font-medium text-[var(--dash-foreground)]">
+          Import from Figma
+        </h2>
+        <p className="mb-4 mt-1 text-[14px] leading-relaxed text-[var(--dash-muted-fg)]">
+          Bring in variables and published components from a file, then track
+          where they have drifted from the code that ships.
+        </p>
+        <FigmaConnectCard />
+      </section>
 
       <section className="rounded-[var(--dash-radius)] border border-[var(--dash-border)] bg-[var(--dash-surface)]">
         <ul>
