@@ -40,11 +40,20 @@ export function ProposalPreview({
     const measure = () => {
       try {
         const h = frame.contentDocument?.body?.scrollHeight;
-        // Size to the content. There was a 520px ceiling here, so anything
-        // taller grew its own scrollbar inside the frame — a component you
-        // could only see part of, which is the one thing a preview must not
-        // do. The floor stays so an empty proposal is not a sliver.
-        if (h) setHeight(Math.max(h + 8, 96));
+        // Size to the content — with a ceiling, and only on real change.
+        // Both guards break the same feedback loop: a proposed full page
+        // uses min-height:100vh sections, and vh resolves against the
+        // frame's own height, so size-to-content chased its own tail — the
+        // frame grew, the sections grew to match, the observer fired, and
+        // the page scrolled forever through empty ground. Components fit
+        // comfortably under the ceiling; a full page scrolls inside the
+        // frame and has the Open-full-page link for the real thing.
+        if (h) {
+          setHeight((prev) => {
+            const next = Math.min(Math.max(h + 8, 96), 1600);
+            return Math.abs(next - prev) > 12 ? next : prev;
+          });
+        }
       } catch {
         /* cross-origin is impossible here, but never let measuring throw */
       }
@@ -93,7 +102,6 @@ export function ProposalPreview({
        * take advantage of the shared origin.
        */
       sandbox="allow-same-origin"
-      scrolling="no"
       srcDoc={doc}
       style={{ height }}
       className="w-full rounded-lg border border-[var(--wiki-border)] bg-white"

@@ -88,7 +88,14 @@ export default async function WikiPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
-  const sources = await listAccessibleDocSources();
+  // The source list feeds a dropdown; a storage hiccup listing it must not
+  // take down the document the reader actually asked for.
+  let sources: Awaited<ReturnType<typeof listAccessibleDocSources>> = [];
+  try {
+    sources = await listAccessibleDocSources();
+  } catch (err) {
+    console.error("[wiki] source listing failed:", err);
+  }
   const meta = getClientMeta(fileName);
 
   const ir = await ensureDesignIRWithFonts(fileName, system);
@@ -556,16 +563,30 @@ function renderGovernance(
   ir: DesignIR,
   docFileName: string,
 ) {
-  const snapshot = buildSystemSnapshot(system, ir);
-  recordSnapshot(docFileName, snapshot);
-  const previous = loadPreviousSnapshot(docFileName, snapshot.contentHash);
-  const diff = previous ? diffSnapshots(previous, snapshot) : null;
   const report = scoreFidelity(system, ir);
-  const previousLabel = previous
-    ? new Date(previous.updatedAt).toLocaleDateString()
-    : null;
 
-  const teamActivity = listActivity(docFileName, { limit: 30 });
+  // History and diffing are enrichment; a doc whose stored history will not
+  // parse must not take the governance page down with it.
+  let diff: ReturnType<typeof diffSnapshots> | null = null;
+  let previousLabel: string | null = null;
+  try {
+    const snapshot = buildSystemSnapshot(system, ir);
+    recordSnapshot(docFileName, snapshot);
+    const previous = loadPreviousSnapshot(docFileName, snapshot.contentHash);
+    diff = previous ? diffSnapshots(previous, snapshot) : null;
+    previousLabel = previous
+      ? new Date(previous.updatedAt).toLocaleDateString()
+      : null;
+  } catch (err) {
+    console.error("[wiki] governance history failed:", docFileName, err);
+  }
+
+  let teamActivity: ReturnType<typeof listActivity> = [];
+  try {
+    teamActivity = listActivity(docFileName, { limit: 30 });
+  } catch (err) {
+    console.error("[wiki] activity read failed:", docFileName, err);
+  }
 
   return (
     <GovernancePage

@@ -23,12 +23,27 @@ export async function assertWikiDocAccess(docRef: string): Promise<void> {
   if (isPublicContent(fileName)) return;
 
   const user = await getSupabaseUser();
+  // Invite acceptance is a convenience on the way in, not the gate itself; a
+  // transient failure here must not take the whole page down.
   if (user?.email) {
-    await acceptPendingInvites(user.userId, user.email);
+    try {
+      await acceptPendingInvites(user.userId, user.email);
+    } catch (err) {
+      console.error("[wiki-access] invite acceptance failed:", err);
+    }
   }
 
-  const allowed = await canAccessDocument(fileName, user?.userId ?? null, {
-    action: "read",
-  });
+  // The gate proper. An error answering "may they read this?" is treated as
+  // "no" — a denial renders the same not-found page a missing doc does,
+  // where an unhandled throw rendered the raw error boundary on every
+  // Supabase hiccup and read as the wiki being broken.
+  let allowed = false;
+  try {
+    allowed = await canAccessDocument(fileName, user?.userId ?? null, {
+      action: "read",
+    });
+  } catch (err) {
+    console.error("[wiki-access] access check failed:", fileName, err);
+  }
   if (!allowed) notFound();
 }
