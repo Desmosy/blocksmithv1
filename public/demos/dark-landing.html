@@ -1,0 +1,503 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --color-ground: #171721; --color-ink: #272735; --color-paper: #ffffff; --color-mist: #f4f5f9; --color-chalk: #f1f1f4; --color-stone: #e2e3ed; --color-slate: #c3c3cc; --color-blue: #5266eb; --color-graphite: #000000; --space-2xs: 2px; --text-meta: 10px; --text-body-sm: 14px; --text-body: 16px; --text-body-2: 18px; --text-body-lg: 21px; --text-subheading: 24px; --text-subheading-2: 28px; --text-heading: 32px; --text-heading-2: 42px; }
+  html,body { margin:0; padding:0; min-height:100%; background:#171721; color:#272735;
+    font-family:"arcadiaDisplay", ui-sans-serif, system-ui, sans-serif; }
+  * { box-sizing:border-box; }
+  img,svg { max-width:100%; }
+</style></head><body><style>
+:root{
+  --ground:#171721;
+  --ink:#272735;
+  --paper:#ffffff;
+  --mist:#f4f5f9;
+  --chalk:#f1f1f4;
+  --stone:#e2e3ed;
+  --slate:#c3c3cc;
+  --blue:#5266eb;
+  --graphite:#000000;
+  --chart-1:var(--ink);
+  --chart-2:var(--blue);
+  --chart-3:var(--slate);
+  --chart-4:var(--stone);
+  --chart-5:var(--chalk);
+  --space-2xs:2px;
+  --r-small:2px;
+  --r-control:6px;
+  --r-card:8px;
+  --r-panel:12px;
+  --r-pill:9999px;
+  --ease:cubic-bezier(.16,0,.13,1);
+  --font-body:arcadia,Arial,sans-serif;
+  --font-display:arcadiaDisplay,arcadia,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.35}
+a{color:inherit;text-decoration:none}
+button,a{transition:color 150ms var(--ease),background 250ms var(--ease),border-color 250ms var(--ease),transform 250ms var(--ease)}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.shell{max-width:1200px;margin-inline:auto;padding-inline:calc(var(--space-2xs) * 16)}
+.nav{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--stone)}
+.nav-inner{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:calc(var(--space-2xs) * 12)}
+.brand{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5);font-size:18px;font-weight:600}
+.brand-mark{width:26px;height:26px;border-radius:var(--r-pill);background:var(--ground);display:grid;place-items:center;color:var(--paper)}
+.nav-links{display:flex;align-items:center;gap:calc(var(--space-2xs) * 14);font-size:14px}
+.nav-links a:hover{color:var(--blue)}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:calc(var(--space-2xs) * 4);min-height:44px;padding-inline:calc(var(--space-2xs) * 10);border-radius:var(--r-pill);border:1px solid var(--blue);background:var(--blue);color:var(--paper);font:600 14px/1 var(--font-body);cursor:pointer}
+.pill:hover{background:var(--ink);border-color:var(--ink);transform:translateY(-2px)}
+.pill.light{background:var(--paper);border-color:var(--paper);color:var(--ground)}
+.pill.light:hover{background:var(--mist);border-color:var(--mist)}
+.text-link{display:inline-flex;align-items:center;gap:calc(var(--space-2xs) * 4);font-size:14px;font-weight:600;border-bottom:1px solid var(--slate);padding-bottom:var(--space-2xs)}
+.text-link:hover{color:var(--blue);border-color:var(--blue)}
+.hero{position:relative;overflow:hidden;background:var(--ground);color:var(--paper);min-height:720px}
+.hero-grid{min-height:720px;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:calc(var(--space-2xs) * 32);padding-block:calc(var(--space-2xs) * 48)}
+.eyebrow{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;font-weight:600}
+.eyebrow.blue{color:var(--blue)}
+.hero h1{font-family:var(--font-display);font-size:42px;line-height:1.1;font-weight:400;max-width:680px;margin:calc(var(--space-2xs) * 8) 0}
+.hero-copy{max-width:580px;color:var(--slate);font-size:18px;line-height:1.35;margin:0}
+.hero-actions{display:flex;align-items:center;gap:calc(var(--space-2xs) * 10);margin-top:calc(var(--space-2xs) * 16)}
+.hero-actions .text-link{color:var(--paper);border-color:var(--slate)}
+.hero-art{position:relative;min-height:500px;display:grid;place-items:center}
+.orbit-card{position:relative;width:min(100%,500px);aspect-ratio:1;border:1px solid var(--slate);border-radius:var(--r-panel);overflow:hidden;background:var(--ground)}
+.orbit-card svg{width:100%;height:100%;display:block}
+.floating-stat{position:absolute;left:calc(var(--space-2xs) * 10);bottom:calc(var(--space-2xs) * 10);background:var(--paper);color:var(--ink);border:1px solid var(--stone);border-radius:var(--r-card);padding:calc(var(--space-2xs) * 8);min-width:174px}
+.floating-stat strong{display:block;font-family:var(--font-display);font-size:28px;line-height:1.2;font-weight:400}
+.floating-stat span{font-size:10px;letter-spacing:.3px;text-transform:uppercase}
+.logo-strip{border-bottom:1px solid var(--stone);background:var(--mist)}
+.logo-row{min-height:110px;display:grid;grid-template-columns:1.2fr repeat(5,1fr);align-items:center;gap:calc(var(--space-2xs) * 12)}
+.logo-row p{font-size:10px;letter-spacing:.3px;text-transform:uppercase}
+.logo-name{font-size:14px;font-weight:600;color:var(--ink)}
+.section{padding-block:calc(var(--space-2xs) * 48)}
+.section.soft{background:var(--mist)}
+.section.dark{background:var(--ground);color:var(--paper)}
+.section-head{display:grid;grid-template-columns:.75fr 1.25fr;gap:calc(var(--space-2xs) * 32);align-items:end;margin-bottom:calc(var(--space-2xs) * 24)}
+.section h2{font-family:var(--font-display);font-size:32px;line-height:1.15;font-weight:400;margin:calc(var(--space-2xs) * 6) 0 0}
+.section-intro{font-size:18px;max-width:620px;color:var(--ink);margin:0}
+.dark .section-intro{color:var(--slate)}
+.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--space-2xs) * 8)}
+.service-card{min-height:310px;border:1px solid var(--stone);border-radius:var(--r-card);padding:calc(var(--space-2xs) * 16);display:flex;flex-direction:column;justify-content:space-between;background:var(--paper)}
+.service-card:hover{border-color:var(--blue);transform:translateY(-2px)}
+.icon-wrap{width:44px;height:44px;border:1px solid var(--stone);border-radius:var(--r-control);display:grid;place-items:center;color:var(--blue)}
+.icon-wrap svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5}
+.service-card h3{font-family:var(--font-display);font-size:24px;line-height:1.2;font-weight:400;margin:calc(var(--space-2xs) * 10) 0 calc(var(--space-2xs) * 5)}
+.service-card p{font-size:14px;color:var(--ink);margin:0;max-width:290px}
+.card-index{font-size:10px;letter-spacing:.3px;color:var(--slate)}
+.results-layout{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--space-2xs) * 8)}
+.chart-card{background:var(--paper);border:1px solid var(--stone);border-radius:var(--r-card);padding:calc(var(--space-2xs) * 14);color:var(--ink)}
+.chart-top{display:flex;align-items:flex-start;justify-content:space-between;gap:calc(var(--space-2xs) * 8);margin-bottom:calc(var(--space-2xs) * 12)}
+.chart-top h3{font-family:var(--font-display);font-size:21px;line-height:1.2;font-weight:400;margin:0}
+.chart-top p{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;color:var(--ink);margin:calc(var(--space-2xs) * 3) 0 0}
+.metric{font-family:var(--font-display);font-size:28px;line-height:1.2}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font-family:var(--font-body);font-size:10px;fill:var(--ink)}
+.chart .baseline{stroke:var(--stone);stroke-width:1}
+.chart .growth-line{fill:none;stroke:var(--chart-1);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:620;stroke-dashoffset:620;animation:draw 400ms var(--ease) forwards}
+.chart .point{fill:var(--paper);stroke:var(--chart-1);stroke-width:2}
+.chart .bar-a{fill:var(--chart-1)}
+.chart .bar-b{fill:var(--chart-2)}
+.chart .bar-c{fill:var(--chart-3)}
+.chart .bar-d{fill:var(--chart-4)}
+.chart .bar-part{transition:opacity 150ms var(--ease)}
+.chart .bar-part:hover{opacity:.7}
+.legend{display:flex;flex-wrap:wrap;gap:calc(var(--space-2xs) * 8);margin-top:calc(var(--space-2xs) * 8);font-size:10px;letter-spacing:.3px}
+.legend span{display:inline-flex;align-items:center;gap:calc(var(--space-2xs) * 3)}
+.swatch{width:10px;height:10px;border-radius:var(--r-small)}
+.source-note{font-size:10px;line-height:1.4;margin:calc(var(--space-2xs) * 8) 0 0;color:var(--ink)}
+@keyframes draw{to{stroke-dashoffset:0}}
+.case-study{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--stone);border-radius:var(--r-panel);overflow:hidden;background:var(--paper)}
+.case-copy{padding:calc(var(--space-2xs) * 24)}
+.case-copy h3{font-family:var(--font-display);font-size:32px;line-height:1.15;font-weight:400;margin:calc(var(--space-2xs) * 8) 0}
+.case-copy p{font-size:16px;max-width:470px}
+.case-list{list-style:none;padding:0;margin:calc(var(--space-2xs) * 14) 0;display:grid;gap:calc(var(--space-2xs) * 6)}
+.case-list li{display:flex;gap:calc(var(--space-2xs) * 5);align-items:center;font-size:14px}
+.case-list svg{width:18px;height:18px;fill:none;stroke:var(--blue);stroke-width:1.5;flex:none}
+.case-art{background:var(--ground);min-height:500px;display:grid;place-items:center;padding:calc(var(--space-2xs) * 20)}
+.case-art svg{width:100%;height:auto;max-width:480px}
+.process{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--slate)}
+.step{padding:calc(var(--space-2xs) * 14) calc(var(--space-2xs) * 10);border-right:1px solid var(--slate)}
+.step:last-child{border-right:0}
+.step span{font-size:10px;letter-spacing:.3px;color:var(--slate)}
+.step h3{font-family:var(--font-display);font-size:21px;line-height:1.2;font-weight:400;margin:calc(var(--space-2xs) * 7) 0}
+.step p{font-size:14px;color:var(--slate);margin:0}
+.quote-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:calc(var(--space-2xs) * 8)}
+.quote-card,.stats-card{border:1px solid var(--stone);border-radius:var(--r-card);padding:calc(var(--space-2xs) * 16);background:var(--paper)}
+.quote-card blockquote{font-family:var(--font-display);font-size:28px;line-height:1.2;margin:0}
+.person{display:flex;align-items:center;gap:calc(var(--space-2xs) * 6);margin-top:calc(var(--space-2xs) * 16);font-size:14px}
+.avatar{width:40px;height:40px;border-radius:var(--r-pill);background:var(--ground);color:var(--paper);display:grid;place-items:center;font-size:14px}
+.person small{display:block;font-size:10px;color:var(--ink)}
+.stats-card{background:var(--blue);color:var(--paper);display:grid;gap:calc(var(--space-2xs) * 12)}
+.stat-row{display:flex;align-items:end;justify-content:space-between;border-bottom:1px solid var(--paper);padding-bottom:calc(var(--space-2xs) * 8)}
+.stat-row:last-child{border-bottom:0}
+.stat-row strong{font-family:var(--font-display);font-size:32px;line-height:1.15;font-weight:400}
+.stat-row span{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;max-width:110px}
+.cta{position:relative;overflow:hidden;background:var(--ground);color:var(--paper);border-radius:var(--r-panel);padding:calc(var(--space-2xs) * 32);display:grid;grid-template-columns:1fr auto;align-items:center;gap:calc(var(--space-2xs) * 16)}
+.cta h2{font-size:32px;margin:calc(var(--space-2xs) * 6) 0}
+.cta p{font-size:16px;color:var(--slate);max-width:580px;margin:0}
+.cta svg{position:absolute;right:0;top:0;width:260px;height:100%;opacity:.32;pointer-events:none}
+.cta .pill{position:relative;z-index:1}
+.faq{display:grid;grid-template-columns:.7fr 1.3fr;gap:calc(var(--space-2xs) * 32)}
+.faq-list{border-top:1px solid var(--stone)}
+.faq details{border-bottom:1px solid var(--stone);padding-block:calc(var(--space-2xs) * 9)}
+.faq summary{cursor:pointer;font-family:var(--font-display);font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:calc(var(--space-2xs) * 8)}
+.faq summary::after{content:"+";color:var(--blue)}
+.faq details[open] summary::after{content:"−"}
+.faq details p{font-size:14px;max-width:620px;margin:calc(var(--space-2xs) * 7) 0 0;color:var(--ink)}
+.footer{background:var(--ground);color:var(--paper);border-top:1px solid var(--slate);padding-block:calc(var(--space-2xs) * 24)}
+.footer-grid{display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:calc(var(--space-2xs) * 16)}
+.footer h3{font-family:var(--font-display);font-size:18px;font-weight:400;margin:0 0 calc(var(--space-2xs) * 8)}
+.footer p,.footer a{font-size:14px;color:var(--slate)}
+.footer-col{display:grid;align-content:start;gap:calc(var(--space-2xs) * 5)}
+.footer a:hover{color:var(--paper)}
+.footer-bottom{border-top:1px solid var(--slate);margin-top:calc(var(--space-2xs) * 18);padding-top:calc(var(--space-2xs) * 10);display:flex;justify-content:space-between;gap:calc(var(--space-2xs) * 8);font-size:10px;color:var(--slate)}
+.reveal{animation:rise 400ms var(--ease) both;animation-timeline:view();animation-range:entry 5% cover 25%}
+@keyframes rise{from{opacity:0;transform:translateY(calc(var(--space-2xs) * 8))}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){
+  .nav-links a:not(.pill){display:none}
+  .hero-grid,.section-head,.case-study,.quote-grid,.faq,.cta{grid-template-columns:1fr}
+  .hero-grid{gap:calc(var(--space-2xs) * 16)}
+  .hero-art{min-height:380px}
+  .logo-row{grid-template-columns:repeat(3,1fr);padding-block:calc(var(--space-2xs) * 12)}
+  .logo-row p{grid-column:1/-1}
+  .card-grid,.results-layout{grid-template-columns:1fr}
+  .process{grid-template-columns:1fr 1fr}
+  .step:nth-child(2){border-right:0}
+  .step{border-bottom:1px solid var(--slate)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .shell{padding-inline:calc(var(--space-2xs) * 10)}
+  .hero{min-height:auto}
+  .hero-grid{min-height:auto;padding-block:calc(var(--space-2xs) * 30)}
+  .hero-actions{align-items:flex-start;flex-direction:column}
+  .hero-art{min-height:300px}
+  .floating-stat{left:calc(var(--space-2xs) * 5);bottom:calc(var(--space-2xs) * 5)}
+  .card-grid,.results-layout,.process,.footer-grid{grid-template-columns:1fr}
+  .step{border-right:0}
+  .cta{padding:calc(var(--space-2xs) * 18)}
+  .footer-bottom{flex-direction:column}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<header class="nav">
+  <div class="shell nav-inner">
+    <a class="brand" href="#top" aria-label="Northline home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 17V7l14 10V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      Northline
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#services">Services</a>
+      <a href="#results">Results</a>
+      <a href="#process">Process</a>
+      <a href="#work">Work</a>
+      <a class="pill" href="#contact">Start a project
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <div class="eyebrow">Strategy · Creative · Performance</div>
+        <h1>Make your next stage of growth feel inevitable.</h1>
+        <p class="hero-copy">Northline is the senior marketing team for ambitious companies. We turn a sharper position, stronger creative, and disciplined media into demand you can measure.</p>
+        <div class="hero-actions">
+          <a class="pill light" href="#contact">Plan your growth sprint
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="text-link" href="#work">See the work</a>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="orbit-card">
+          <svg viewBox="0 0 500 500" fill="none">
+            <circle cx="250" cy="250" r="186" stroke="var(--slate)" stroke-width="1"/>
+            <circle cx="250" cy="250" r="122" stroke="var(--stone)" stroke-width="1" stroke-dasharray="4 8"/>
+            <path d="M64 250H436M250 64V436" stroke="var(--slate)" stroke-width="1"/>
+            <path d="M118 382C168 312 222 280 282 259C344 238 390 196 415 118" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="118" cy="382" r="9" fill="var(--paper)"/>
+            <circle cx="282" cy="259" r="9" fill="var(--blue)"/>
+            <circle cx="415" cy="118" r="13" fill="var(--paper)" stroke="var(--blue)" stroke-width="3"/>
+            <path d="M95 106h84M321 396h84" stroke="var(--stone)" stroke-width="1"/>
+            <path d="M137 84v44M363 374v44" stroke="var(--stone)" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="floating-stat">
+          <span>Illustrative growth target</span>
+          <strong>+184%</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="logo-strip" aria-label="Selected client categories">
+    <div class="shell logo-row">
+      <p>Trusted across modern categories</p>
+      <span class="logo-name">Arc Systems</span>
+      <span class="logo-name">Ledgerly</span>
+      <span class="logo-name">Onda Health</span>
+      <span class="logo-name">Pillar AI</span>
+      <span class="logo-name">Northstar</span>
+    </div>
+  </section>
+
+  <section class="section" id="services">
+    <div class="shell">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow blue">What we do</div>
+          <h2>One team from signal to scale.</h2>
+        </div>
+        <p class="section-intro">We connect the work most agencies split apart, so the promise, campaign, landing page, and dashboard all tell the same story.</p>
+      </div>
+      <div class="card-grid">
+        <article class="service-card reveal">
+          <div>
+            <div class="icon-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 12h16M12 5v14M20 5v14"/></svg>
+            </div>
+            <h3>Positioning that creates preference</h3>
+            <p>Category research, customer insight, narrative, and launch strategy built into a message your whole team can use.</p>
+          </div>
+          <span class="card-index">01 · Strategy</span>
+        </article>
+        <article class="service-card reveal">
+          <div>
+            <div class="icon-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l6-6 4 4 6-8M4 20h16"/></svg>
+            </div>
+            <h3>Creative engineered to learn</h3>
+            <p>Campaign systems, landing pages, and rapid creative testing that turn every release into a useful signal.</p>
+          </div>
+          <span class="card-index">02 · Creative</span>
+        </article>
+        <article class="service-card reveal">
+          <div>
+            <div class="icon-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+            </div>
+            <h3>Performance without the black box</h3>
+            <p>Channel planning, media, measurement, and a clean weekly operating rhythm your leadership team can trust.</p>
+          </div>
+          <span class="card-index">03 · Growth</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section soft" id="results">
+    <div class="shell">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow blue">Results model</div>
+          <h2>Growth you can actually read.</h2>
+        </div>
+        <p class="section-intro">A transparent measurement layer connects attention to qualified pipeline. The sample below shows how a six-month engagement is reported.</p>
+      </div>
+
+      <div class="results-layout">
+        <article class="chart-card reveal">
+          <div class="chart-top">
+            <div>
+              <h3>Qualified demand</h3>
+              <p>Monthly qualified leads</p>
+            </div>
+            <div class="metric">1.2k → 9.8k</div>
+          </div>
+          <svg class="chart" viewBox="0 0 560 280" role="img" aria-labelledby="growth-title growth-desc">
+            <title id="growth-title">Illustrative qualified demand growth</title>
+            <desc id="growth-desc">A line rises from 1.2 thousand in January to 9.8 thousand in June.</desc>
+            <line class="baseline" x1="44" y1="230" x2="530" y2="230"/>
+            <path class="growth-line" d="M52 212 C108 204 132 194 150 180 S232 168 250 146 S334 120 350 92 S430 74 456 48 S500 34 522 24"/>
+            <circle class="point" cx="52" cy="212" r="5"/><circle class="point" cx="150" cy="180" r="5"/>
+            <circle class="point" cx="250" cy="146" r="5"/><circle class="point" cx="350" cy="92" r="5"/>
+            <circle class="point" cx="456" cy="48" r="5"/><circle class="point" cx="522" cy="24" r="5"/>
+            <text x="44" y="254">Jan</text><text x="140" y="254">Feb</text><text x="238" y="254">Mar</text>
+            <text x="338" y="254">Apr</text><text x="444" y="254">May</text><text x="510" y="254">Jun</text>
+          </svg>
+          <p class="source-note">Illustrative data for demonstration only · Jan–Jun 2026</p>
+        </article>
+
+        <article class="chart-card reveal">
+          <div class="chart-top">
+            <div>
+              <h3>Pipeline by source</h3>
+              <p>Monthly contribution mix</p>
+            </div>
+            <div class="metric">$2.4m</div>
+          </div>
+          <svg class="chart" viewBox="0 0 560 280" role="img" aria-labelledby="source-title source-desc">
+            <title id="source-title">Illustrative stacked pipeline bars by source</title>
+            <desc id="source-desc">Six stacked bars show organic, paid, partner, and lifecycle sources increasing over six months.</desc>
+            <line class="baseline" x1="38" y1="230" x2="530" y2="230"/>
+            <g>
+              <rect class="bar-part bar-a" x="52" y="176" width="46" height="54" rx="2"><title>January organic: 54 units</title></rect>
+              <rect class="bar-part bar-b" x="52" y="146" width="46" height="30" rx="2"><title>January paid: 30 units</title></rect>
+              <rect class="bar-part bar-c" x="52" y="130" width="46" height="16" rx="2"><title>January partners: 16 units</title></rect>
+              <rect class="bar-part bar-d" x="52" y="118" width="46" height="12" rx="2"><title>January lifecycle: 12 units</title></rect>
+            </g>
+            <g>
+              <rect class="bar-part bar-a" x="136" y="166" width="46" height="64" rx="2"/><rect class="bar-part bar-b" x="136" y="128" width="46" height="38" rx="2"/><rect class="bar-part bar-c" x="136" y="108" width="46" height="20" rx="2"/><rect class="bar-part bar-d" x="136" y="94" width="46" height="14" rx="2"/>
+            </g>
+            <g>
+              <rect class="bar-part bar-a" x="220" y="152" width="46" height="78" rx="2"/><rect class="bar-part bar-b" x="220" y="108" width="46" height="44" rx="2"/><rect class="bar-part bar-c" x="220" y="84" width="46" height="24" rx="2"/><rect class="bar-part bar-d" x="220" y="68" width="46" height="16" rx="2"/>
+            </g>
+            <g>
+              <rect class="bar-part bar-a" x="304" y="140" width="46" height="90" rx="2"/><rect class="bar-part bar-b" x="304" y="90" width="46" height="50" rx="2"/><rect class="bar-part bar-c" x="304" y="62" width="46" height="28" rx="2"/><rect class="bar-part bar-d" x="304" y="44" width="46" height="18" rx="2"/>
+            </g>
+            <g>
+              <rect class="bar-part bar-a" x="388" y="128" width="46" height="102" rx="2"/><rect class="bar-part bar-b" x="388" y="72" width="46" height="56" rx="2"/><rect class="bar-part bar-c" x="388" y="40" width="46" height="32" rx="2"/><rect class="bar-part bar-d" x="388" y="20" width="46" height="20" rx="2"/>
+            </g>
+            <g>
+              <rect class="bar-part bar-a" x="472" y="116" width="46" height="114" rx="2"/><rect class="bar-part bar-b" x="472" y="54" width="46" height="62" rx="2"/><rect class="bar-part bar-c" x="472" y="18" width="46" height="36" rx="2"/><rect class="bar-part bar-d" x="472" y="2" width="46" height="16" rx="2"/>
+            </g>
+            <text x="58" y="254">Jan</text><text x="142" y="254">Feb</text><text x="226" y="254">Mar</text><text x="310" y="254">Apr</text><text x="394" y="254">May</text><text x="478" y="254">Jun</text>
+          </svg>
+          <div class="legend" aria-label="Sources">
+            <span><i class="swatch" style="background:var(--chart-1)"></i>Organic</span>
+            <span><i class="swatch" style="background:var(--chart-2)"></i>Paid</span>
+            <span><i class="swatch" style="background:var(--chart-3)"></i>Partners</span>
+            <span><i class="swatch" style="background:var(--chart-4)"></i>Lifecycle</span>
+          </div>
+          <p class="source-note">Illustrative data for demonstration only · Values shown as modeled pipeline</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="work">
+    <div class="shell">
+      <article class="case-study reveal">
+        <div class="case-copy">
+          <div class="eyebrow blue">Featured engagement</div>
+          <h3>From a broad story to a buying signal.</h3>
+          <p>We helped a B2B platform turn technical capability into a category point of view, then carried that idea across launch creative and demand capture.</p>
+          <ul class="case-list">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>Research-led positioning sprint</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>Modular launch campaign system</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>Weekly media and conversion program</li>
+          </ul>
+          <a class="text-link" href="#contact">Build your growth brief</a>
+        </div>
+        <div class="case-art" aria-hidden="true">
+          <svg viewBox="0 0 500 420" fill="none">
+            <rect x="42" y="40" width="416" height="340" rx="12" stroke="var(--slate)"/>
+            <rect x="76" y="76" width="348" height="74" rx="8" fill="var(--paper)"/>
+            <path d="M104 102h136M104 124h210" stroke="var(--ground)" stroke-width="2"/>
+            <rect x="76" y="174" width="166" height="166" rx="8" stroke="var(--stone)"/>
+            <rect x="258" y="174" width="166" height="76" rx="8" fill="var(--blue)"/>
+            <rect x="258" y="266" width="166" height="74" rx="8" stroke="var(--stone)"/>
+            <circle cx="159" cy="257" r="42" stroke="var(--paper)"/>
+            <path d="M137 264l16-18 14 12 20-30" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M284 204h108M284 222h72M284 294h108M284 312h84" stroke="var(--paper)" stroke-width="2"/>
+          </svg>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section dark" id="process">
+    <div class="shell">
+      <div class="section-head reveal">
+        <div>
+          <div class="eyebrow">How we work</div>
+          <h2>Senior thinking. Short feedback loops.</h2>
+        </div>
+        <p class="section-intro">A focused four-part rhythm keeps strategy close to execution and makes progress visible every week.</p>
+      </div>
+      <div class="process">
+        <article class="step"><span>01</span><h3>Find the signal</h3><p>Customer evidence, market context, and the real constraint.</p></article>
+        <article class="step"><span>02</span><h3>Choose the move</h3><p>A sharp strategic bet, a measurement plan, and priorities.</p></article>
+        <article class="step"><span>03</span><h3>Ship the system</h3><p>Creative and channel execution designed to work together.</p></article>
+        <article class="step"><span>04</span><h3>Compound learning</h3><p>Weekly reporting that changes what we do next.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section soft">
+    <div class="shell">
+      <div class="quote-grid">
+        <article class="quote-card reveal">
+          <blockquote>“Northline brought the clarity of a strategy firm and the pace of an embedded growth team.”</blockquote>
+          <div class="person">
+            <span class="avatar">AM</span>
+            <span>Alex Morgan<small>Example client profile · VP Growth</small></span>
+          </div>
+        </article>
+        <aside class="stats-card reveal" aria-label="Illustrative engagement targets">
+          <div class="stat-row"><strong>6 wk</strong><span>Positioning to launch</span></div>
+          <div class="stat-row"><strong>3×</strong><span>Creative learning velocity</span></div>
+          <div class="stat-row"><strong>1 view</strong><span>Shared growth scorecard</span></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell faq">
+      <div>
+        <div class="eyebrow blue">Good to know</div>
+        <h2>A practical partnership, by design.</h2>
+      </div>
+      <div class="faq-list">
+        <details open>
+          <summary>Who is Northline built for?</summary>
+          <p>Growth-stage B2B and consumer teams with a strong product, an important next chapter, and a need for senior marketing leadership without another layer of management.</p>
+        </details>
+        <details>
+          <summary>Can you work with our internal team?</summary>
+          <p>Yes. We can lead a focused initiative or plug into your existing brand, product, sales, and analytics teams with clear ownership.</p>
+        </details>
+        <details>
+          <summary>How quickly can we start?</summary>
+          <p>Most engagements begin with a two-week discovery and positioning sprint, followed by a 90-day launch or growth program.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="shell">
+      <div class="cta reveal">
+        <div>
+          <div class="eyebrow">Your next growth chapter</div>
+          <h2>Bring us the ambitious part.</h2>
+          <p>Tell us what has to change in the next six months. We’ll return with the clearest path from today’s signal to tomorrow’s demand.</p>
+        </div>
+        <a class="pill light" href="mailto:hello@northline.example">Book a growth session
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <svg viewBox="0 0 260 220" fill="none" aria-hidden="true">
+          <circle cx="226" cy="110" r="88" stroke="var(--slate)"/>
+          <circle cx="226" cy="110" r="50" stroke="var(--paper)"/>
+          <path d="M88 0l138 110L88 220" stroke="var(--blue)" stroke-width="2"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="#top"><span class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 17V7l14 10V7" stroke="currentColor" stroke-width="2"/></svg></span>Northline</a>
+        <p>Strategy, creative, and performance for ambitious companies.</p>
+      </div>
+      <div class="footer-col"><h3>Explore</h3><a href="#services">Services</a><a href="#results">Results</a><a href="#work">Work</a></div>
+      <div class="footer-col"><h3>Company</h3><a href="#process">Process</a><a href="#contact">Contact</a><a href="#top">Journal</a></div>
+      <div class="footer-col"><h3>Connect</h3><a href="#top">LinkedIn</a><a href="#top">Instagram</a><a href="mailto:hello@northline.example">Email</a></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 Northline Studio</span><span>Original inline SVG artwork · No attribution required</span></div>
+  </div>
+</footer></body></html>

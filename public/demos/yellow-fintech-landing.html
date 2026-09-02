@@ -1,0 +1,416 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --color-ground: #ffffff; --color-ink: #000000; --color-accent: #e4f222; --color-linen: #f4f2f0; --color-stone: #e5e7eb; --color-ash: #d3d3d3; --color-clay: #d2cdca; --color-smoke: #6d6c6b; --color-graphite: #1a1919; --color-graphite-2: #0c0a08; --text-meta: 10px; --text-body-sm: 14px; --text-body-sm-2: 15px; --text-body: 17px; --text-body-lg: 19px; --text-body-lg-2: 22px; --text-subheading: 25px; --text-heading: 40px; --text-heading-lg: 48px; }
+  html,body { margin:0; padding:0; min-height:100%; background:#ffffff; color:#000000;
+    font-family:"lausanne", ui-sans-serif, system-ui, sans-serif; }
+  * { box-sizing:border-box; }
+  img,svg { max-width:100%; }
+</style></head><body><div class="clearstack-site">
+  <style>
+    .clearstack-site {
+      --ground: #ffffff;
+      --ink: #000000;
+      --accent: #e4f222;
+      --linen: #f4f2f0;
+      --stone: #e5e7eb;
+      --ash: #d3d3d3;
+      --clay: #d2cdca;
+      --smoke: #6d6c6b;
+      --graphite: #1a1919;
+      --graphite-2: #0c0a08;
+      background: var(--ground);
+      color: var(--graphite-2);
+      font-family: Lausanne, Inter, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      overflow: hidden;
+      --unit: 4px;
+    }
+    .clearstack-site * { box-sizing: border-box; }
+    .clearstack-site a { color: inherit; text-decoration: none; }
+    .cs-shell { width: min(1200px, calc(100% - 64px)); margin: 0 auto; }
+    .cs-nav { height: 80px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--stone); }
+    .cs-brand { display: inline-flex; align-items: center; gap: calc(var(--unit) * 3); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+    .cs-brand svg { width: 28px; height: 28px; }
+    .cs-nav-links, .cs-nav-actions { display: flex; align-items: center; gap: calc(var(--unit) * 8); }
+    .cs-nav-link { color: var(--smoke); font-size: 14px; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1); }
+    .cs-nav-link:hover, .cs-nav-link:focus-visible { color: var(--ink); }
+    .cs-button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: calc(var(--unit) * 2); padding: 0 calc(var(--unit) * 6); border: 1px solid var(--graphite-2); border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1), background 150ms cubic-bezier(0.4, 0, 0.2, 1); }
+    .cs-button:hover { transform: translateY(-2px); }
+    .cs-button:focus-visible, .cs-nav-link:focus-visible, .cs-input:focus-visible { outline: 2px solid var(--graphite-2); outline-offset: 4px; }
+    .cs-button-primary { background: var(--accent); color: var(--graphite-2); }
+    .cs-button-primary:hover { background: var(--accent); }
+    .cs-button-secondary { background: var(--ground); color: var(--graphite-2); }
+    .cs-button-small { min-height: 40px; padding: 0 calc(var(--unit) * 5); font-size: 14px; }
+    .cs-hero { padding: calc(var(--unit) * 24) 0 calc(var(--unit) * 16); }
+    .cs-eyebrow { margin: 0 0 calc(var(--unit) * 6); color: var(--smoke); font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .cs-hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: calc(var(--unit) * 16); align-items: center; }
+    .cs-hero h1 { max-width: 720px; margin: 0; color: var(--ink); font-size: 48px; line-height: 0.98; letter-spacing: -0.055em; font-weight: 500; }
+    .cs-hero-copy { max-width: 600px; margin: calc(var(--unit) * 8) 0 0; color: var(--smoke); font-size: 19px; line-height: 1.5; }
+    .cs-hero-actions { display: flex; flex-wrap: wrap; gap: calc(var(--unit) * 4); margin-top: calc(var(--unit) * 10); }
+    .cs-microcopy { margin-top: calc(var(--unit) * 4); color: var(--smoke); font-size: 14px; }
+    .cs-hero-art { min-height: 520px; display: flex; align-items: center; justify-content: center; background: var(--linen); border-radius: 12px; overflow: hidden; }
+    .cs-hero-art svg { width: 100%; height: auto; display: block; }
+    .cs-trust { padding: calc(var(--unit) * 10) 0 calc(var(--unit) * 20); }
+    .cs-trust-label { color: var(--smoke); font-size: 14px; text-align: center; }
+    .cs-logo-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(var(--unit) * 6); margin-top: calc(var(--unit) * 8); color: var(--smoke); }
+    .cs-wordmark { display: flex; align-items: center; justify-content: center; gap: calc(var(--unit) * 2); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+    .cs-wordmark svg { width: 20px; height: 20px; }
+    .cs-divider { height: 1px; background: var(--stone); }
+    .cs-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-left: 1px solid var(--stone); }
+    .cs-stat { padding: calc(var(--unit) * 12); border-right: 1px solid var(--stone); }
+    .cs-stat-value { display: block; color: var(--ink); font-size: 48px; line-height: 1; letter-spacing: -0.045em; }
+    .cs-stat-label { display: block; margin-top: calc(var(--unit) * 4); color: var(--smoke); }
+    .cs-section { padding: calc(var(--unit) * 28) 0; }
+    .cs-section-heading { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--unit) * 16); align-items: end; margin-bottom: calc(var(--unit) * 16); }
+    .cs-kicker { margin: 0 0 calc(var(--unit) * 4); color: var(--smoke); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .cs-section h2 { margin: 0; color: var(--ink); font-size: 48px; line-height: 1.08; letter-spacing: -0.045em; font-weight: 500; }
+    .cs-section-intro { margin: 0; color: var(--smoke); font-size: 17px; max-width: 520px; justify-self: end; }
+    .cs-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--unit) * 6); }
+    .cs-card { min-height: 460px; padding: calc(var(--unit) * 8); border: 1px solid var(--stone); border-radius: 16px; display: flex; flex-direction: column; transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1); }
+    .cs-card:hover { border-color: var(--graphite-2); transform: translateY(-4px); }
+    .cs-card-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 6px; background: var(--linen); }
+    .cs-card-icon svg { width: 24px; height: 24px; }
+    .cs-card h3 { margin: calc(var(--unit) * 8) 0 calc(var(--unit) * 3); font-size: 25px; line-height: 1.2; letter-spacing: -0.025em; font-weight: 500; }
+    .cs-card p { margin: 0; color: var(--smoke); }
+    .cs-mini-ui { margin-top: auto; padding-top: calc(var(--unit) * 10); }
+    .cs-ledger-row { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--unit) * 4); padding: calc(var(--unit) * 4) 0; border-top: 1px solid var(--stone); font-size: 14px; }
+    .cs-ledger-id { display: flex; align-items: center; gap: calc(var(--unit) * 3); }
+    .cs-ledger-dot { width: 32px; height: 32px; border-radius: 16px; background: var(--linen); display: grid; place-items: center; color: var(--graphite-2); font-size: 10px; font-weight: 600; }
+    .cs-status { color: var(--smoke); }
+    .cs-tinted-section { background: var(--linen); }
+    .cs-feature-panel { display: grid; grid-template-columns: 0.9fr 1.1fr; min-height: 560px; background: var(--ground); border-radius: 12px; overflow: hidden; }
+    .cs-feature-copy { padding: calc(var(--unit) * 16); display: flex; flex-direction: column; justify-content: center; }
+    .cs-feature-copy h2 { font-size: 48px; }
+    .cs-feature-copy p { color: var(--smoke); font-size: 17px; }
+    .cs-check-list { list-style: none; margin: calc(var(--unit) * 8) 0 0; padding: 0; display: grid; gap: calc(var(--unit) * 4); }
+    .cs-check-list li { display: flex; gap: calc(var(--unit) * 3); align-items: center; }
+    .cs-check { width: 24px; height: 24px; flex: 0 0 auto; border-radius: 12px; background: var(--graphite-2); color: var(--ground); display: grid; place-items: center; }
+    .cs-check svg { width: 14px; height: 14px; }
+    .cs-feature-visual { padding: calc(var(--unit) * 12); background: var(--graphite-2); color: var(--ground); display: flex; flex-direction: column; justify-content: center; }
+    .cs-close-card { border: 1px solid var(--smoke); border-radius: 16px; overflow: hidden; }
+    .cs-close-head { display: flex; justify-content: space-between; align-items: center; padding: calc(var(--unit) * 6); border-bottom: 1px solid var(--smoke); }
+    .cs-close-title { font-size: 17px; font-weight: 600; }
+    .cs-close-body { padding: calc(var(--unit) * 2) calc(var(--unit) * 6) calc(var(--unit) * 6); }
+    .cs-close-row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: calc(var(--unit) * 4); padding: calc(var(--unit) * 5) 0; border-bottom: 1px solid var(--smoke); }
+    .cs-close-row:last-child { border-bottom: 0; }
+    .cs-number { width: 32px; height: 32px; border: 1px solid var(--smoke); border-radius: 16px; display: grid; place-items: center; font-size: 10px; }
+    .cs-close-row strong { display: block; font-size: 14px; }
+    .cs-close-row span { color: var(--ash); font-size: 14px; }
+    .cs-done { width: 24px; height: 24px; border-radius: 12px; background: var(--ground); color: var(--graphite-2); display: grid; place-items: center; }
+    .cs-done svg { width: 14px; height: 14px; }
+    .cs-security { background: var(--graphite-2); color: var(--ground); }
+    .cs-security .cs-kicker, .cs-security .cs-section-intro { color: var(--ash); }
+    .cs-security h2 { color: var(--ground); }
+    .cs-security-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--unit) * 6); margin-top: calc(var(--unit) * 16); }
+    .cs-security-card { padding: calc(var(--unit) * 8) 0; border-top: 1px solid var(--smoke); }
+    .cs-security-card svg { width: 32px; height: 32px; }
+    .cs-security-card h3 { margin: calc(var(--unit) * 6) 0 calc(var(--unit) * 3); font-size: 19px; font-weight: 500; }
+    .cs-security-card p { margin: 0; color: var(--ash); }
+    .cs-testimonials { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: calc(var(--unit) * 6); }
+    .cs-quote-card { padding: calc(var(--unit) * 12); border: 1px solid var(--stone); border-radius: 16px; }
+    .cs-quote { margin: 0; color: var(--ink); font-size: 25px; line-height: 1.35; letter-spacing: -0.025em; }
+    .cs-person { display: flex; gap: calc(var(--unit) * 4); align-items: center; margin-top: calc(var(--unit) * 10); }
+    .cs-avatar { width: 48px; height: 48px; border-radius: 16px; background: var(--linen); display: grid; place-items: center; font-weight: 600; }
+    .cs-person strong, .cs-person span { display: block; }
+    .cs-person span { color: var(--smoke); font-size: 14px; }
+    .cs-mini-quote { background: var(--linen); border: 0; }
+    .cs-mini-quote .cs-quote { font-size: 19px; }
+    .cs-cta { padding: calc(var(--unit) * 28) 0; }
+    .cs-cta-panel { padding: calc(var(--unit) * 20); border-radius: 12px; background: var(--linen); display: grid; grid-template-columns: 1.1fr 0.9fr; gap: calc(var(--unit) * 16); align-items: center; }
+    .cs-cta h2 { margin: 0; color: var(--ink); font-size: 48px; line-height: 1.05; letter-spacing: -0.045em; font-weight: 500; }
+    .cs-cta p { color: var(--smoke); font-size: 17px; }
+    .cs-form { display: flex; gap: calc(var(--unit) * 3); }
+    .cs-input { min-width: 0; flex: 1; height: 48px; padding: 0 calc(var(--unit) * 4); border: 1px solid var(--stone); border-radius: 6px; background: var(--ground); color: var(--graphite-2); font: inherit; }
+    .cs-input::placeholder { color: var(--smoke); }
+    .cs-form-note { margin: calc(var(--unit) * 3) 0 0; color: var(--smoke); font-size: 14px; }
+    .cs-footer { padding: calc(var(--unit) * 16) 0 calc(var(--unit) * 8); border-top: 1px solid var(--stone); }
+    .cs-footer-grid { display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: calc(var(--unit) * 12); }
+    .cs-footer h4 { margin: 0 0 calc(var(--unit) * 4); font-size: 14px; }
+    .cs-footer-links { display: grid; gap: calc(var(--unit) * 3); }
+    .cs-footer-links a { color: var(--smoke); font-size: 14px; }
+    .cs-footer-links a:hover { color: var(--ink); }
+    .cs-footer-bottom { display: flex; justify-content: space-between; margin-top: calc(var(--unit) * 16); padding-top: calc(var(--unit) * 6); border-top: 1px solid var(--stone); color: var(--smoke); font-size: 14px; }
+    @media (max-width: 900px) {
+      .cs-shell { width: min(100% - 40px, 1200px); }
+      .cs-nav-links { display: none; }
+      .cs-hero { padding: calc(var(--unit) * 16) 0 calc(var(--unit) * 12); }
+      .cs-hero-grid, .cs-section-heading, .cs-feature-panel, .cs-cta-panel { grid-template-columns: 1fr; }
+      .cs-hero h1 { font-size: 48px; }
+      .cs-hero-art { min-height: 400px; }
+      .cs-section { padding: calc(var(--unit) * 20) 0; }
+      .cs-card-grid, .cs-security-grid { grid-template-columns: 1fr; }
+      .cs-card { min-height: 400px; }
+      .cs-stats { grid-template-columns: 1fr; border-bottom: 1px solid var(--stone); }
+      .cs-stat { border-bottom: 1px solid var(--stone); }
+      .cs-stat:last-child { border-bottom: 0; }
+      .cs-section-intro { justify-self: start; }
+      .cs-testimonials { grid-template-columns: 1fr; }
+      .cs-cta-panel { padding: calc(var(--unit) * 12); gap: calc(var(--unit) * 8); }
+      .cs-footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .cs-nav-actions .cs-nav-link { display: none; }
+      .cs-hero h1 { font-size: 40px; }
+      .cs-hero-copy { font-size: 17px; }
+      .cs-hero-actions, .cs-form { flex-direction: column; align-items: stretch; }
+      .cs-logo-row { grid-template-columns: repeat(2, 1fr); }
+      .cs-logo-row .cs-wordmark:last-child { grid-column: 1 / -1; }
+      .cs-stat { padding: calc(var(--unit) * 8) 0; }
+      .cs-section h2, .cs-feature-copy h2, .cs-cta h2 { font-size: 40px; }
+      .cs-feature-copy, .cs-feature-visual, .cs-quote-card, .cs-cta-panel { padding: calc(var(--unit) * 8); }
+      .cs-footer-grid { grid-template-columns: 1fr; }
+      .cs-footer-bottom { flex-direction: column; gap: calc(var(--unit) * 3); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .clearstack-site *, .clearstack-site *::before, .clearstack-site *::after { transition-duration: 0.01ms !important; }
+    }
+  </style>
+
+  <header class="cs-shell">
+    <nav class="cs-nav" aria-label="Primary navigation">
+      <a class="cs-brand" href="#" aria-label="Clearstack home">
+        <svg viewBox="0 0 28 28" aria-hidden="true">
+          <rect x="1" y="1" width="26" height="26" rx="6" fill="#0c0a08"/>
+          <path d="M8 10.5h12M8 14h8M8 17.5h12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Clearstack
+      </a>
+      <div class="cs-nav-links">
+        <a class="cs-nav-link" href="#platform">Platform</a>
+        <a class="cs-nav-link" href="#customers">Customers</a>
+        <a class="cs-nav-link" href="#security">Security</a>
+        <a class="cs-nav-link" href="#pricing">Pricing</a>
+      </div>
+      <div class="cs-nav-actions">
+        <a class="cs-nav-link" href="#signin">Sign in</a>
+        <a class="cs-button cs-button-primary cs-button-small" href="#start">Get started</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="cs-hero cs-shell">
+      <div class="cs-hero-grid">
+        <div>
+          <p class="cs-eyebrow">Financial operations, finally connected</p>
+          <h1>Make every dollar move with purpose.</h1>
+          <p class="cs-hero-copy">Clearstack brings cards, bills, approvals, cash, and accounting into one calm workspace, so finance teams can move faster without losing control.</p>
+          <div class="cs-hero-actions">
+            <a class="cs-button cs-button-primary" href="#start">
+              Start free
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 9h10M10 5l4 4-4 4" fill="none" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="cs-button cs-button-secondary" href="#demo">Book a demo</a>
+          </div>
+          <p class="cs-microcopy">No setup fee. Connect your accounting system in minutes.</p>
+        </div>
+
+        <div class="cs-hero-art">
+          <svg viewBox="0 0 640 520" role="img" aria-label="Illustration of connected cards, bills, approvals, and bank accounts">
+            <rect x="0" y="0" width="640" height="520" fill="#f4f2f0"/>
+            <circle cx="320" cy="260" r="176" fill="none" stroke="#d2cdca" stroke-width="1"/>
+            <circle cx="320" cy="260" r="120" fill="none" stroke="#d3d3d3" stroke-width="1" stroke-dasharray="5 7"/>
+            <path d="M178 156C228 116 270 116 320 148M462 156C412 116 370 116 320 148M178 364C228 404 270 404 320 372M462 364C412 404 370 404 320 372" fill="none" stroke="#6d6c6b" stroke-width="1.5"/>
+            <rect x="218" y="164" width="204" height="192" rx="16" fill="#ffffff" stroke="#e5e7eb"/>
+            <rect x="242" y="190" width="156" height="44" rx="6" fill="#0c0a08"/>
+            <circle cx="266" cy="212" r="8" fill="#ffffff"/>
+            <path d="M284 207h56M284 216h38" stroke="#d3d3d3" stroke-width="4" stroke-linecap="round"/>
+            <path d="M242 260h156M242 300h156" stroke="#e5e7eb"/>
+            <circle cx="258" cy="280" r="8" fill="#f4f2f0" stroke="#d2cdca"/>
+            <path d="M278 276h70M278 284h44" stroke="#6d6c6b" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="258" cy="320" r="8" fill="#f4f2f0" stroke="#d2cdca"/>
+            <path d="M278 316h62M278 324h82" stroke="#6d6c6b" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="320" cy="78" r="40" fill="#ffffff" stroke="#e5e7eb"/>
+            <path d="M304 78h32M320 62v32" stroke="#0c0a08" stroke-width="2" stroke-linecap="round"/>
+            <rect x="66" y="116" width="128" height="80" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+            <rect x="82" y="134" width="96" height="12" rx="6" fill="#0c0a08"/>
+            <path d="M82 164h54M82 176h78" stroke="#6d6c6b" stroke-width="5" stroke-linecap="round"/>
+            <rect x="446" y="116" width="128" height="80" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+            <circle cx="472" cy="146" r="12" fill="#f4f2f0" stroke="#d2cdca"/>
+            <path d="M492 142h58M492 151h38" stroke="#6d6c6b" stroke-width="4" stroke-linecap="round"/>
+            <rect x="66" y="324" width="128" height="80" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+            <path d="M86 348h88M86 364h52M86 380h72" stroke="#6d6c6b" stroke-width="5" stroke-linecap="round"/>
+            <rect x="446" y="324" width="128" height="80" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+            <circle cx="476" cy="364" r="16" fill="#0c0a08"/>
+            <path d="M469 364l5 5 9-11" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M500 358h52M500 369h36" stroke="#6d6c6b" stroke-width="4" stroke-linecap="round"/>
+            <path d="M320 118v30M194 156h24M422 156h24M194 364h24M422 364h24" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-trust cs-shell" aria-label="Trusted companies">
+      <p class="cs-trust-label">Trusted by finance teams building what is next</p>
+      <div class="cs-logo-row">
+        <div class="cs-wordmark"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="#6d6c6b" stroke-width="2"/><path d="M6 10h8" stroke="#6d6c6b" stroke-width="2"/></svg>Arbor</div>
+        <div class="cs-wordmark"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4h14L10 17z" fill="none" stroke="#6d6c6b" stroke-width="2"/></svg>Vela</div>
+        <div class="cs-wordmark"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="3" fill="none" stroke="#6d6c6b" stroke-width="2"/><path d="M6 10h8" stroke="#6d6c6b" stroke-width="2"/></svg>Kino</div>
+        <div class="cs-wordmark"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l7 8-7 8-7-8z" fill="none" stroke="#6d6c6b" stroke-width="2"/></svg>North</div>
+        <div class="cs-wordmark"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5l7 10 7-10" fill="none" stroke="#6d6c6b" stroke-width="2"/></svg>Weekday</div>
+      </div>
+    </section>
+
+    <div class="cs-divider"></div>
+
+    <section class="cs-shell" aria-label="Customer outcomes">
+      <div class="cs-stats">
+        <div class="cs-stat"><span class="cs-stat-value">3.2×</span><span class="cs-stat-label">faster month-end close</span></div>
+        <div class="cs-stat"><span class="cs-stat-value">41%</span><span class="cs-stat-label">less spend leakage</span></div>
+        <div class="cs-stat"><span class="cs-stat-value">99.99%</span><span class="cs-stat-label">platform uptime</span></div>
+      </div>
+    </section>
+
+    <section class="cs-section cs-shell" id="platform">
+      <div class="cs-section-heading">
+        <div>
+          <p class="cs-kicker">One financial workspace</p>
+          <h2>Control spend without slowing anyone down.</h2>
+        </div>
+        <p class="cs-section-intro">Clear policies, real-time visibility, and accounting that stays current. Every payment arrives with the context your team needs.</p>
+      </div>
+
+      <div class="cs-card-grid">
+        <article class="cs-card">
+          <div class="cs-card-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="#0c0a08" stroke-width="1.5"/><path d="M3 10h18M7 15h4" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Cards with guardrails</h3>
+          <p>Issue physical or virtual cards in seconds, with limits that adapt to every team and trip.</p>
+          <div class="cs-mini-ui">
+            <div class="cs-ledger-row"><div class="cs-ledger-id"><span class="cs-ledger-dot">JM</span><span>Product team</span></div><strong>$8,000</strong></div>
+            <div class="cs-ledger-row"><div class="cs-ledger-id"><span class="cs-ledger-dot">AK</span><span>Travel</span></div><span class="cs-status">On policy</span></div>
+          </div>
+        </article>
+
+        <article class="cs-card">
+          <div class="cs-card-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l3 3v15H4V3z" fill="none" stroke="#0c0a08" stroke-width="1.5"/><path d="M8 10h8M8 14h8M8 18h5" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Bills that route themselves</h3>
+          <p>Capture, code, approve, and pay bills with a workflow that knows who needs to act next.</p>
+          <div class="cs-mini-ui">
+            <div class="cs-ledger-row"><div class="cs-ledger-id"><span class="cs-ledger-dot">F</span><span>Figma</span></div><strong>$2,400</strong></div>
+            <div class="cs-ledger-row"><div class="cs-ledger-id"><span class="cs-ledger-dot">AWS</span><span>Cloud</span></div><span class="cs-status">Approved</span></div>
+          </div>
+        </article>
+
+        <article class="cs-card">
+          <div class="cs-card-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V8M10 19V4M16 19v-7M22 19H2" fill="none" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Cash you can see clearly</h3>
+          <p>Bring every account into one view and know what changed before the next meeting starts.</p>
+          <div class="cs-mini-ui">
+            <div class="cs-ledger-row"><span>Operating</span><strong>$1.84M</strong></div>
+            <div class="cs-ledger-row"><span>Reserve</span><strong>$620K</strong></div>
+            <div class="cs-ledger-row"><span>Payroll</span><span class="cs-status">Funded</span></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="cs-section cs-tinted-section">
+      <div class="cs-shell">
+        <div class="cs-feature-panel">
+          <div class="cs-feature-copy">
+            <p class="cs-kicker">Built for a clean close</p>
+            <h2>Close the books without the chase.</h2>
+            <p>Receipts, memos, approvals, and coding stay attached to each transaction from the moment it happens.</p>
+            <ul class="cs-check-list">
+              <li><span class="cs-check"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7l3 3 7-7" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Automatic receipt matching</li>
+              <li><span class="cs-check"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7l3 3 7-7" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Smart category suggestions</li>
+              <li><span class="cs-check"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7l3 3 7-7" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Native accounting sync</li>
+            </ul>
+          </div>
+          <div class="cs-feature-visual">
+            <div class="cs-close-card">
+              <div class="cs-close-head"><span class="cs-close-title">March close</span><span>12 of 12 complete</span></div>
+              <div class="cs-close-body">
+                <div class="cs-close-row"><span class="cs-number">01</span><div><strong>Card transactions</strong><span>All receipts matched</span></div><span class="cs-done"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7l3 3 7-7" fill="none" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+                <div class="cs-close-row"><span class="cs-number">02</span><div><strong>Vendor bills</strong><span>Approvals complete</span></div><span class="cs-done"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7l3 3 7-7" fill="none" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+                <div class="cs-close-row"><span class="cs-number">03</span><div><strong>Accounting sync</strong><span>Books are current</span></div><span class="cs-done"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7l3 3 7-7" fill="none" stroke="#0c0a08" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-section cs-security" id="security">
+      <div class="cs-shell">
+        <div class="cs-section-heading">
+          <div><p class="cs-kicker">Security by design</p><h2>Enterprise control, built into every move.</h2></div>
+          <p class="cs-section-intro">Clearstack protects your money and data with layered controls, continuous monitoring, and permissions that stay simple.</p>
+        </div>
+        <div class="cs-security-grid">
+          <article class="cs-security-card">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3l11 4v8c0 7-4.5 11.5-11 14-6.5-2.5-11-7-11-14V7z" fill="none" stroke="#ffffff" stroke-width="1.5"/><path d="M11 16l3 3 7-7" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h3>SOC 2 Type II</h3><p>Independent controls and ongoing monitoring across the platform.</p>
+          </article>
+          <article class="cs-security-card">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="14" width="20" height="15" rx="3" fill="none" stroke="#ffffff" stroke-width="1.5"/><path d="M10 14V10a6 6 0 0112 0v4" fill="none" stroke="#ffffff" stroke-width="1.5"/></svg>
+            <h3>Granular permissions</h3><p>Give every person exactly the access they need, and nothing more.</p>
+          </article>
+          <article class="cs-security-card">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 22l7-7 5 5 12-12" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 8h8v8" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <h3>Real-time monitoring</h3><p>Automated risk signals flag unusual activity as it happens.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cs-section cs-shell" id="customers">
+      <div class="cs-section-heading">
+        <div><p class="cs-kicker">Loved by finance teams</p><h2>More time for the work that actually matters.</h2></div>
+        <p class="cs-section-intro">Finance leaders use Clearstack to replace fragmented tools with one system their whole company understands.</p>
+      </div>
+      <div class="cs-testimonials">
+        <article class="cs-quote-card">
+          <p class="cs-quote">“We cut our close from nine days to three. More importantly, my team stopped spending every Friday chasing receipts.”</p>
+          <div class="cs-person"><span class="cs-avatar">MC</span><div><strong>Maya Chen</strong><span>VP Finance, Arbor</span></div></div>
+        </article>
+        <article class="cs-quote-card cs-mini-quote">
+          <p class="cs-quote">“The controls are strong enough for finance and simple enough that the rest of the company actually follows them.”</p>
+          <div class="cs-person"><span class="cs-avatar">DR</span><div><strong>Daniel Ruiz</strong><span>Controller, Vela</span></div></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="cs-cta cs-shell" id="start">
+      <div class="cs-cta-panel">
+        <div>
+          <h2>Your next close can be your cleanest one.</h2>
+          <p>Join a 30-minute walkthrough and see how Clearstack fits your finance workflow.</p>
+        </div>
+        <div>
+          <form class="cs-form">
+            <input class="cs-input" id="work-email" type="email" placeholder="Work email" aria-label="Work email"/>
+            <button class="cs-button cs-button-primary" type="button">Book a demo</button>
+          </form>
+          <p class="cs-form-note">No spam. A product specialist will follow up within one business day.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="cs-footer">
+    <div class="cs-shell">
+      <div class="cs-footer-grid">
+        <div>
+          <a class="cs-brand" href="#" aria-label="Clearstack home">
+            <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="1" y="1" width="26" height="26" rx="6" fill="#0c0a08"/><path d="M8 10.5h12M8 14h8M8 17.5h12" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/></svg>
+            Clearstack
+          </a>
+          <p class="cs-microcopy">The financial operations platform for modern teams.</p>
+        </div>
+        <div><h4>Platform</h4><div class="cs-footer-links"><a href="#">Cards</a><a href="#">Bills</a><a href="#">Cash</a><a href="#">Accounting</a></div></div>
+        <div><h4>Company</h4><div class="cs-footer-links"><a href="#">About</a><a href="#">Customers</a><a href="#">Careers</a><a href="#">Contact</a></div></div>
+        <div><h4>Resources</h4><div class="cs-footer-links"><a href="#">Help center</a><a href="#">Guides</a><a href="#">Security</a><a href="#">Status</a></div></div>
+      </div>
+      <div class="cs-footer-bottom"><span>© 2026 Clearstack, Inc.</span><span>Privacy · Terms · Licenses</span></div>
+    </div>
+  </footer>
+</div></body></html>

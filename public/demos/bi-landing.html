@@ -1,0 +1,448 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --color-ground: #eef2e3; --color-ink: #043f2e; --color-accent: #78c51c; --color-paper: #ffffff; --color-paper-2: #f8f8f8; --color-yellow: #c8f169; --color-slate: #bbd1fb; --color-clay: #ffbbbe; --color-graphite: #242524; --color-graphite-2: #000000; --space-2xs: 6px; --space-xs: 8px; --space-sm: 14px; --space-md: 16px; --space-lg: 24px; --space-xl: 30px; --space-2xl: 32px; --space-3xl: 56px; --space-4xl: 120px; --text-meta: 12px; --text-body-sm: 14px; --text-body: 16px; --text-body-2: 18px; --text-subheading: 24px; --text-heading: 36px; --text-heading-lg: 56px; --text-display: 70px; --text-display-2: 72px; }
+  html,body { margin:0; padding:0; min-height:100%; background:#eef2e3; color:#043f2e;
+    font-family:"Grenette", ui-sans-serif, system-ui, sans-serif; }
+  * { box-sizing:border-box; }
+  img,svg { max-width:100%; }
+</style></head><body><style>
+  .helio-page {
+    --ground: #eef2e3;
+    --ink: #043f2e;
+    --accent: #78c51c;
+    --paper: #ffffff;
+    --paper-2: #f8f8f8;
+    --yellow: #c8f169;
+    --slate: #bbd1fb;
+    --clay: #ffbbbe;
+    --graphite: #242524;
+    --graphite-2: #000000;
+    background: var(--ground);
+    color: var(--ink);
+    min-height: 100vh;
+    font-family: Graphik, Inter, sans-serif;
+    font-size: 16px;
+    line-height: 1.18;
+  }
+  .helio-page * { box-sizing: border-box; }
+  .helio-page h1, .helio-page h2, .helio-page h3 { font-family: Grenette, Georgia, serif; font-weight: 400; }
+  .helio-page a { color: inherit; text-decoration: none; }
+  .helio-page svg { display: block; max-width: 100%; height: auto; }
+  .helio-shell { width: min(1240px, calc(100% - 32px)); margin: 0 auto; }
+  .helio-nav { background: var(--ground); border-bottom: 1px solid var(--accent); }
+  .helio-nav-inner { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+  .helio-brand { display: inline-flex; align-items: center; gap: 14px; font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
+  .helio-mark { width: 34px; height: 34px; }
+  .helio-nav-links { display: flex; align-items: center; gap: 30px; font-size: 14px; font-weight: 500; }
+  .helio-nav-links a, .helio-footer a { transition: color 200ms cubic-bezier(1,.1,.1,1); }
+  .helio-nav-links a:hover, .helio-nav-links a:focus-visible, .helio-footer a:hover, .helio-footer a:focus-visible { color: var(--accent); }
+  .helio-button-group { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+  .helio-btn {
+    min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0 24px; border-radius: 5px; border: 1px solid var(--accent);
+    font-family: Graphik, Inter, sans-serif; font-size: 14px; font-weight: 500;
+    transition: transform 200ms cubic-bezier(1,.1,.1,1), background 200ms cubic-bezier(1,.1,.1,1), border-color 200ms cubic-bezier(1,.1,.1,1);
+  }
+  .helio-btn:hover { transform: translateY(-2px); }
+  .helio-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .helio-btn-tinted { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+  .helio-btn-tinted:hover { border-color: var(--accent); }
+  .helio-btn-outline { background: transparent; color: var(--ink); }
+  .helio-btn-light { background: transparent; color: var(--paper); border-color: var(--paper); }
+  .helio-btn-light:hover { border-color: var(--accent); }
+  .helio-hero { padding: 120px 0 56px; overflow: hidden; }
+  .helio-hero-grid { display: grid; grid-template-columns: .92fr 1.08fr; align-items: center; gap: 56px; }
+  .helio-kicker { margin: 0 0 24px; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: .12em; }
+  .helio-title { max-width: 700px; margin: 0; font-size: 72px; line-height: 1.1; letter-spacing: -.02em; }
+  .helio-lede { max-width: 580px; margin: 30px 0 0; font-size: 18px; line-height: 1.3; }
+  .helio-hero .helio-button-group { margin-top: 32px; }
+  .helio-proof { display: flex; align-items: center; gap: 14px; margin-top: 32px; font-size: 14px; }
+  .helio-proof-line { width: 48px; height: 1px; background: var(--accent); }
+  .helio-hero-art { position: relative; }
+  .helio-visual { overflow: hidden; border: 1px solid var(--accent); border-radius: 16px; background: var(--paper); transition: transform 350ms cubic-bezier(1,.1,.1,1); }
+  .helio-visual:hover { transform: translateY(-6px); }
+  .helio-visual-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--accent); font-size: 12px; }
+  .helio-live { display: inline-flex; align-items: center; gap: 8px; }
+  .helio-live-dot { width: 8px; height: 8px; border-radius: 200px; background: var(--accent); }
+  .helio-badge {
+    position: absolute; right: -24px; bottom: -24px; width: 190px;
+    padding: 24px; border-radius: 8px; background: var(--yellow);
+    color: var(--ink); border: 1px solid var(--accent);
+    transition: transform 250ms cubic-bezier(1,.1,.1,1);
+  }
+  .helio-hero-art:hover .helio-badge { transform: translateY(-8px); }
+  .helio-badge span { display: block; font-size: 12px; }
+  .helio-badge strong { display: block; margin-top: 6px; font-family: Grenette, Georgia, serif; font-size: 36px; font-weight: 400; }
+  .helio-logo-strip { padding: 32px 0; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); background: var(--paper); }
+  .helio-logos { display: grid; grid-template-columns: 1.4fr repeat(5, 1fr); align-items: center; gap: 24px; }
+  .helio-logo-label { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+  .helio-wordmark { text-align: center; color: var(--graphite); font-size: 18px; font-weight: 600; letter-spacing: -.03em; }
+  .helio-section { padding: 120px 0; border-bottom: 1px solid var(--accent); }
+  .helio-section-paper { background: var(--paper); }
+  .helio-section-head { display: grid; grid-template-columns: .7fr 1.3fr; align-items: end; gap: 56px; margin-bottom: 56px; }
+  .helio-eyebrow { margin: 0; font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; }
+  .helio-h2 { margin: 0; font-size: 56px; line-height: 1.2; letter-spacing: -.02em; }
+  .helio-h2 em { font-style: normal; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 8px; }
+  .helio-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .helio-feature-card {
+    min-height: 360px; display: flex; flex-direction: column; padding: 30px;
+    border: 1px solid var(--slate); border-radius: 8px; background: var(--paper-2);
+    transition: border-color 200ms cubic-bezier(1,.1,.1,1), transform 200ms cubic-bezier(1,.1,.1,1);
+  }
+  .helio-feature-card:hover { border-color: var(--accent); transform: translateY(-6px); }
+  .helio-feature-card:nth-child(2) { background: var(--yellow); border-color: var(--yellow); }
+  .helio-feature-card:nth-child(2):hover { border-color: var(--accent); }
+  .helio-feature-icon { width: 56px; height: 56px; margin-bottom: 56px; }
+  .helio-feature-card h3 { margin: 0 0 14px; font-size: 24px; line-height: 1.2; }
+  .helio-feature-card p { margin: 0; font-size: 16px; line-height: 1.3; }
+  .helio-feature-link { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 30px; font-size: 14px; font-weight: 500; }
+  .helio-feature-link:hover, .helio-feature-link:focus-visible { color: var(--accent); }
+  .helio-dark { background: var(--graphite); color: var(--paper); }
+  .helio-dark .helio-eyebrow { color: var(--slate); }
+  .helio-workspace { display: grid; grid-template-columns: .84fr 1.16fr; align-items: stretch; gap: 16px; }
+  .helio-workspace-copy { padding: 32px; border: 1px solid var(--slate); border-radius: 16px; }
+  .helio-workspace-copy h3 { margin: 0 0 24px; color: var(--paper); font-size: 36px; line-height: 1.03; }
+  .helio-workspace-copy p { margin: 0 0 32px; color: var(--paper-2); font-size: 16px; line-height: 1.3; }
+  .helio-signal-list { display: grid; gap: 14px; margin-top: 32px; }
+  .helio-signal { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid var(--slate); font-size: 14px; }
+  .helio-signal strong { font-size: 14px; font-weight: 600; }
+  .helio-chart-card { overflow: hidden; padding: 30px; border-radius: 16px; background: var(--paper); color: var(--ink); }
+  .helio-chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 24px; }
+  .helio-chart-head p { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+  .helio-chart-head h3 { margin: 0; font-size: 36px; }
+  .helio-chart-pill { padding: 8px 14px; border: 1px solid var(--accent); border-radius: 200px; font-size: 12px; }
+  .helio-chart-legend { display: flex; gap: 16px; margin-top: 16px; font-size: 12px; }
+  .helio-chart-legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .helio-chart-legend i { width: 10px; height: 10px; border-radius: 200px; background: var(--slate); }
+  .helio-chart-legend span:nth-child(2) i { background: var(--clay); }
+  .helio-process-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .helio-step { padding: 30px; border-top: 1px solid var(--accent); }
+  .helio-step-num { display: block; margin-bottom: 56px; font-size: 12px; letter-spacing: .12em; }
+  .helio-step h3 { margin: 0 0 14px; font-size: 24px; }
+  .helio-step p { margin: 0; font-size: 16px; line-height: 1.3; }
+  .helio-integration-panel {
+    display: grid; grid-template-columns: .9fr 1.1fr; overflow: hidden;
+    border: 1px solid var(--accent); border-radius: 16px; background: var(--paper);
+  }
+  .helio-integration-copy { padding: 56px; }
+  .helio-integration-copy h2 { margin: 0 0 24px; font-size: 56px; line-height: 1.2; }
+  .helio-integration-copy p { margin: 0 0 32px; font-size: 18px; line-height: 1.3; }
+  .helio-integration-art { min-height: 500px; display: grid; place-items: center; padding: 32px; border-left: 1px solid var(--accent); background: var(--paper-2); }
+  .helio-results { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+  .helio-result-main { padding: 56px; border-radius: 8px; background: var(--yellow); }
+  .helio-result-main p { max-width: 760px; margin: 0; font-family: Grenette, Georgia, serif; font-size: 36px; line-height: 1.2; }
+  .helio-result-meta { display: flex; justify-content: space-between; gap: 24px; margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--accent); font-size: 14px; }
+  .helio-result-metrics { display: grid; gap: 16px; }
+  .helio-metric { padding: 30px; border: 1px solid var(--slate); border-radius: 8px; background: var(--paper); }
+  .helio-metric span { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+  .helio-metric strong { display: block; margin-top: 24px; font-family: Grenette, Georgia, serif; font-size: 56px; font-weight: 400; }
+  .helio-security { display: grid; grid-template-columns: .8fr 1.2fr; align-items: center; gap: 56px; }
+  .helio-security-copy p { margin: 30px 0 0; font-size: 18px; line-height: 1.3; }
+  .helio-security-grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--slate); border-radius: 8px; overflow: hidden; }
+  .helio-security-item { padding: 30px; background: var(--paper-2); border-right: 1px solid var(--slate); border-bottom: 1px solid var(--slate); }
+  .helio-security-item:nth-child(2n) { border-right: 0; }
+  .helio-security-item:nth-last-child(-n+2) { border-bottom: 0; }
+  .helio-security-item h3 { margin: 24px 0 8px; font-size: 18px; }
+  .helio-security-item p { margin: 0; font-size: 14px; line-height: 1.44; }
+  .helio-cta { padding: 120px 0; background: var(--graphite); color: var(--paper); }
+  .helio-cta-grid { display: grid; grid-template-columns: 1.35fr .65fr; align-items: end; gap: 56px; }
+  .helio-cta h2 { margin: 0; color: var(--paper); font-size: 70px; line-height: 1.1; letter-spacing: -.03em; }
+  .helio-cta p { margin: 0 0 24px; color: var(--paper-2); font-size: 18px; line-height: 1.3; }
+  .helio-footer { padding: 56px 0 32px; background: var(--graphite-2); color: var(--paper); }
+  .helio-footer-grid { display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 56px; padding-bottom: 56px; }
+  .helio-footer-note { max-width: 360px; margin: 24px 0 0; color: var(--paper-2); font-size: 14px; line-height: 1.44; }
+  .helio-footer h3 { margin: 0 0 24px; font-family: Graphik, Inter, sans-serif; font-size: 14px; font-weight: 500; }
+  .helio-footer a { display: block; margin: 14px 0; color: var(--paper-2); font-size: 14px; }
+  .helio-footer-bottom { display: flex; justify-content: space-between; gap: 24px; padding-top: 24px; border-top: 1px solid var(--slate); color: var(--paper-2); font-size: 12px; }
+  @media (max-width: 960px) {
+    .helio-nav-links { display: none; }
+    .helio-hero-grid, .helio-section-head, .helio-workspace, .helio-integration-panel, .helio-results, .helio-security, .helio-cta-grid { grid-template-columns: 1fr; }
+    .helio-feature-grid, .helio-process-grid { grid-template-columns: 1fr; }
+    .helio-logos { grid-template-columns: repeat(3, 1fr); }
+    .helio-logo-label { grid-column: 1 / -1; text-align: center; }
+    .helio-integration-art { border-left: 0; border-top: 1px solid var(--accent); }
+    .helio-footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .helio-shell { width: min(100% - 24px, 1240px); }
+    .helio-nav .helio-btn-outline { display: none; }
+    .helio-hero { padding: 56px 0; }
+    .helio-title, .helio-cta h2 { font-size: 56px; }
+    .helio-h2, .helio-integration-copy h2 { font-size: 36px; }
+    .helio-badge { position: relative; right: auto; bottom: auto; width: 100%; margin-top: 16px; }
+    .helio-section { padding: 56px 0; }
+    .helio-integration-copy, .helio-result-main { padding: 30px; }
+    .helio-logos { grid-template-columns: 1fr 1fr; }
+    .helio-security-grid { grid-template-columns: 1fr; }
+    .helio-security-item, .helio-security-item:nth-child(2n) { border-right: 0; border-bottom: 1px solid var(--slate); }
+    .helio-security-item:last-child { border-bottom: 0; }
+    .helio-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    .helio-footer-grid > div:first-child { grid-column: 1 / -1; }
+    .helio-footer-bottom { flex-direction: column; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .helio-page *, .helio-page *::before, .helio-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
+</style>
+
+<div class="helio-page" id="top">
+  <nav class="helio-nav" aria-label="Primary navigation">
+    <div class="helio-shell helio-nav-inner">
+      <a class="helio-brand" href="#top" aria-label="Helio AI home">
+        <svg class="helio-mark" viewBox="0 0 34 34" aria-hidden="true">
+          <circle cx="17" cy="17" r="16" fill="var(--paper)" stroke="var(--accent)"/>
+          <path d="M9 20c5-1 7-8 12-8 2 0 3 1 4 2" fill="none" stroke="var(--graphite)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="20" r="3" fill="var(--slate)" stroke="var(--graphite)"/>
+          <circle cx="24" cy="14" r="3" fill="var(--clay)" stroke="var(--graphite)"/>
+        </svg>
+        Helio AI
+      </a>
+      <div class="helio-nav-links">
+        <a href="#platform">Platform</a>
+        <a href="#workspace">How it works</a>
+        <a href="#results">Customers</a>
+        <a href="#security">Security</a>
+      </div>
+      <div class="helio-button-group">
+        <a class="helio-btn helio-btn-outline" href="#workspace">See platform</a>
+        <a class="helio-btn helio-btn-tinted" href="#contact">Book a demo</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="helio-hero">
+      <div class="helio-shell helio-hero-grid">
+        <div>
+          <p class="helio-kicker">Decision intelligence for every team</p>
+          <h1 class="helio-title">Your company already knows the answer.</h1>
+          <p class="helio-lede">Helio connects your data, documents, and customer signals so anyone can ask a business question and get an explainable next step.</p>
+          <div class="helio-button-group">
+            <a class="helio-btn helio-btn-tinted" href="#contact">Start with Helio
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="helio-btn helio-btn-outline" href="#platform">Explore the product</a>
+          </div>
+          <div class="helio-proof"><span class="helio-proof-line"></span>Trusted by product, finance, and operations teams</div>
+        </div>
+
+        <div class="helio-hero-art">
+          <div class="helio-visual">
+            <div class="helio-visual-top"><strong>Live intelligence map</strong><span class="helio-live"><i class="helio-live-dot"></i>12 sources connected</span></div>
+            <svg viewBox="0 0 700 540" role="img" aria-label="Decorative map of company knowledge sources connected to an AI reasoning core">
+              <rect width="700" height="540" fill="var(--paper)"/>
+              <g stroke="var(--slate)" stroke-width="1">
+                <path d="M0 90H700M0 180H700M0 270H700M0 360H700M0 450H700"/>
+                <path d="M100 0V540M200 0V540M300 0V540M400 0V540M500 0V540M600 0V540"/>
+              </g>
+              <g fill="none" stroke="var(--graphite)" stroke-width="2">
+                <path d="M350 270L132 130M350 270L566 116M350 270L120 408M350 270L576 410"/>
+                <path d="M132 130C230 92 286 154 350 270M566 116C470 96 418 170 350 270" stroke-dasharray="7 8"/>
+              </g>
+              <g>
+                <circle cx="350" cy="270" r="88" fill="var(--slate)" stroke="var(--graphite)" stroke-width="2"/>
+                <circle cx="350" cy="270" r="50" fill="var(--paper)" stroke="var(--graphite)" stroke-width="2"/>
+                <path d="M328 272l15 15 31-38" fill="none" stroke="var(--graphite)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <g font-size="12" font-family="Graphik, Inter, sans-serif" text-anchor="middle" fill="var(--graphite)">
+                <g><rect x="64" y="88" width="136" height="84" rx="8" fill="var(--paper-2)" stroke="var(--graphite)"/><text x="132" y="124">Product data</text><text x="132" y="148" font-size="16" font-weight="600">2.4M events</text></g>
+                <g><rect x="498" y="74" width="136" height="84" rx="8" fill="var(--clay)" stroke="var(--graphite)"/><text x="566" y="110">Customers</text><text x="566" y="134" font-size="16" font-weight="600">18K signals</text></g>
+                <g><rect x="52" y="366" width="136" height="84" rx="8" fill="var(--slate)" stroke="var(--graphite)"/><text x="120" y="402">Documents</text><text x="120" y="426" font-size="16" font-weight="600">640K pages</text></g>
+                <g><rect x="508" y="368" width="136" height="84" rx="8" fill="var(--paper-2)" stroke="var(--graphite)"/><text x="576" y="404">Revenue</text><text x="576" y="428" font-size="16" font-weight="600">$84M context</text></g>
+              </g>
+              <text x="350" y="385" text-anchor="middle" fill="var(--graphite)" font-size="14" font-family="Graphik, Inter, sans-serif">One governed reasoning layer</text>
+            </svg>
+          </div>
+          <div class="helio-badge"><span>Decision time reduced</span><strong>78%</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-logo-strip" aria-label="Selected customers">
+      <div class="helio-shell helio-logos">
+        <div class="helio-logo-label">Forward-looking teams choose Helio</div>
+        <div class="helio-wordmark">Morrow</div><div class="helio-wordmark">KINETIC</div><div class="helio-wordmark">Northstar</div><div class="helio-wordmark">Arcadia</div><div class="helio-wordmark">Relay</div>
+      </div>
+    </section>
+
+    <section class="helio-section helio-section-paper" id="platform">
+      <div class="helio-shell">
+        <div class="helio-section-head">
+          <p class="helio-eyebrow">One intelligence layer</p>
+          <h2 class="helio-h2">From scattered context to a <em>clear decision.</em></h2>
+        </div>
+        <div class="helio-feature-grid">
+          <article class="helio-feature-card">
+            <svg class="helio-feature-icon" viewBox="0 0 56 56" aria-hidden="true"><rect x="1" y="1" width="54" height="54" rx="8" fill="var(--slate)" stroke="var(--graphite)"/><path d="M14 20h28M14 28h18M14 36h24" stroke="var(--graphite)" stroke-width="2" stroke-linecap="round"/></svg>
+            <h3>Connect the whole company</h3>
+            <p>Unify warehouse tables, SaaS tools, documents, and conversations without moving the source data.</p>
+            <a class="helio-feature-link" href="#workspace">Explore connections
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </a>
+          </article>
+          <article class="helio-feature-card">
+            <svg class="helio-feature-icon" viewBox="0 0 56 56" aria-hidden="true"><rect x="1" y="1" width="54" height="54" rx="8" fill="var(--paper)" stroke="var(--graphite)"/><path d="M16 17h24v17H27l-7 6v-6h-4z" fill="var(--paper-2)" stroke="var(--graphite)" stroke-width="2"/><circle cx="23" cy="26" r="2" fill="var(--graphite)"/><circle cx="28" cy="26" r="2" fill="var(--graphite)"/><circle cx="33" cy="26" r="2" fill="var(--graphite)"/></svg>
+            <h3>Ask questions naturally</h3>
+            <p>Turn plain-language questions into governed analysis with sources, assumptions, and confidence attached.</p>
+            <a class="helio-feature-link" href="#workspace">See explainable AI
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </a>
+          </article>
+          <article class="helio-feature-card">
+            <svg class="helio-feature-icon" viewBox="0 0 56 56" aria-hidden="true"><rect x="1" y="1" width="54" height="54" rx="8" fill="var(--clay)" stroke="var(--graphite)"/><path d="M16 38V28M28 38V18M40 38V23" stroke="var(--graphite)" stroke-width="3" stroke-linecap="round"/></svg>
+            <h3>Act while it matters</h3>
+            <p>Send a decision brief, launch a workflow, or alert the right owner without losing the evidence behind it.</p>
+            <a class="helio-feature-link" href="#process">See the workflow
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-section helio-dark" id="workspace">
+      <div class="helio-shell">
+        <div class="helio-section-head">
+          <p class="helio-eyebrow">The intelligence workspace</p>
+          <h2 class="helio-h2">See what changed. Understand why. Decide what is next.</h2>
+        </div>
+        <div class="helio-workspace">
+          <div class="helio-workspace-copy">
+            <h3>A brief every team can trust.</h3>
+            <p>Helio blends live metrics with company context, then shows the reasoning chain behind every recommendation.</p>
+            <a class="helio-btn helio-btn-light" href="#contact">Request a workspace tour</a>
+            <div class="helio-signal-list">
+              <div class="helio-signal"><span>Acquisition efficiency</span><strong>Improving</strong></div>
+              <div class="helio-signal"><span>Expansion readiness</span><strong>12 accounts</strong></div>
+              <div class="helio-signal"><span>Churn risk</span><strong>3 cohorts</strong></div>
+            </div>
+          </div>
+          <div class="helio-chart-card">
+            <div class="helio-chart-head">
+              <div><p>Expansion revenue forecast</p><h3>$4.82M</h3></div>
+              <span class="helio-chart-pill">92% confidence</span>
+            </div>
+            <svg viewBox="0 0 720 360" role="img" aria-label="Expansion revenue forecast rising over six months">
+              <g stroke="var(--slate)" stroke-width="1"><path d="M54 44H690M54 112H690M54 180H690M54 248H690M54 316H690"/></g>
+              <g fill="var(--graphite)" font-family="Graphik, Inter, sans-serif" font-size="12">
+                <text x="10" y="48">$5M</text><text x="10" y="184">$3M</text><text x="10" y="320">$1M</text>
+                <text x="54" y="346">Apr</text><text x="176" y="346">May</text><text x="298" y="346">Jun</text><text x="420" y="346">Jul</text><text x="542" y="346">Aug</text><text x="654" y="346">Sep</text>
+              </g>
+              <path d="M54 274C112 264 126 240 176 246S250 222 298 210 374 190 420 168 496 154 542 118 616 96 676 72" fill="none" stroke="var(--graphite)" stroke-width="4" stroke-linecap="round"/>
+              <path d="M54 302C108 292 132 284 176 278S252 266 298 250 376 242 420 220 494 206 542 178 620 164 676 138" fill="none" stroke="var(--clay)" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 8"/>
+              <g fill="var(--slate)" stroke="var(--graphite)" stroke-width="2"><circle cx="420" cy="168" r="7"/><circle cx="676" cy="72" r="8"/></g>
+            </svg>
+            <div class="helio-chart-legend"><span><i></i>Forecast</span><span><i></i>Current plan</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-section" id="process">
+      <div class="helio-shell">
+        <div class="helio-section-head">
+          <p class="helio-eyebrow">How Helio works</p>
+          <h2 class="helio-h2">Three steps from question to accountable action.</h2>
+        </div>
+        <div class="helio-process-grid">
+          <article class="helio-step"><span class="helio-step-num">01 / CONNECT</span><h3>Map your context</h3><p>Helio learns your business definitions, permissions, and decision logic across every connected source.</p></article>
+          <article class="helio-step"><span class="helio-step-num">02 / REASON</span><h3>Trace the answer</h3><p>Every response links back to the metric, document, query, and assumption that produced it.</p></article>
+          <article class="helio-step"><span class="helio-step-num">03 / ACT</span><h3>Move with confidence</h3><p>Assign an owner, trigger a workflow, or share a decision brief while the signal is still useful.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-section helio-section-paper">
+      <div class="helio-shell helio-integration-panel">
+        <div class="helio-integration-copy">
+          <p class="helio-eyebrow">Works with your stack</p>
+          <h2>Context in. Decisions out.</h2>
+          <p>Connect the tools your teams already trust. Helio respects source permissions and keeps the data where it belongs.</p>
+          <a class="helio-btn helio-btn-outline" href="#security">Explore enterprise controls</a>
+        </div>
+        <div class="helio-integration-art">
+          <svg viewBox="0 0 560 460" role="img" aria-label="Decorative illustration of six business systems connected to Helio">
+            <g fill="none" stroke="var(--slate)" stroke-width="1"><circle cx="280" cy="230" r="176"/><circle cx="280" cy="230" r="116"/></g>
+            <g stroke="var(--graphite)" stroke-width="2"><path d="M280 230L280 54M280 230L432 142M280 230L432 318M280 230L280 406M280 230L128 318M280 230L128 142"/></g>
+            <circle cx="280" cy="230" r="72" fill="var(--clay)" stroke="var(--graphite)" stroke-width="2"/>
+            <text x="280" y="224" text-anchor="middle" fill="var(--graphite)" font-family="Grenette, Georgia, serif" font-size="24">Helio AI</text>
+            <text x="280" y="250" text-anchor="middle" fill="var(--graphite)" font-family="Graphik, Inter, sans-serif" font-size="12">Reasoning layer</text>
+            <g fill="var(--paper)" stroke="var(--graphite)" stroke-width="2">
+              <circle cx="280" cy="54" r="38"/><circle cx="432" cy="142" r="38"/><circle cx="432" cy="318" r="38"/><circle cx="280" cy="406" r="38"/><circle cx="128" cy="318" r="38"/><circle cx="128" cy="142" r="38"/>
+            </g>
+            <g fill="var(--graphite)" font-family="Graphik, Inter, sans-serif" font-size="12" text-anchor="middle">
+              <text x="280" y="58">SQL</text><text x="432" y="146">CRM</text><text x="432" y="322">Docs</text><text x="280" y="410">Support</text><text x="128" y="322">Finance</text><text x="128" y="146">Product</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-section" id="results">
+      <div class="helio-shell">
+        <div class="helio-section-head">
+          <p class="helio-eyebrow">Customer result</p>
+          <h2 class="helio-h2">Better questions become better business outcomes.</h2>
+        </div>
+        <div class="helio-results">
+          <article class="helio-result-main">
+            <p>“Helio gave every leader the same evidence, in language they could act on. Our weekly review went from reporting the past to deciding the future.”</p>
+            <div class="helio-result-meta"><strong>Maya Chen, COO at Morrow</strong><span>Enterprise software</span></div>
+          </article>
+          <div class="helio-result-metrics">
+            <div class="helio-metric"><span>Faster decisions</span><strong>4.2×</strong></div>
+            <div class="helio-metric"><span>Analyst hours returned</span><strong>680</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-section helio-section-paper" id="security">
+      <div class="helio-shell helio-security">
+        <div class="helio-security-copy">
+          <p class="helio-eyebrow">Enterprise trust</p>
+          <h2 class="helio-h2">Your intelligence stays yours.</h2>
+          <p>Helio is built for sensitive business context, with permissions, lineage, and control at every layer.</p>
+        </div>
+        <div class="helio-security-grid">
+          <article class="helio-security-item"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 3l13 5v9c0 9-5 15-13 19C12 32 7 26 7 17V8l13-5z" fill="var(--slate)" stroke="var(--graphite)" stroke-width="2"/></svg><h3>SOC 2 controls</h3><p>Operational safeguards built into every workspace.</p></article>
+          <article class="helio-security-item"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="17" width="28" height="20" rx="5" fill="var(--paper)" stroke="var(--graphite)" stroke-width="2"/><path d="M12 17v-5a8 8 0 0116 0v5" fill="none" stroke="var(--graphite)" stroke-width="2"/></svg><h3>Source-level access</h3><p>Every answer respects the original permissions.</p></article>
+          <article class="helio-security-item"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><path d="M7 10h26M7 20h26M7 30h26" stroke="var(--graphite)" stroke-width="2"/><circle cx="14" cy="10" r="4" fill="var(--clay)" stroke="var(--graphite)"/><circle cx="26" cy="20" r="4" fill="var(--slate)" stroke="var(--graphite)"/><circle cx="18" cy="30" r="4" fill="var(--clay)" stroke="var(--graphite)"/></svg><h3>Complete lineage</h3><p>Inspect sources, queries, definitions, and reasoning.</p></article>
+          <article class="helio-security-item"><svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="var(--graphite)"/><path d="M12 21l6 6 11-14" fill="none" stroke="var(--paper)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Private by design</h3><p>Your data is never used to train shared models.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="helio-cta" id="contact">
+      <div class="helio-shell helio-cta-grid">
+        <div><p class="helio-eyebrow">The next decision starts here</p><h2>Give your company one place to think.</h2></div>
+        <div>
+          <p>See how Helio turns your business context into a clear, explainable next step.</p>
+          <div class="helio-button-group">
+            <a class="helio-btn helio-btn-tinted" href="mailto:hello@helio.ai">Book your demo</a>
+            <a class="helio-btn helio-btn-light" href="#platform">Review platform</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="helio-footer">
+    <div class="helio-shell">
+      <div class="helio-footer-grid">
+        <div>
+          <a class="helio-brand" href="#top">
+            <svg class="helio-mark" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="16" fill="var(--paper)" stroke="var(--accent)"/><path d="M9 20c5-1 7-8 12-8 2 0 3 1 4 2" fill="none" stroke="var(--graphite)" stroke-width="2" stroke-linecap="round"/></svg>
+            Helio AI
+          </a>
+          <p class="helio-footer-note">Explainable decision intelligence for teams that need to move with confidence.</p>
+        </div>
+        <div><h3>Platform</h3><a href="#platform">Capabilities</a><a href="#workspace">Workspace</a><a href="#security">Security</a></div>
+        <div><h3>Company</h3><a href="#results">Customers</a><a href="#contact">Contact</a><a href="#contact">Careers</a></div>
+        <div><h3>Resources</h3><a href="#process">How it works</a><a href="#security">Trust center</a><a href="#contact">Documentation</a></div>
+      </div>
+      <div class="helio-footer-bottom"><span>© 2026 Helio Intelligence, Inc.</span><span>Privacy · Terms · Status</span></div>
+    </div>
+  </footer>
+</div></body></html>

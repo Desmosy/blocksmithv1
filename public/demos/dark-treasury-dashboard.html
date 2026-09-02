@@ -1,0 +1,384 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --color-ground: #171721; --color-ink: #272735; --color-paper: #ffffff; --color-mist: #f4f5f9; --color-chalk: #f1f1f4; --color-stone: #e2e3ed; --color-slate: #c3c3cc; --color-blue: #5266eb; --color-graphite: #000000; --space-2xs: 2px; --text-meta: 10px; --text-body-sm: 14px; --text-body: 16px; --text-body-2: 18px; --text-body-lg: 21px; --text-subheading: 24px; --text-subheading-2: 28px; --text-heading: 32px; --text-heading-2: 42px; }
+  html,body { margin:0; padding:0; min-height:100%; background:#171721; color:#272735;
+    font-family:"arcadiaDisplay", ui-sans-serif, system-ui, sans-serif; }
+  * { box-sizing:border-box; }
+  img,svg { max-width:100%; }
+</style></head><body><style>
+:root{
+  --ground:#171721;--ink:#272735;--paper:#ffffff;--mist:#f4f5f9;--chalk:#f1f1f4;--stone:#e2e3ed;--slate:#c3c3cc;--blue:#5266eb;--graphite:#000000;
+  --chart-1:var(--ink);--chart-2:var(--blue);--chart-3:var(--slate);--chart-4:var(--stone);--chart-5:var(--chalk);
+  --space-2xs:2px;--r-small:2px;--r-control:6px;--r-card:8px;--r-panel:12px;--r-pill:9999px;
+  --ease:cubic-bezier(.16,0,.13,1);--font-body:arcadia,Arial,sans-serif;--font-display:arcadiaDisplay,arcadia,Arial,sans-serif
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mist);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.4}
+button,input{font:inherit}
+button,a{transition:background 150ms var(--ease),color 150ms var(--ease),border-color 250ms var(--ease),transform 250ms var(--ease)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.app{min-height:100vh;display:grid;grid-template-columns:236px minmax(0,1fr)}
+.sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:var(--ground);color:var(--paper);border-right:1px solid var(--slate);padding:calc(var(--space-2xs) * 10)}
+.logo{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5);font-size:18px;font-weight:600;padding:calc(var(--space-2xs) * 4)}
+.logo-mark{width:28px;height:28px;border:1px solid var(--slate);border-radius:var(--r-pill);display:grid;place-items:center;color:var(--paper)}
+.logo-mark svg{width:16px;height:16px}
+.workspace-switch{margin-top:calc(var(--space-2xs) * 12);display:flex;align-items:center;justify-content:space-between;width:100%;padding:calc(var(--space-2xs) * 6);border:1px solid var(--slate);border-radius:var(--r-control);background:var(--ink);color:var(--paper);cursor:pointer}
+.workspace-copy{display:grid;text-align:left;gap:var(--space-2xs)}
+.workspace-copy small{font-size:10px;color:var(--slate);letter-spacing:.3px}
+.workspace-copy strong{font-size:14px;font-weight:500}
+.nav-label{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;color:var(--slate);padding-inline:calc(var(--space-2xs) * 5);margin:calc(var(--space-2xs) * 12) 0 calc(var(--space-2xs) * 4)}
+.side-nav{display:grid;gap:var(--space-2xs)}
+.side-link{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5);padding:calc(var(--space-2xs) * 5) calc(var(--space-2xs) * 6);border-radius:var(--r-control);color:var(--slate);text-decoration:none;position:relative}
+.side-link:hover{color:var(--paper);background:var(--ink)}
+.side-link.active{color:var(--paper);background:var(--ink)}
+.side-link.active::before{content:"";position:absolute;left:0;width:var(--space-2xs);height:20px;border-radius:var(--r-pill);background:var(--blue)}
+.side-link svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;flex:none}
+.side-link span{font-size:14px}
+.side-link .badge{margin-left:auto;background:var(--blue);color:var(--paper);font-size:10px;min-width:20px;height:20px;border-radius:var(--r-pill);display:grid;place-items:center}
+.sidebar-bottom{margin-top:auto;display:grid;gap:calc(var(--space-2xs) * 5)}
+.send-card{border:1px solid var(--slate);border-radius:var(--r-card);padding:calc(var(--space-2xs) * 7);background:var(--ink)}
+.send-card small{font-size:10px;color:var(--slate);display:block}
+.send-card strong{font-family:var(--font-display);font-size:21px;line-height:1.2;font-weight:400;display:block;margin-block:calc(var(--space-2xs) * 3)}
+.send-card button{width:100%;border:1px solid var(--paper);background:var(--paper);color:var(--ground);border-radius:var(--r-pill);padding:calc(var(--space-2xs) * 5);font-size:10px;font-weight:600;cursor:pointer}
+.send-card button:hover{background:var(--blue);border-color:var(--blue);color:var(--paper)}
+.user{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5);padding:calc(var(--space-2xs) * 4)}
+.avatar{width:32px;height:32px;border-radius:var(--r-pill);background:var(--blue);display:grid;place-items:center;font-size:10px;font-weight:600}
+.user strong{font-size:14px;font-weight:500}.user small{font-size:10px;color:var(--slate);display:block}
+.main{min-width:0}
+.topbar{height:72px;background:var(--paper);border-bottom:1px solid var(--stone);display:flex;align-items:center;justify-content:space-between;padding-inline:calc(var(--space-2xs) * 16);position:sticky;top:0;z-index:10}
+.breadcrumb{display:flex;align-items:center;gap:calc(var(--space-2xs) * 4);font-size:14px}.breadcrumb span{color:var(--slate)}
+.top-actions{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5)}
+.search{height:38px;min-width:220px;display:flex;align-items:center;gap:calc(var(--space-2xs) * 4);padding-inline:calc(var(--space-2xs) * 6);background:var(--mist);border:1px solid var(--stone);border-radius:var(--r-control)}
+.search svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:1.5}
+.search input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font-size:14px}
+.icon-button{width:38px;height:38px;border:1px solid var(--stone);border-radius:var(--r-control);background:var(--paper);display:grid;place-items:center;color:var(--ink);cursor:pointer}
+.icon-button:hover{border-color:var(--blue);color:var(--blue)}
+.icon-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.content{max-width:1440px;margin-inline:auto;padding:calc(var(--space-2xs) * 16)}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:calc(var(--space-2xs) * 12);margin-bottom:calc(var(--space-2xs) * 12)}
+.page-head h1{font-family:var(--font-display);font-size:32px;line-height:1.15;font-weight:400;margin:0}
+.page-head p{font-size:14px;margin:calc(var(--space-2xs) * 3) 0 0;color:var(--ink)}
+.head-actions{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5)}
+.control{height:40px;display:inline-flex;align-items:center;gap:calc(var(--space-2xs) * 4);padding-inline:calc(var(--space-2xs) * 7);border:1px solid var(--stone);border-radius:var(--r-control);background:var(--paper);color:var(--ink);font-size:14px;cursor:pointer}
+.control:hover{border-color:var(--blue)}
+.control svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
+.primary{height:40px;display:inline-flex;align-items:center;gap:calc(var(--space-2xs) * 4);padding-inline:calc(var(--space-2xs) * 8);border:1px solid var(--blue);border-radius:var(--r-pill);background:var(--blue);color:var(--paper);font-size:14px;font-weight:600;cursor:pointer}
+.primary:hover{background:var(--ink);border-color:var(--ink);transform:translateY(-2px)}
+.primary svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
+.kpi-grid{display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:calc(var(--space-2xs) * 6)}
+.kpi{border:1px solid var(--stone);border-radius:var(--r-card);background:var(--paper);padding:calc(var(--space-2xs) * 10);min-height:148px;display:flex;flex-direction:column;justify-content:space-between}
+.kpi.featured{background:var(--ground);color:var(--paper);border-color:var(--ground)}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--space-2xs) * 5)}
+.kpi-label{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;color:var(--ink)}
+.featured .kpi-label{color:var(--slate)}
+.status{display:inline-flex;align-items:center;gap:calc(var(--space-2xs) * 3);padding:calc(var(--space-2xs) * 2) calc(var(--space-2xs) * 4);border-radius:var(--r-pill);background:var(--mist);font-size:10px;color:var(--ink)}
+.featured .status{background:var(--ink);color:var(--paper)}
+.dot{width:6px;height:6px;border-radius:var(--r-pill);background:var(--blue)}
+.kpi-value{font-family:var(--font-display);font-size:28px;line-height:1.2;font-weight:400;letter-spacing:.42px}
+.kpi-sub{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--space-2xs) * 4);font-size:10px;color:var(--ink)}
+.featured .kpi-sub{color:var(--slate)}
+.change{color:var(--blue);font-weight:600}
+.action-row{margin-top:calc(var(--space-2xs) * 6);display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--stone);border-radius:var(--r-card);background:var(--paper);overflow:hidden}
+.quick-action{min-height:72px;border:0;border-right:1px solid var(--stone);background:var(--paper);display:flex;align-items:center;justify-content:center;gap:calc(var(--space-2xs) * 5);color:var(--ink);cursor:pointer}
+.quick-action:last-child{border-right:0}
+.quick-action:hover{background:var(--mist);color:var(--blue)}
+.quick-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.quick-action span{font-size:14px;font-weight:500}
+.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.8fr);gap:calc(var(--space-2xs) * 6);margin-top:calc(var(--space-2xs) * 6)}
+.panel{border:1px solid var(--stone);border-radius:var(--r-card);background:var(--paper);padding:calc(var(--space-2xs) * 10)}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:calc(var(--space-2xs) * 6);margin-bottom:calc(var(--space-2xs) * 8)}
+.panel-head h2{font-family:var(--font-display);font-size:21px;line-height:1.2;font-weight:400;margin:0}
+.panel-head p{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;color:var(--ink);margin:calc(var(--space-2xs) * 2) 0 0}
+.segmented{display:flex;border:1px solid var(--stone);border-radius:var(--r-pill);padding:var(--space-2xs);background:var(--mist)}
+.segmented button{border:0;background:transparent;color:var(--ink);border-radius:var(--r-pill);padding:calc(var(--space-2xs) * 3) calc(var(--space-2xs) * 5);font-size:10px;cursor:pointer}
+.segmented button.active{background:var(--paper);color:var(--blue)}
+.chart-summary{display:flex;align-items:flex-end;gap:calc(var(--space-2xs) * 7);margin-bottom:calc(var(--space-2xs) * 6)}
+.chart-summary strong{font-family:var(--font-display);font-size:28px;line-height:1.2;font-weight:400}
+.chart-summary span{font-size:10px;color:var(--blue);padding-bottom:calc(var(--space-2xs) * 2)}
+.cash-chart{width:100%;height:auto;display:block;overflow:visible}
+.cash-chart text{font-family:var(--font-body);font-size:10px;fill:var(--ink)}
+.cash-chart .baseline{stroke:var(--stone);stroke-width:1}
+.cash-chart .line{fill:none;stroke:var(--chart-1);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:720;stroke-dashoffset:720;animation:draw 400ms var(--ease) forwards}
+.cash-chart .point{fill:var(--paper);stroke:var(--chart-1);stroke-width:2}
+.chart-note{font-size:10px;line-height:1.4;color:var(--ink);margin:calc(var(--space-2xs) * 6) 0 0}
+@keyframes draw{to{stroke-dashoffset:0}}
+.account-list{display:grid}
+.account{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:calc(var(--space-2xs) * 5);padding-block:calc(var(--space-2xs) * 7);border-bottom:1px solid var(--stone)}
+.account:last-child{border-bottom:0}
+.account-icon{width:36px;height:36px;border-radius:var(--r-control);background:var(--mist);display:grid;place-items:center;color:var(--blue)}
+.account-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.account strong{font-size:14px;font-weight:500;display:block}.account small{font-size:10px;color:var(--ink)}
+.account-amount{text-align:right}.account-amount strong{font-family:var(--font-display);font-size:18px;font-weight:400}.account-amount small{display:block}
+.limit{margin-top:calc(var(--space-2xs) * 8);padding-top:calc(var(--space-2xs) * 8);border-top:1px solid var(--stone)}
+.limit-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:calc(var(--space-2xs) * 4)}
+.progress{height:6px;background:var(--stone);border-radius:var(--r-pill);overflow:hidden}.progress span{display:block;height:100%;width:64%;background:var(--blue);border-radius:var(--r-pill)}
+.lower-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.8fr);gap:calc(var(--space-2xs) * 6);margin-top:calc(var(--space-2xs) * 6)}
+.table-panel{padding:0;overflow:hidden}
+.table-panel .panel-head{padding:calc(var(--space-2xs) * 10);margin:0;border-bottom:1px solid var(--stone)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{text-align:left;padding:calc(var(--space-2xs) * 7) calc(var(--space-2xs) * 10);border-bottom:1px solid var(--stone);font-size:14px}
+th{font-size:10px;line-height:1.4;letter-spacing:.3px;text-transform:uppercase;font-weight:500;color:var(--ink);background:var(--mist)}
+tbody tr{transition:background 150ms var(--ease)}
+tbody tr:hover{background:var(--mist)}
+tbody tr:last-child td{border-bottom:0}
+.merchant{display:flex;align-items:center;gap:calc(var(--space-2xs) * 5)}
+.merchant-icon{width:32px;height:32px;border:1px solid var(--stone);border-radius:var(--r-control);display:grid;place-items:center;font-size:10px;font-weight:600;background:var(--paper)}
+.merchant strong{font-size:14px;font-weight:500;display:block}.merchant small{font-size:10px;color:var(--ink)}
+.tag{display:inline-flex;padding:calc(var(--space-2xs) * 2) calc(var(--space-2xs) * 4);border-radius:var(--r-pill);background:var(--mist);font-size:10px;color:var(--ink)}
+.amount{text-align:right;font-weight:600}.positive{color:var(--blue)}
+.insight{display:flex;gap:calc(var(--space-2xs) * 6);padding-block:calc(var(--space-2xs) * 7);border-bottom:1px solid var(--stone)}
+.insight:last-child{border-bottom:0}
+.insight-icon{width:34px;height:34px;border-radius:var(--r-pill);display:grid;place-items:center;flex:none;background:var(--mist);color:var(--blue)}
+.insight-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5}
+.insight h3{font-size:14px;font-weight:500;margin:0 0 calc(var(--space-2xs) * 2)}
+.insight p{font-size:10px;line-height:1.4;color:var(--ink);margin:0}
+.insight button{border:0;background:transparent;color:var(--blue);padding:0;margin-top:calc(var(--space-2xs) * 3);font-size:10px;font-weight:600;cursor:pointer}
+.disclosure{margin-top:calc(var(--space-2xs) * 6);font-size:10px;color:var(--ink)}
+.mobile-menu{display:none}
+@media(max-width:1100px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .dashboard-grid,.lower-grid{grid-template-columns:1fr}
+}
+@media(max-width:780px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .topbar{padding-inline:calc(var(--space-2xs) * 9)}
+  .mobile-menu{display:grid}
+  .search{display:none}
+  .content{padding:calc(var(--space-2xs) * 9)}
+  .page-head{align-items:flex-start;flex-direction:column}
+  .head-actions{width:100%}.head-actions .primary{flex:1}
+  .action-row{grid-template-columns:1fr 1fr}
+  .quick-action:nth-child(2){border-right:0}.quick-action:nth-child(-n+2){border-bottom:1px solid var(--stone)}
+}
+@media(max-width:520px){
+  .kpi-grid{grid-template-columns:1fr}
+  .control span{display:none}
+  .page-head h1{font-size:28px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <aside class="sidebar" aria-label="Workspace navigation">
+    <div class="logo">
+      <span class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 17V7l12 10V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      Lumen
+    </div>
+
+    <button class="workspace-switch" type="button" aria-label="Switch workspace">
+      <span class="workspace-copy"><small>Workspace</small><strong>Arc Systems, Inc.</strong></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+
+    <div class="nav-label">Money</div>
+    <nav class="side-nav">
+      <a class="side-link active" href="#overview">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+        <span>Overview</span>
+      </a>
+      <a class="side-link" href="#accounts">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4zM4 8l8-4 8 4M8 12v3M12 12v3M16 12v3"/></svg>
+        <span>Accounts</span>
+      </a>
+      <a class="side-link" href="#transactions">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h4"/></svg>
+        <span>Transactions</span>
+        <span class="badge">3</span>
+      </a>
+      <a class="side-link" href="#cards">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
+        <span>Cards</span>
+      </a>
+      <a class="side-link" href="#payments">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M15 7l5 5-5 5M9 17l-5-5 5-5"/></svg>
+        <span>Payments</span>
+      </a>
+    </nav>
+
+    <div class="nav-label">Plan</div>
+    <nav class="side-nav">
+      <a class="side-link" href="#cashflow">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V6M4 18h16M7 14l4-4 3 3 5-7"/></svg>
+        <span>Cash flow</span>
+      </a>
+      <a class="side-link" href="#insights">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M9 12l2 2 4-5"/></svg>
+        <span>Insights</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="send-card">
+        <small>Available to send</small>
+        <strong>$842,630</strong>
+        <button type="button">Move money</button>
+      </div>
+      <div class="user">
+        <span class="avatar">KM</span>
+        <span><strong>Kai Morgan</strong><small>Administrator</small></span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main" id="overview">
+    <header class="topbar">
+      <div class="breadcrumb">
+        <button class="icon-button mobile-menu" aria-label="Open navigation">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <span>Arc Systems</span><span>/</span><strong>Overview</strong>
+      </div>
+      <div class="top-actions">
+        <label class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16 16l4 4"/></svg>
+          <input type="search" placeholder="Search transactions" aria-label="Search transactions"/>
+        </label>
+        <button class="icon-button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16h12l-1.5-2v-4a4.5 4.5 0 0 0-9 0v4zM10 19h4"/></svg>
+        </button>
+        <button class="icon-button" aria-label="Help">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M10 9a2 2 0 1 1 3 1.7c-.7.4-1 .8-1 1.8M12 16h.01"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h1>Good morning, Kai.</h1>
+          <p>Here is how your money is moving across Arc Systems.</p>
+        </div>
+        <div class="head-actions">
+          <button class="control" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>
+            <span>Last 30 days</span>
+          </button>
+          <button class="primary" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Move money
+          </button>
+        </div>
+      </div>
+
+      <section class="kpi-grid" aria-label="Financial overview">
+        <article class="kpi featured">
+          <div class="kpi-top"><span class="kpi-label">Total cash</span><span class="status"><i class="dot"></i>Live</span></div>
+          <div class="kpi-value">$3,248,920.14</div>
+          <div class="kpi-sub"><span>Across 4 accounts</span><span>Updated now</span></div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-label">Money in</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M7 10l5-5 5 5" stroke="var(--blue)" stroke-width="1.5"/></svg>
+          </div>
+          <div class="kpi-value">$426,800</div>
+          <div class="kpi-sub"><span>Last 30 days</span><span class="change">+18.4%</span></div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-label">Money out</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M7 14l5 5 5-5" stroke="var(--ink)" stroke-width="1.5"/></svg>
+          </div>
+          <div class="kpi-value">$184,320</div>
+          <div class="kpi-sub"><span>Last 30 days</span><span>8 payments</span></div>
+        </article>
+        <article class="kpi">
+          <div class="kpi-top"><span class="kpi-label">Runway</span><span class="status">Forecast</span></div>
+          <div class="kpi-value">18.4 mo</div>
+          <div class="kpi-sub"><span>At current burn</span><span class="change">+2.1 mo</span></div>
+        </article>
+      </section>
+
+      <section class="action-row" aria-label="Quick actions">
+        <button class="quick-action" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M7 10l5-5 5 5"/></svg><span>Add funds</span></button>
+        <button class="quick-action" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M7 14l5 5 5-5"/></svg><span>Send payment</span></button>
+        <button class="quick-action" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg><span>Create card</span></button>
+        <button class="quick-action" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-7"/></svg><span>View forecast</span></button>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel" id="cashflow">
+          <div class="panel-head">
+            <div><h2>Cash position</h2><p>Illustrative balance · USD</p></div>
+            <div class="segmented" role="group" aria-label="Chart range">
+              <button type="button">7D</button><button type="button" class="active" aria-pressed="true">30D</button><button type="button">90D</button>
+            </div>
+          </div>
+          <div class="chart-summary"><strong>$3.25m</strong><span>+$242k this period</span></div>
+          <svg class="cash-chart" viewBox="0 0 760 260" role="img" aria-labelledby="cash-title cash-desc">
+            <title id="cash-title">Illustrative 30-day cash position</title>
+            <desc id="cash-desc">A single line shows a generally rising cash balance from 3.01 million to 3.25 million dollars.</desc>
+            <line class="baseline" x1="34" y1="214" x2="728" y2="214"/>
+            <path class="line" d="M36 184C74 176 94 188 126 166S186 152 220 158S278 138 312 128S374 140 406 112S470 98 504 104S566 72 600 78S664 44 724 38"/>
+            <circle class="point" cx="36" cy="184" r="5"/><circle class="point" cx="126" cy="166" r="5"/><circle class="point" cx="220" cy="158" r="5"/><circle class="point" cx="312" cy="128" r="5"/><circle class="point" cx="406" cy="112" r="5"/><circle class="point" cx="504" cy="104" r="5"/><circle class="point" cx="600" cy="78" r="5"/><circle class="point" cx="724" cy="38" r="5"/>
+            <text x="34" y="238">Aug 04</text><text x="194" y="238">Aug 11</text><text x="366" y="238">Aug 18</text><text x="536" y="238">Aug 25</text><text x="684" y="238">Sep 02</text>
+          </svg>
+          <p class="chart-note">Sample workspace data for interface demonstration only · Not a financial statement</p>
+        </article>
+
+        <aside class="panel" id="accounts">
+          <div class="panel-head"><div><h2>Accounts</h2><p>Available balances</p></div><button class="icon-button" aria-label="Account options"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button></div>
+          <div class="account-list">
+            <div class="account"><span class="account-icon"><svg viewBox="0 0 24 24"><path d="M4 8h16v11H4zM4 8l8-4 8 4"/></svg></span><span><strong>Operating</strong><small>•• 4821</small></span><span class="account-amount"><strong>$1.82m</strong><small>56%</small></span></div>
+            <div class="account"><span class="account-icon"><svg viewBox="0 0 24 24"><path d="M5 19V5h14v14M9 9h6M9 13h6"/></svg></span><span><strong>Revenue</strong><small>•• 1038</small></span><span class="account-amount"><strong>$842k</strong><small>26%</small></span></div>
+            <div class="account"><span class="account-icon"><svg viewBox="0 0 24 24"><path d="M12 4v16M5 12h14"/></svg></span><span><strong>Tax reserve</strong><small>•• 7724</small></span><span class="account-amount"><strong>$384k</strong><small>12%</small></span></div>
+            <div class="account"><span class="account-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9 12h6"/></svg></span><span><strong>Payroll</strong><small>•• 9150</small></span><span class="account-amount"><strong>$203k</strong><small>6%</small></span></div>
+          </div>
+          <div class="limit"><div class="limit-row"><span>Daily transfer limit</span><strong>$64k / $100k</strong></div><div class="progress" aria-label="64 percent of daily transfer limit used"><span></span></div></div>
+        </aside>
+      </section>
+
+      <section class="lower-grid">
+        <article class="panel table-panel" id="transactions">
+          <div class="panel-head">
+            <div><h2>Recent transactions</h2><p>5 of 128 this month</p></div>
+            <button class="control" type="button">View all
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Merchant</th><th>Account</th><th>Category</th><th>Date</th><th style="text-align:right">Amount</th></tr></thead>
+              <tbody>
+                <tr><td><div class="merchant"><span class="merchant-icon">AS</span><span><strong>AWS</strong><small>Cloud services</small></span></div></td><td>Operating</td><td><span class="tag">Software</span></td><td>Sep 02</td><td class="amount">−$18,420.00</td></tr>
+                <tr><td><div class="merchant"><span class="merchant-icon">ST</span><span><strong>Stripe payout</strong><small>Customer revenue</small></span></div></td><td>Revenue</td><td><span class="tag">Income</span></td><td>Sep 01</td><td class="amount positive">+$86,240.80</td></tr>
+                <tr><td><div class="merchant"><span class="merchant-icon">RL</span><span><strong>Rippling</strong><small>Team payroll</small></span></div></td><td>Payroll</td><td><span class="tag">Payroll</span></td><td>Aug 31</td><td class="amount">−$72,840.00</td></tr>
+                <tr><td><div class="merchant"><span class="merchant-icon">FG</span><span><strong>Figma</strong><small>Design workspace</small></span></div></td><td>Operating</td><td><span class="tag">Software</span></td><td>Aug 29</td><td class="amount">−$1,248.00</td></tr>
+                <tr><td><div class="merchant"><span class="merchant-icon">GC</span><span><strong>Google Cloud</strong><small>Infrastructure</small></span></div></td><td>Operating</td><td><span class="tag">Software</span></td><td>Aug 28</td><td class="amount">−$9,842.12</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <aside class="panel" id="insights">
+          <div class="panel-head"><div><h2>Needs attention</h2><p>3 recommendations</p></div></div>
+          <div>
+            <article class="insight"><span class="insight-icon"><svg viewBox="0 0 24 24"><path d="M12 4v16M5 12h14"/></svg></span><div><h3>Idle cash opportunity</h3><p>$384k has remained unallocated for 30 days.</p><button type="button">Review options →</button></div></article>
+            <article class="insight"><span class="insight-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6M9 12h6"/></svg></span><div><h3>3 receipts missing</h3><p>Card transactions need documentation before close.</p><button type="button">Match receipts →</button></div></article>
+            <article class="insight"><span class="insight-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><div><h3>Payment due Friday</h3><p>A $42k vendor payment is ready for approval.</p><button type="button">View payment →</button></div></article>
+          </div>
+        </aside>
+      </section>
+
+      <p class="disclosure">Lumen dashboard concept · All company names, balances, forecasts, and transactions are illustrative demo data.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.segmented button').forEach(function(button){
+  button.addEventListener('click',function(){
+    document.querySelectorAll('.segmented button').forEach(function(item){item.classList.remove('active');item.setAttribute('aria-pressed','false')});
+    button.classList.add('active');button.setAttribute('aria-pressed','true')
+  })
+});
+document.querySelectorAll('.side-link').forEach(function(link){
+  link.addEventListener('click',function(){
+    document.querySelectorAll('.side-link').forEach(function(item){item.classList.remove('active')});
+    link.classList.add('active')
+  })
+});
+</script></body></html>
