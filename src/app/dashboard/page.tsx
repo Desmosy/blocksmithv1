@@ -2,6 +2,7 @@ import { PromptBar } from "@/components/dashboard/PromptBar";
 import { ProjectGrid } from "@/components/dashboard/ProjectGrid";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { ClaimUnownedButton } from "@/components/dashboard/ClaimUnownedButton";
+import { CommunitySection } from "@/components/dashboard/CommunitySection";
 import { listDashboardProjects } from "@/lib/dashboard/projects";
 import { getSupabaseUser } from "@/lib/auth/session";
 import { isNvidiaConfigured } from "@/lib/ai/nvidia";
@@ -70,6 +71,8 @@ export default async function DashboardPage() {
           <ProjectGrid projects={projects} />
         </section>
       )}
+
+      <CommunitySection />
     </div>
   );
 }

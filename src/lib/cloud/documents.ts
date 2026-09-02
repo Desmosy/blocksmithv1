@@ -239,6 +239,43 @@ export async function listPublishedDocumentsForOrg(
   return docs.filter((d) => d.published);
 }
 
+/**
+ * Every published document, across all orgs — the Community shelf.
+ *
+ * Only rows whose owner explicitly flipped the published flag appear here:
+ * publishing is an admin/owner action with an account behind it, which is
+ * what separates a community template from an anonymous drop. Ownerless
+ * documents can never reach this list — they have no one to publish them.
+ */
+export async function listPublishedDocuments(
+  limit = 24,
+): Promise<DocumentRecord[]> {
+  if (saasDbEnabled()) {
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb
+      .from("blocksmith_documents")
+      .select("*")
+      .eq("published", true)
+      .order("updated_at", { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(`Published list failed: ${error.message}`);
+    return (data ?? []).map((d) => ({
+      fileName: d.file_name as string,
+      docRef: d.doc_ref as string,
+      ownerUserId: d.owner_user_id as string,
+      orgId: (d.org_id as string | null) ?? undefined,
+      githubRepo: (d.github_repo as string | null) ?? undefined,
+      scanMode: (d.scan_mode as string | null) ?? undefined,
+      published: (d.published as boolean | null) ?? false,
+      createdAt: d.created_at as string,
+      updatedAt: d.updated_at as string,
+    }));
+  }
+  return readFileStore()
+    .documents.filter((d) => d.published)
+    .slice(0, limit);
+}
+
 export async function canAccessDocument(
   fileName: string,
   userId: string | null,
