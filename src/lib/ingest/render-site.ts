@@ -717,17 +717,91 @@ const COLLECT_IN_PAGE = `(() => {
  * every step is a round-trip, and a 9,000px page at 500px a step is what
  * pushed a capture past a serverless function's limit.
  */
-const scrollThrough = (maxSteps: number) => `(async () => {
-  const step = Math.max(500, window.innerHeight - 100);
-  const max = Math.min(document.documentElement.scrollHeight, 30000);
-  let n = 0;
-  for (let y = 0; y < max && n < ${maxSteps}; y += step, n++) {
-    window.scrollTo(0, y);
-    await new Promise((r) => setTimeout(r, 120));
+/**
+ * The painted ground at this moment — html, body, then any wrapper spanning
+ * essentially the whole document, last painted wins. Evaluated once per
+ * scroll stop: mercury.com themes one full-document wrapper as you move
+ * through it — dark at the top, beige and white through the middle, dark at
+ * the footer — so any single-moment reading publishes whichever theme the
+ * census happened to land on. The majority across the scroll is what a
+ * reader would call the page's background.
+ */
+const READ_GROUND = `(() => {
+  const norm = (() => {
+    let ctx = null;
+    try { const c = document.createElement("canvas"); c.width = 1; c.height = 1; ctx = c.getContext("2d", { willReadFrequently: true }); } catch {}
+    return (v) => {
+      if (!v || v === "transparent") return null;
+      const m = v.match(/^rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?\\)$/);
+      if (m) {
+        if (m[4] !== undefined && parseFloat(m[4]) < 0.9) return null;
+        const h = (n) => (+n).toString(16).padStart(2, "0");
+        return "#" + h(m[1]) + h(m[2]) + h(m[3]);
+      }
+      if (!ctx) return null;
+      try {
+        ctx.fillStyle = v; ctx.clearRect(0, 0, 1, 1); ctx.fillRect(0, 0, 1, 1);
+        const d = ctx.getImageData(0, 0, 1, 1).data;
+        if (d[3] < 230) return null;
+        const h = (n) => n.toString(16).padStart(2, "0");
+        return "#" + h(d[0]) + h(d[1]) + h(d[2]);
+      } catch { return null; }
+    };
+  })();
+  const vw = window.innerWidth;
+  const docH = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  let bg = null;
+  const consider = (el) => { try { const v = norm(getComputedStyle(el).backgroundColor); if (v) bg = v; } catch {} };
+  consider(document.documentElement);
+  consider(document.body);
+  let host = document.body;
+  for (let depth = 0; depth < 6 && host; depth++) {
+    let next = null;
+    for (const child of host.children) {
+      if (child.namespaceURI === "http://www.w3.org/2000/svg") continue;
+      const cs = getComputedStyle(child);
+      if (cs.display === "none" || cs.position === "fixed") continue;
+      const r = child.getBoundingClientRect();
+      if (r.width >= vw * 0.9 && r.height >= docH * 0.8) { next = child; break; }
+    }
+    if (!next) break;
+    consider(next);
+    host = next;
   }
-  window.scrollTo(0, 0);
-  await new Promise((r) => setTimeout(r, 300));
+  return bg;
 })()`;
+
+/**
+ * The most common ground across scroll samples, grouping colours within a
+ * small RGB distance so a theme transition caught mid-flight still counts
+ * toward the theme it was heading for. Null when there is no clear signal.
+ */
+function majorityGround(samples: (string | null)[]): string | null {
+  const hexes = samples.filter((s): s is string => Boolean(s && /^#[0-9a-f]{6}$/.test(s)));
+  if (hexes.length < 2) return null;
+  const rgb = (h: string) => [
+    parseInt(h.slice(1, 3), 16),
+    parseInt(h.slice(3, 5), 16),
+    parseInt(h.slice(5, 7), 16),
+  ];
+  const near = (a: string, b: string) => {
+    const [r1, g1, b1] = rgb(a), [r2, g2, b2] = rgb(b);
+    return Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2) <= 48;
+  };
+  const groups: { members: string[] }[] = [];
+  for (const h of hexes) {
+    const group = groups.find((g) => near(g.members[0], h));
+    if (group) group.members.push(h);
+    else groups.push({ members: [h] });
+  }
+  groups.sort((a, b) => b.members.length - a.members.length);
+  const top = groups[0];
+  if (!top || top.members.length <= hexes.length / 2) return null;
+  // The most common exact value inside the winning group.
+  const count = new Map<string, number>();
+  for (const h of top.members) count.set(h, (count.get(h) ?? 0) + 1);
+  return [...count.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
 
 type Kind =
   | "control" | "field" | "checkbox" | "radio" | "switch" | "badge" | "avatar"
@@ -1869,13 +1943,46 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
     // steps as a quarter of the remaining budget allows at ~0.4s each on a
     // remote browser, capped at fourteen. Skipped outright when the clock is
     // nearly out: a thinner reading now beats none at all.
+    // Scroll with real wheel input, not window.scrollTo: scroll-driven
+    // theming (mercury.com repaints its whole ground per section) ignores
+    // programmatic jumps but follows wheel events, and lazily mounted
+    // sections appear more reliably for real input too. The ground is
+    // sampled at every stop.
+    const groundSamples: (string | null)[] = [];
     if (left() > 8_000) {
-      const steps = Math.max(2, Math.min(14, Math.floor((left() * 0.25) / 400)));
-      await page.evaluate(scrollThrough(steps)).catch(() => {});
+      const steps = Math.max(2, Math.min(14, Math.floor((left() * 0.25) / 500)));
+      const stepPx = Math.max(500, VIEWPORT.height - 100);
+      for (let i = 0; i < steps; i++) {
+        try {
+          await page.mouse.wheel(0, stepPx);
+        } catch {
+          break;
+        }
+        // Two reads per stop, and only a value that held still counts: the
+        // themed wrapper *transitions* its background, so a single read
+        // catches the interpolated grey between two themes as often as
+        // either theme itself.
+        await page.waitForTimeout(200);
+        const g1 = (await page.evaluate(READ_GROUND).catch(() => null)) as string | null;
+        await page.waitForTimeout(180);
+        const g2 = (await page.evaluate(READ_GROUND).catch(() => null)) as string | null;
+        groundSamples.push(g1 === g2 ? g1 : null);
+      }
+      await page.evaluate("window.scrollTo(0, 0)").catch(() => {});
+      await page.waitForTimeout(300);
     }
     mark("scroll:done");
 
     const raw = (await page.evaluate(COLLECT_IN_PAGE)) as RawPage;
+    // A scroll-themed page repaints its ground as you move through it; the
+    // majority across the scroll is the honest reading, and the scroll-0
+    // value only stands when there was no scroll evidence. Samples caught
+    // mid-transition interpolate between themes, so group by proximity
+    // rather than exact hex before counting.
+    if (process.env.BLOCKSMITH_DEBUG_RENDER) {
+      console.error("[render-site] groundSamples", groundSamples, "scroll0", raw.pageBg);
+    }
+    raw.pageBg = majorityGround(groundSamples) ?? raw.pageBg;
     mark("collect:done");
     // Tuning the detector means looking at what it saw before grouping. Set
     // BLOCKSMITH_DUMP_CANDIDATES to a path ({host} is replaced) to keep it.

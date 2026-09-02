@@ -218,46 +218,45 @@ export function GovernanceCheckPanel({
 
       {/* Everything built in this conversation, not just the last thing. Each
           new proposal pushes the previous into history on the server; without
-          this strip, three components generated in one chat looked like one. */}
+          this, three components generated in one chat looked like one. A
+          dropdown rather than pills, so ten versions read as ten rows instead
+          of a wall of chips. */}
       {fromAgent && versions.length > 1 ? (
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wiki-muted)]">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+          <label
+            htmlFor={`${id}-history`}
+            className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wiki-muted)]"
+          >
             History
-          </span>
-          {versions.map((entry) => {
-            const label =
-              entry.v === 0 ? "Latest" : `v${versions.length - entry.v}`;
-            const on = entry.v === viewV;
-            return (
-              <button
-                key={entry.v}
-                type="button"
-                onClick={() => void viewVersion(entry.v)}
-                title={
-                  (entry.intent ? `${entry.intent} — ` : "") +
-                  new Date(entry.at).toLocaleString()
-                }
-                className={
-                  "rounded-full border px-3 py-1 transition-colors " +
-                  (on
-                    ? "border-[var(--wiki-text)] bg-[var(--wiki-text)] text-[var(--wiki-bg)]"
-                    : "border-[var(--wiki-border)] text-[var(--wiki-muted)] hover:border-[var(--wiki-text)] hover:text-[var(--wiki-text)]")
-                }
-              >
-                {label}
-                {entry.intent ? (
-                  <span className="ml-1.5 opacity-70">
-                    {entry.intent.length > 42
-                      ? `${entry.intent.slice(0, 42)}…`
-                      : entry.intent}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
+          </label>
+          <select
+            id={`${id}-history`}
+            value={viewV}
+            onChange={(e) => void viewVersion(Number(e.target.value))}
+            className="max-w-full rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] px-3 py-1.5 text-xs text-[var(--wiki-text)] outline-none focus:border-[var(--wiki-text)]"
+          >
+            {versions.map((entry) => {
+              const label =
+                entry.v === 0 ? "Latest" : `v${versions.length - entry.v}`;
+              const when = new Date(entry.at).toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+              });
+              const intent = entry.intent
+                ? entry.intent.length > 64
+                  ? `${entry.intent.slice(0, 64)}…`
+                  : entry.intent
+                : "Untitled proposal";
+              return (
+                <option key={entry.v} value={entry.v}>
+                  {label} · {when} — {intent}
+                </option>
+              );
+            })}
+          </select>
           {viewingOld ? (
             <span className="text-[var(--wiki-muted)]">
-              Viewing an earlier version — read-only.{" "}
+              Earlier version — read-only.{" "}
               <button
                 type="button"
                 onClick={() => void viewVersion(0)}
