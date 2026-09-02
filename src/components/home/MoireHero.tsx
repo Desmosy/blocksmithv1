@@ -321,11 +321,16 @@ export default function MoireHero({ className }: { className?: string }) {
   return (
     <MoireField
       {...params}
-      density={70000}
+      density={120000}
+      dotSize={1.5}
+      zoom={1.35}
       drift={1}
       paused={still}
       background="#000000"
       className={className}
+      // The field's root sets position:relative inline, which beats any
+      // class — position it inline too so it actually fills the host cell.
+      style={{ position: "absolute", inset: 0 }}
       aria-hidden
     />
   );
