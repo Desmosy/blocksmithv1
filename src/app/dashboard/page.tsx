@@ -1,6 +1,7 @@
 import { PromptBar } from "@/components/dashboard/PromptBar";
 import { ProjectGrid } from "@/components/dashboard/ProjectGrid";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
+import { ClaimUnownedButton } from "@/components/dashboard/ClaimUnownedButton";
 import { listDashboardProjects } from "@/lib/dashboard/projects";
 import { getSupabaseUser } from "@/lib/auth/session";
 import { isNvidiaConfigured } from "@/lib/ai/nvidia";
@@ -18,6 +19,7 @@ export default async function DashboardPage() {
   // Tenant scoping: in hosted mode restrict to the caller's org docs (and show
   // nothing to anonymous visitors). Local dev (no DB) lists all local uploads.
   let allowedFileNames: Set<string> | undefined;
+  let canClaim = false;
   try {
     const user = await getSupabaseUser();
     greetingName = user?.login ?? null;
@@ -26,6 +28,9 @@ export default async function DashboardPage() {
         const org = await ensureDefaultOrg(user.userId, user.login);
         const docs = await listDocumentsForOrg(org.id);
         allowedFileNames = new Set(docs.map((d) => d.fileName));
+        // Captures made through an agent arrive ownerless and therefore
+        // invisible here; a signed-in user gets the recovery control.
+        canClaim = true;
       } else {
         allowedFileNames = new Set(); // hosted + anonymous → nothing
       }
@@ -43,6 +48,12 @@ export default async function DashboardPage() {
       </section>
 
 
+
+      {canClaim ? (
+        <section className="px-2">
+          <ClaimUnownedButton />
+        </section>
+      ) : null}
 
       {projects.length === 0 ? (
         <DashboardEmptyState aiEnabled={aiEnabled} />
