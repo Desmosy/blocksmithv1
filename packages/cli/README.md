@@ -1,6 +1,6 @@
 # @block-smith/cli
 
-Command-line tool for [BlockSmith](https://github.com/Desmosy/blocksmith) — promote design in the wiki, then pull governed rules and wire up Cursor MCP from your terminal.
+Command-line tool for [BlockSmith](https://github.com/Desmosy/blocksmith). Promote design in the wiki, then pull governed rules and wire up Cursor MCP from your terminal.
 
 Self-contained: one global install, no peer packages to manage.
 
@@ -65,4 +65,4 @@ npm login                              # one time
 npm publish -w @block-smith/cli         # prepublishOnly rebuilds the bundle
 ```
 
-`@blocksmith/sdk` does **not** need to be published — it is bundled in.
+`@blocksmith/sdk` does **not** need to be published. It is bundled in.

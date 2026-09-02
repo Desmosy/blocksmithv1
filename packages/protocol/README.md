@@ -2,15 +2,15 @@
 
 ![blocks.v1 conformance](https://img.shields.io/badge/blocks.v1-conformant-22c55e)
 
-**`blocksmith.blocks.v1` — the interchange format for design truth.**
+**`blocksmith.blocks.v1`: the interchange format for design truth.**
 
 Figma is Ethernet. This is TCP/IP. Any tool compiles **into** the block graph
-(ingest adapter); any consumer compiles **out** (compile target) — wiki, npm
+(ingest adapter); any consumer compiles **out** (compile target): wiki, npm
 packages, AI agents, firmware headers. `blocksmith.lock` pins production in
 every repo so agents physically cannot hallucinate a design system.
 
-This package is everything a third party needs to speak the protocol —
-types, validators, canonical hashing, JSON Schemas, conformance fixtures —
+This package is everything a third party needs to speak the protocol:
+types, validators, canonical hashing, JSON Schemas, conformance fixtures,
 **without cloning BlockSmith**. Zero runtime dependencies.
 
 ## Install
@@ -61,7 +61,7 @@ const { ok, stale, errors } = verifyLockAgainstGraph(lock, officialGraph);
 | Path | Contents |
 |------|----------|
 | `schemas/` | JSON Schema 2020-12 for `blocks.v1`, `lock.v1`, `registry.v1`, `compile-targets.v1` |
-| `fixtures/` | Canonical example graph + lock (hashes are real — recompute and compare) |
+| `fixtures/` | Canonical example graph + lock (hashes are real: recompute and compare) |
 | `conformance/` | Valid/invalid/behavioral fixtures + runner (`npm run conformance`) |
 | `compile-targets.v1.json` | Registry of reference compile targets |
 
@@ -80,9 +80,9 @@ exclude `draft`/`conflict`; locks must detect version drift and staleness.
 1. **Versions are append-only.** Rollback moves the `official` pointer; history is never edited.
 2. **`official` is production.** Only official versions are lock-eligible; agents and compile targets read official graphs only.
 3. **Scan facts auto-promote** (token/component from code); **governance stages as draft** until a human promotes.
-4. **`stale` ≠ deleted** — the last official version stays pinned until a human decides.
+4. **`stale` is not deleted**: the last official version stays pinned until a human decides.
 5. **`conflict` blocks promote** until a human resolves the disagreeing sources.
-6. **Hashing is canonical** — sorted-key JSON, sha256, truncated 32 hex; graph hash is order-independent.
+6. **Hashing is canonical**: sorted-key JSON, sha256, truncated 32 hex; graph hash is order-independent.
 
 Changing any of these is a `blocks.v2` spec bump (see `docs/PROTOCOL-GOVERNANCE.md`
 in the BlockSmith repo).
