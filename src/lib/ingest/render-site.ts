@@ -81,6 +81,12 @@ export type SiteVar = {
 export type Rendered = {
   /** Colours ranked by the screen area they cover, tagged by what painted them. */
   colors: { value: string; weight: number; src: ColorSource }[];
+  /**
+   * The page's actual painted ground, read directly from html/body/full-page
+   * wrappers rather than inferred from area ranking — the ranking flips
+   * between rendering environments, the direct reading does not.
+   */
+  pageBg: string | null;
   components: RenderedComponent[];
   /** Font stacks as actually applied, most-used first. */
   fonts: string[];
@@ -316,6 +322,46 @@ const COLLECT_IN_PAGE = `(() => {
   const candidates = [];
   const containers = [];
   const pushed = new Map();
+
+  // The page's actual ground — what a reader points at and calls "the
+  // background". The walk below covers "body *", so the body's own paint
+  // never enters the area census, and the ground was being inferred from
+  // whichever wrappers happened to repaint it. That inference flips between
+  // environments: the same site captured locally and through a remote
+  // browser ranked white and a cream section tint in opposite orders, and
+  // the cream became the published ground of a white page. Read the ground
+  // directly instead: html, then body, then any wrapper spanning essentially
+  // the whole document — the last painted one is the visible one (monad.com
+  // grounds on a wrapper's #f6f3f1 with the body's white never shown).
+  const pageBg = (() => {
+    let bg = null;
+    const consider = (el) => {
+      try {
+        const v = rgbToHexOver(getComputedStyle(el).backgroundColor, bg);
+        if (v) bg = v;
+      } catch {}
+    };
+    consider(document.documentElement);
+    consider(document.body);
+    let host = document.body;
+    for (let depth = 0; depth < 6 && host; depth++) {
+      let next = null;
+      for (const child of host.children) {
+        if (child.namespaceURI === "http://www.w3.org/2000/svg") continue;
+        const cs2 = getComputedStyle(child);
+        if (cs2.display === "none" || cs2.position === "fixed") continue;
+        const r = child.getBoundingClientRect();
+        if (r.width >= vw * 0.9 && r.height >= docH * 0.8) { next = child; break; }
+      }
+      if (!next) break;
+      consider(next);
+      host = next;
+    }
+    return bg;
+  })();
+  // Enter it in the census at the area it truly covers, so ranking-based
+  // consumers agree with the direct reading.
+  if (pageBg) bump("fill", pageBg, vw * docH);
 
   // A computed box-shadow keeps every declared layer, including the fully
   // transparent ones sites leave as hover slots. Truncating the raw string
@@ -660,6 +706,7 @@ const COLLECT_IN_PAGE = `(() => {
     hairlines: Array.from(hairlines.entries()).sort(byWeight).slice(0, 10),
     motion: motionCensus,
     viewport: { w: vw, h: vh, docH: docH },
+    pageBg: pageBg,
   };
 })()`;
 
@@ -736,6 +783,7 @@ type RawPage = {
   hairlines: [string, number][];
   motion: { animated: number; transitions: number; staged: number };
   viewport: { w: number; h: number; docH: number };
+  pageBg: string | null;
 };
 
 type Palette = { accent?: string; ink?: string; ground?: string };
@@ -1877,8 +1925,9 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
       : null;
 
     // Ground is what covers the screen; ink is the darkest heavily-used
-    // colour; accent is the most chromatic thing that is neither.
-    const ground = colors[0]?.value;
+    // colour; accent is the most chromatic thing that is neither. Prefer the
+    // directly-read page background — the ranking is environment-sensitive.
+    const ground = raw.pageBg ?? colors[0]?.value;
     const ink = [...colors].sort((a, b) => luminance(a.value) - luminance(b.value))[0]?.value;
     const accent = colors
       .filter((c) => c.value !== ground && c.value !== ink)
@@ -2062,6 +2111,7 @@ export async function renderSiteDesign(url: string, opts: RenderOptions = {}): P
 
     return {
       colors,
+      pageBg: raw.pageBg ?? null,
       fonts: raw.fonts,
       typeSamples,
       shadows,

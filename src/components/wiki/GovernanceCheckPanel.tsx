@@ -41,6 +41,18 @@ export function GovernanceCheckPanel({
   const [manual, setManual] = useState("");
   const [showCode, setShowCode] = useState(false);
   /**
+   * Older proposals for this system, newest first. The server keeps them —
+   * "show me another version" stopped destroying the last one long ago — but
+   * the panel only ever showed the current, so three components built in one
+   * chat looked like one. v0 is the current proposal.
+   */
+  const [versions, setVersions] = useState<
+    { v: number; intent: string | null; at: number }[]
+  >([]);
+  /** Which version is on screen. 0 is the live proposal; older ones are read-only. */
+  const [viewV, setViewV] = useState(0);
+  const [viewingCode, setViewingCode] = useState<string | null>(null);
+  /**
    * Edits made here, on top of whatever the agent proposed.
    *
    * Null means "showing what arrived". Once someone types, this holds the
@@ -63,20 +75,43 @@ export function GovernanceCheckPanel({
   useEffect(() => {
     let cancelled = false;
     let lastSeen = 0;
+    let lastVersions = -1;
 
     const poll = async () => {
       try {
-        const url = `/api/webmcp/proposal${docFileName ? `?doc=${encodeURIComponent(docFileName)}` : ""}`;
-        const res = await fetch(url, { cache: "no-store" });
-        const data = (await res.json()) as { proposal: Proposal | null };
+        const q = docFileName ? `?doc=${encodeURIComponent(docFileName)}` : "";
+        const res = await fetch(`/api/webmcp/proposal${q}`, { cache: "no-store" });
+        const data = (await res.json()) as {
+          proposal: Proposal | null;
+          versions?: number;
+        };
         if (cancelled) return;
         const next = data.proposal;
         if (next && next.at > lastSeen) {
           lastSeen = next.at;
           setLocal(next);
           // A newly arrived proposal is the thing to look at; keeping an edit
-          // from the previous one on screen would hide it.
+          // from the previous one — or an old version — on screen would hide it.
           setDraft(null);
+          setViewV(0);
+          setViewingCode(null);
+        }
+        // The history metadata is fetched only when its depth changes, so the
+        // steady-state poll stays one request.
+        const depth = data.versions ?? 0;
+        if (depth !== lastVersions) {
+          lastVersions = depth;
+          if (depth > 1) {
+            const listRes = await fetch(`/api/webmcp/proposal${q}${q ? "&" : "?"}list=1`, {
+              cache: "no-store",
+            });
+            const list = (await listRes.json()) as {
+              versions: { v: number; intent: string | null; at: number }[];
+            };
+            if (!cancelled) setVersions(list.versions ?? []);
+          } else {
+            setVersions([]);
+          }
         }
       } catch {
         /* a dropped poll is not worth surfacing; the next one will land */
@@ -92,15 +127,41 @@ export function GovernanceCheckPanel({
   }, [docFileName]);
 
   const arrived = proposal?.code ?? manual;
-  const code = draft ?? arrived;
+  const viewingOld = viewV > 0 && viewingCode !== null;
+  const code = viewingOld ? viewingCode : (draft ?? arrived);
   const fromAgent = Boolean(proposal);
-  const edited = draft !== null && draft !== arrived;
+  const edited = !viewingOld && draft !== null && draft !== arrived;
+
+  /** Show an earlier version. Its body ships on demand — the list is metadata. */
+  const viewVersion = async (v: number) => {
+    if (v === 0) {
+      setViewV(0);
+      setViewingCode(null);
+      return;
+    }
+    try {
+      const q = docFileName ? `?doc=${encodeURIComponent(docFileName)}&` : "?";
+      const res = await fetch(`/api/webmcp/proposal/frame${q}v=${v}&raw=1`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const body = await res.text();
+      setViewV(v);
+      setViewingCode(body);
+      setDraft(null);
+    } catch {
+      /* leave the current view in place */
+    }
+  };
 
   const clear = () => {
     setProposal(null);
     setManual("");
     setDraft(null);
     setShowCode(false);
+    setVersions([]);
+    setViewV(0);
+    setViewingCode(null);
     // Clear it for every viewer, not just this tab.
     void fetch("/api/webmcp/proposal", {
       method: "POST",
@@ -129,7 +190,7 @@ export function GovernanceCheckPanel({
               itself. Open it at the size it was designed for. */}
           {fromAgent && code ? (
             <a
-              href={`/api/webmcp/proposal/frame${docFileName ? `?doc=${encodeURIComponent(docFileName)}` : ""}`}
+              href={`/api/webmcp/proposal/frame?${docFileName ? `doc=${encodeURIComponent(docFileName)}&` : ""}v=${viewV}`}
               target="_blank"
               rel="noreferrer"
               className="text-[var(--wiki-muted)] underline underline-offset-4 hover:text-[var(--wiki-text)]"
@@ -154,6 +215,60 @@ export function GovernanceCheckPanel({
             : "Rendered in this system's own tokens, and checked against its rules."
           : "Ask an agent for a component and it appears here. You can also paste one."}
       </p>
+
+      {/* Everything built in this conversation, not just the last thing. Each
+          new proposal pushes the previous into history on the server; without
+          this strip, three components generated in one chat looked like one. */}
+      {fromAgent && versions.length > 1 ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wiki-muted)]">
+            History
+          </span>
+          {versions.map((entry) => {
+            const label =
+              entry.v === 0 ? "Latest" : `v${versions.length - entry.v}`;
+            const on = entry.v === viewV;
+            return (
+              <button
+                key={entry.v}
+                type="button"
+                onClick={() => void viewVersion(entry.v)}
+                title={
+                  (entry.intent ? `${entry.intent} — ` : "") +
+                  new Date(entry.at).toLocaleString()
+                }
+                className={
+                  "rounded-full border px-3 py-1 transition-colors " +
+                  (on
+                    ? "border-[var(--wiki-text)] bg-[var(--wiki-text)] text-[var(--wiki-bg)]"
+                    : "border-[var(--wiki-border)] text-[var(--wiki-muted)] hover:border-[var(--wiki-text)] hover:text-[var(--wiki-text)]")
+                }
+              >
+                {label}
+                {entry.intent ? (
+                  <span className="ml-1.5 opacity-70">
+                    {entry.intent.length > 42
+                      ? `${entry.intent.slice(0, 42)}…`
+                      : entry.intent}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+          {viewingOld ? (
+            <span className="text-[var(--wiki-muted)]">
+              Viewing an earlier version — read-only.{" "}
+              <button
+                type="button"
+                onClick={() => void viewVersion(0)}
+                className="underline underline-offset-4 hover:text-[var(--wiki-text)]"
+              >
+                Back to latest
+              </button>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Stacked, each band full width. Side by side, the preview was squeezed
           into half a column and every violation wrapped to four lines in the
@@ -193,14 +308,18 @@ export function GovernanceCheckPanel({
                 <textarea
                   id={`${id}-edit`}
                   value={code}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={(e) => {
+                    if (!viewingOld) setDraft(e.target.value);
+                  }}
+                  readOnly={viewingOld}
                   spellCheck={false}
                   rows={10}
                   className="w-full resize-y rounded-lg border border-[var(--wiki-border)] bg-[var(--wiki-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--wiki-text)] outline-none focus:border-[var(--wiki-text)]"
                 />
                 <p className="text-[11px] leading-relaxed text-[var(--wiki-muted)]">
-                  Edit and the preview and verdict follow. Fixing a violation
-                  here is the fastest way to see the rule you just satisfied.
+                  {viewingOld
+                    ? "An earlier version, kept as it arrived. Go back to the latest to edit."
+                    : "Edit and the preview and verdict follow. Fixing a violation here is the fastest way to see the rule you just satisfied."}
                 </p>
               </div>
             ) : null}

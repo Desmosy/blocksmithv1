@@ -202,7 +202,10 @@ function inferredRole(
   }
 }
 
-function nameColors(colors: { value: string; count: number; src?: string }[]): Named[] {
+function nameColors(
+  colors: { value: string; count: number; src?: string }[],
+  pageBg?: string | null,
+): Named[] {
   const usable = colors.filter((c) => /^#[0-9a-f]{6}$/.test(c.value));
   if (!usable.length) return [];
 
@@ -216,7 +219,17 @@ function nameColors(colors: { value: string; count: number; src?: string }[]): N
   // Light *and* close to neutral. Lightness alone lets a saturated colour win:
   // linear.app paints a large yellow panel that is bright enough to pass a
   // luminance test, and calling it the page background is plainly wrong.
+  //
+  // When the render read the painted ground directly (html → body → any
+  // full-document wrapper), trust that over any ranking. The ranking depends
+  // on how much of each lazy section the browser happened to mount, and the
+  // same site captured through two environments flipped white and a cream
+  // card tint — publishing a cream ground for a white page.
+  const observed = pageBg && /^#[0-9a-f]{6}$/.test(pageBg)
+    ? usable.find((c) => c.value === pageBg) ?? { value: pageBg, count: 1 }
+    : null;
   const ground =
+    observed ??
     [...usable]
       .filter((c) => luminance(c.value) > 0.7 && chroma(c.value) <= 30)
       .sort((a, b) => b.count - a.count)[0] ??
@@ -455,7 +468,7 @@ export function synthesizeDesignSystem(found: Extracted): {
   const named = segments.find((s) => s.split(/\s+/).length <= 3 && s.toLowerCase().includes(brand.toLowerCase()));
   const short = segments.find((s) => s.split(/\s+/).length <= 3);
   const title = named ?? short ?? (brand ? brand[0].toUpperCase() + brand.slice(1) : host);
-  const colors = nameColors(found.colors);
+  const colors = nameColors(found.colors, found.pageBg);
 
   /**
    * The site's own names for the values we captured.

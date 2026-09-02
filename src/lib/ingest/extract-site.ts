@@ -39,6 +39,8 @@ export type Extracted = {
    * captures, where none of that can be known.
    */
   typeSamples: TypeSample[];
+  /** The page's actual painted ground. Null for CSS-only captures. */
+  pageBg: string | null;
   /** The page's vertical composition. Null for CSS-only captures. */
   anatomy: PageAnatomy | null;
   /** The site's own design tokens, by their authored names. */
@@ -521,6 +523,7 @@ function mergeRendered(text: Extracted, rendered: Rendered): Extracted {
     colors,
     fonts: renderedFonts.length ? renderedFonts.slice(0, 5) : text.fonts,
     typeSamples: rendered.typeSamples,
+    pageBg: rendered.pageBg,
     anatomy: rendered.anatomy,
     siteVars: rendered.siteVars,
     darkMode: rendered.darkMode,
@@ -613,6 +616,7 @@ async function extractSiteDesignInner(rawUrl: string, opts: ExtractOptions, timi
     title,
     colors,
     typeSamples: [],
+    pageBg: null,
     anatomy: null,
     siteVars: [],
     darkMode: null,
