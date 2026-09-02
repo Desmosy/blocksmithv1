@@ -23,7 +23,15 @@ export type GraphicsPalette = {
 };
 
 export type Snippet = {
-  id: "svg-orb" | "svg-orbit" | "svg-dot-grid" | "canvas-field" | "shader-gradient" | "paper-mesh";
+  id:
+    | "svg-orb"
+    | "svg-orbit"
+    | "svg-dot-grid"
+    | "svg-line-chart"
+    | "svg-stacked-bars"
+    | "canvas-field"
+    | "shader-gradient"
+    | "paper-mesh";
   title: string;
   language: "html" | "javascript" | "tsx";
   /** What it is for, in one line. */
@@ -198,6 +206,99 @@ export function svgDotGrid(p: GraphicsPalette): Snippet {
     language: "html",
     purpose:
       "Backdrop for a section corner or a card's empty region, behind everything at z -1 — the host must set position:relative and isolation:isolate. The mask dissolves it before it reaches the copy; move the gradient centre to move the fade.",
+    code,
+    runnable: true,
+  };
+}
+
+/**
+ * A line chart in the house discipline, distilled from the best chart an
+ * agent has produced through governance (fixtures/generated/
+ * signal-growth-cohere.html): three hairline gridlines and no more, an area
+ * wash two steps off the ground, the line in ink because the main story is
+ * the darkest thing on the chart, accent only on the data points, every
+ * point focusable with its value read aloud, and a one-sentence caption
+ * under the chart saying what the data shows.
+ */
+export function svgLineChart(p: GraphicsPalette): Snippet {
+  const grid = mix(p.ink, p.ground, 0.85);
+  const area = mix(p.ink, p.ground, 0.94);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+  const pts = [
+    [50, 181, "1.2k"], [118, 166, "2.1k"], [186, 146, "3.4k"],
+    [254, 117, "5.2k"], [322, 83, "7.3k"], [390, 43, "9.8k"],
+  ] as const;
+  const code = `<figure style="margin:0">
+  <svg viewBox="0 0 420 250" role="img" aria-labelledby="lc-title lc-desc" style="display:block;width:100%;height:auto">
+    <title id="lc-title">Monthly signups growth</title>
+    <desc id="lc-desc">Signups rising from 1,200 in January to 9,800 in June. Illustrative data.</desc>
+    <path d="M50 40H390M50 120H390M50 200H390" stroke="${grid}" stroke-width="1"/>
+    <text x="10" y="44" fill="${p.ink}" font-size="12" font-family="monospace">10k</text>
+    <text x="17" y="124" fill="${p.ink}" font-size="12" font-family="monospace">5k</text>
+    <text x="25" y="204" fill="${p.ink}" font-size="12" font-family="monospace">0</text>
+    <path d="M${pts.map(([x, y]) => `${x} ${y}`).join(" L")} L390 200 L50 200 Z" fill="${area}"/>
+    <path d="M${pts.map(([x, y]) => `${x} ${y}`).join(" L")}" fill="none" stroke="${p.ink}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+${pts.map(([x, y, v], i) => `    <circle cx="${x}" cy="${y}" r="6" fill="${p.accent}" stroke="${p.ground}" stroke-width="3" tabindex="0" aria-label="${months[i]}: ${v} signups"><title>${months[i]}: ${v}</title></circle>`).join("\n")}
+${months.map((m, i) => `    <text x="${pts[i][0] - 11}" y="228" fill="${p.ink}" font-size="12" font-family="monospace">${m}</text>`).join("\n")}
+  </svg>
+  <figcaption style="margin-top:12px;font-size:14px;color:${p.ink}">Signups grow faster after March. Say what the data shows, in one sentence. (Illustrative data.)</figcaption>
+</figure>`;
+  return {
+    id: "svg-line-chart",
+    title: "Line chart (SVG)",
+    language: "html",
+    purpose:
+      "One series over time. The line is the ink because the main story is the darkest thing on the chart; accent marks the points; three gridlines and no more, never a graph-paper mesh. Swap the data, keep the caption honest.",
+    code,
+    runnable: true,
+  };
+}
+
+/**
+ * A stacked bar chart walking the ladder — most important series darkest,
+ * from the same golden fixture. Each stack is one focusable group with the
+ * whole month read aloud.
+ */
+export function svgStackedBars(p: GraphicsPalette): Snippet {
+  const grid = mix(p.ink, p.ground, 0.85);
+  const s2 = p.sparks[0] ?? mix(p.ink, p.ground, 0.45);
+  const s3 = p.sparks[1] ?? p.accent;
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+  // x, [h1,h2,h3] stack heights bottom-up, total label
+  const bars = [
+    [45, [10, 6, 3], "1.2k"], [103, [16, 10, 8], "2.1k"], [161, [26, 16, 12], "3.4k"],
+    [219, [38, 26, 19], "5.2k"], [277, [53, 37, 27], "7.3k"], [335, [70, 50, 37], "9.8k"],
+  ] as const;
+  const stack = (x: number, hs: readonly number[]) => {
+    let y = 200;
+    const fills = [p.ink, s2, s3];
+    return hs
+      .map((h, i) => {
+        y -= h;
+        return `<rect x="${x}" y="${y}" width="36" height="${h}" fill="${fills[i]}"/>`;
+      })
+      .join("");
+  };
+  const code = `<figure style="margin:0">
+  <svg viewBox="0 0 420 250" role="img" aria-labelledby="sb-title sb-desc" style="display:block;width:100%;height:auto">
+    <title id="sb-title">Signups by source</title>
+    <desc id="sb-desc">Three sources stacking to a rising total. Illustrative data.</desc>
+    <path d="M45 40H390M45 120H390M45 200H390" stroke="${grid}" stroke-width="1"/>
+${bars.map(([x, hs, total], i) => `    <g tabindex="0" aria-label="${months[i]} total ${total}"><title>${months[i]}: ${total}</title>${stack(x, hs)}</g>`).join("\n")}
+${bars.map(([x], i) => `    <text x="${x + 4}" y="228" fill="${p.ink}" font-size="12" font-family="monospace">${months[i]}</text>`).join("\n")}
+  </svg>
+  <figcaption style="display:flex;gap:16px;margin-top:12px;font-size:12px;font-family:monospace;color:${p.ink}">
+    <span><i style="display:inline-block;width:8px;height:8px;border-radius:8px;background:${p.ink}"></i> Primary</span>
+    <span><i style="display:inline-block;width:8px;height:8px;border-radius:8px;background:${s2}"></i> Second</span>
+    <span><i style="display:inline-block;width:8px;height:8px;border-radius:8px;background:${s3}"></i> Third</span>
+  </figcaption>
+</figure>`;
+  return {
+    id: "svg-stacked-bars",
+    title: "Stacked bars (SVG)",
+    language: "html",
+    purpose:
+      "Composition over time. Series walk the ladder darkest-first — the most important series is the ink, never the brightest colour. Rename the legend to the real series, swap the data, keep the units honest.",
     code,
     runnable: true,
   };
@@ -484,6 +585,8 @@ export function graphicsKit(system: DesignSystem): { palette: GraphicsPalette; s
       svgOrbit(palette),
       svgDotGrid(palette),
       svgOrb(palette),
+      svgLineChart(palette),
+      svgStackedBars(palette),
       canvasField(palette),
       shaderGradient(palette),
       paperMesh(palette),
