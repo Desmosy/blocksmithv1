@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { ScanWorkspaceCard } from "@/components/home/ScanWorkspaceCard";
 import { FigmaConnectCard } from "@/components/figma/FigmaConnectCard";
+import { ConnectorDisclosure } from "@/components/dashboard/ConnectorDisclosure";
 import { getSupabaseUser } from "@/lib/auth/session";
 import { supabaseAnonKey, supabaseStorageEnabled, supabaseUrl } from "@/lib/supabase/env";
 import { isNvidiaConfigured } from "@/lib/ai/nvidia";
@@ -30,6 +31,19 @@ const STATE_STYLE: Record<State, { label: string; dot: string }> = {
   ready: { label: "Ready", dot: "bg-emerald-500" },
   "needs-setup": { label: "Not configured", dot: "bg-[var(--dash-muted-fg)]" },
   "signed-out": { label: "Signed out", dot: "bg-amber-500" },
+};
+
+/**
+ * Connectors that carry a form, and the hash the dashboard links them with.
+ * Anything not listed here stays a status row, which is all it has ever been.
+ */
+const FORM_ANCHOR: Record<string, string> = {
+  GitHub: "codebase",
+  Figma: "figma",
+};
+const FORM_LABEL: Record<string, string> = {
+  GitHub: "Scan a repository",
+  Figma: "Connect a file",
 };
 
 export default async function ConnectorsPage() {
@@ -114,38 +128,6 @@ export default async function ConnectorsPage() {
         </p>
       </header>
 
-      {/*
-        "Scan a repo" on the dashboard links here with #codebase, and this
-        anchor did not exist — so the button navigated to a page with nothing
-        on it to click. The scan form itself was only ever mounted on the
-        logged-out home page, which a signed-in user is redirected away from,
-        so signing in removed the only route to the feature.
-      */}
-      <section id="codebase" className="mb-8 scroll-mt-24">
-        <h2 className="text-[17px] font-medium text-[var(--dash-foreground)]">
-          Scan a codebase
-        </h2>
-        <p className="mb-4 mt-1 text-[14px] leading-relaxed text-[var(--dash-muted-fg)]">
-          Read a repository into a governed design system — every component, its
-          props and variants, and every CSS custom property it declares.
-        </p>
-        <ScanWorkspaceCard />
-      </section>
-
-      {/* Same dead end as #codebase: the dashboard linked here and the anchor
-          never existed, while the form itself sat on /figma, a route with no
-          inbound link anywhere in the app. */}
-      <section id="figma" className="mb-8 scroll-mt-24">
-        <h2 className="text-[17px] font-medium text-[var(--dash-foreground)]">
-          Import from Figma
-        </h2>
-        <p className="mb-4 mt-1 text-[14px] leading-relaxed text-[var(--dash-muted-fg)]">
-          Bring in variables and published components from a file, then track
-          where they have drifted from the code that ships.
-        </p>
-        <FigmaConnectCard />
-      </section>
-
       <section className="rounded-[var(--dash-radius)] border border-[var(--dash-border)] bg-[var(--dash-surface)]">
         <ul>
           {connectors.map((c) => {
@@ -153,7 +135,8 @@ export default async function ConnectorsPage() {
             return (
               <li
                 key={c.name}
-                className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--dash-border)] px-6 py-5 last:border-0"
+                id={FORM_ANCHOR[c.name]}
+                className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--dash-border)] px-6 py-5 scroll-mt-24 last:border-0"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -173,6 +156,16 @@ export default async function ConnectorsPage() {
                   </p>
                   <p className="mt-1.5 text-[13px] text-[var(--dash-foreground)]">{c.detail}</p>
                 </div>
+
+                {/* The doing lives in the row that describes it. */}
+                {FORM_ANCHOR[c.name] ? (
+                  <ConnectorDisclosure
+                    anchor={FORM_ANCHOR[c.name]}
+                    label={FORM_LABEL[c.name]}
+                  >
+                    {c.name === "GitHub" ? <ScanWorkspaceCard /> : <FigmaConnectCard />}
+                  </ConnectorDisclosure>
+                ) : null}
 
                 {c.href ? (
                   <Link
