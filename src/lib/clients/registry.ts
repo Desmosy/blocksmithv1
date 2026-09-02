@@ -26,7 +26,6 @@ import {
   hydrateUploadMarkdown,
   readUploadMarkdownSync,
   uploadMtimeMs,
-  readUploadMarkdownContent,
 } from "@/lib/uploads/persist";
 import { resolveMarkdownForParsing } from "@/ai-lab/02-parser-assist/resolve";
 
@@ -162,24 +161,22 @@ export function listDocSources(): DocSource[] {
 export async function listAllDocSources(): Promise<DocSource[]> {
   const repo = listDocSources();
   const uploads = await listUploads();
-  const uploadSources: DocSource[] = [];
-  for (const u of uploads) {
-    let parser: "apollo" | "generic" = "generic";
-    try {
-      const snippet = (await readUploadMarkdownContent(u.fileName)).slice(0, 8000);
-      parser = detectParser(snippet, u.fileName);
-    } catch {
-      /* generic */
-    }
-    uploadSources.push({
-      id: u.docRef,
-      fileName: u.docRef,
-      path: `data/uploads/${u.fileName}`,
-      label: u.label,
-      parser,
-      origin: "upload",
-    });
-  }
+  // This used to download every upload's full markdown from storage — one
+  // serial round-trip per document — to sniff which parser it would use.
+  // The result feeds a cosmetic badge in the doc switcher, and the loop ran
+  // on every wiki render: with a few dozen captures saved, switching wiki
+  // pages cost 15+ seconds of storage reads for a word nobody was waiting
+  // on. The badge now comes from the file name — captures, design ingests
+  // and pastes are Style Reference documents by construction — and the real
+  // parser decision still happens where it always did, when a doc is opened.
+  const uploadSources: DocSource[] = uploads.map((u) => ({
+    id: u.docRef,
+    fileName: u.docRef,
+    path: `data/uploads/${u.fileName}`,
+    label: u.label,
+    parser: /^(capture|design|paste)-/i.test(u.fileName) ? "apollo" : "generic",
+    origin: "upload",
+  }));
   return [...uploadSources, ...repo];
 }
 
