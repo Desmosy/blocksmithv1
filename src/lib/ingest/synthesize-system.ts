@@ -972,6 +972,7 @@ export function synthesizeDesignSystem(found: Extracted): {
 
   dos.push(
     "Build decorative graphics — orbs, gradients, ambient motion — as SVG, Canvas or shader code from the tokens above, so they re-theme and resize with the system.",
+    "Icons are inline SVG on a 24px grid that inherit `currentColor`, sized 16–24px beside text. Use one icon family per page, from a free set: Lucide, Heroicons, Tabler, Feather or Iconsax need no credit.",
   );
   if (chartLadder.length >= 2) {
     dos.push(
@@ -985,6 +986,7 @@ export function synthesizeDesignSystem(found: Extracted): {
   donts.push(
     "Do not ship decorative artwork as PNG, JPEG or a generated image; raster files are for photography and screenshots only.",
     "Do not draw clip-art glyphs — stars, sparkles, bolts, blobs — and never let decoration overlap text or controls. Decoration sits behind or beside content, in hairline geometry at whisper contrast.",
+    "Do not use an asset that requires attribution without its credit. A CC BY icon or illustration (for example Noun Project's free tier) must carry a visible \"<name> by <creator> — CC BY\" line in the page footer; if you will not write the credit, use a free set instead.",
   );
   if (chartLadder.length >= 2) {
     donts.push(

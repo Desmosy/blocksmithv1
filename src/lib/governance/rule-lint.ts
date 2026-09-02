@@ -25,7 +25,13 @@
 
 import type { DesignSystem } from "@/lib/blocks/types";
 
-export type RuleKind = "gradient" | "shadow" | "pureColor" | "fontFamily" | "gridMesh";
+export type RuleKind =
+  | "gradient"
+  | "shadow"
+  | "pureColor"
+  | "fontFamily"
+  | "gridMesh"
+  | "attribution";
 
 export type RuleViolation = {
   kind: RuleKind;
@@ -49,6 +55,8 @@ export type RuleChecks = {
   fontFamily: string | null;
   /** "No graph-paper grids" — the ruled-squares backdrop behind SVGs. */
   gridMesh: string | null;
+  /** "Credit CC BY assets" — attribution-required art must carry its line. */
+  attribution: string | null;
   /** Normalized names of every font family the system declares. */
   fonts: string[];
 };
@@ -66,6 +74,7 @@ const INVERTED = /\b(remov\w*|omit\w*|skip\w*|strip\w*|delet\w*|forget\w*)\b/;
 const GRADIENT_INTENT = /\bgradients?\b/;
 const SHADOW_INTENT = /\bshadows?\b/;
 const GRID_MESH_INTENT = /\bgraph-?paper\b|\bgrid (?:mesh|of (?:ruled )?squares)\b|\bruled squares\b/;
+const ATTRIBUTION_INTENT = /\bcc by\b|\battribution\b|\bcredit line\b|requires attribution/;
 const BLACK_INTENT = /\b(?:pure|true|solid|full)\s+black\b|#0{3}(?:0{3})?\b/;
 const WHITE_INTENT = /\b(?:pure|true|solid|full)\s+white\b|#f{3}(?:f{3})?\b/;
 /** Explicit family talk, or "font" qualified by a novelty/foreign word. */
@@ -145,6 +154,7 @@ export function checksFromSystem(system: DesignSystem): RuleChecks {
     gradient: findDont(donts, GRADIENT_INTENT),
     shadow: findDont(donts, SHADOW_INTENT),
     gridMesh: findDont(donts, GRID_MESH_INTENT),
+    attribution: findDont(donts, ATTRIBUTION_INTENT),
     // A rule against pure black is meaningless if the palette ships #000000.
     pureBlack: palette.has("#000000") ? null : findDont(donts, BLACK_INTENT),
     pureWhite: palette.has("#ffffff") ? null : findDont(donts, WHITE_INTENT),
@@ -458,6 +468,7 @@ export function findRuleViolations(
     !checks.pureBlack &&
     !checks.pureWhite &&
     !checks.gridMesh &&
+    !checks.attribution &&
     !runFonts
   ) {
     return [];
@@ -476,6 +487,25 @@ export function findRuleViolations(
       matched,
     });
   };
+
+  // Attribution is a whole-document property: an asset from an
+  // attribution-required source is fine anywhere on the page as long as its
+  // credit exists somewhere on the same page. Checked before the line scan
+  // because no single line can answer it.
+  if (checks.attribution) {
+    const ATTRIBUTION_SOURCE = /thenounproject\.com|noun\s?project|blush\.design/i;
+    const hasSource = ATTRIBUTION_SOURCE.test(code);
+    const hasCredit = /\bCC BY\b/i.test(code);
+    if (hasSource && !hasCredit) {
+      const i = lines.findIndex((l) => ATTRIBUTION_SOURCE.test(l));
+      push(
+        "attribution",
+        checks.attribution,
+        Math.max(i, 0),
+        lines[Math.max(i, 0)].match(ATTRIBUTION_SOURCE)?.[0] ?? "attribution-required asset",
+      );
+    }
+  }
 
   scan.forEach((line, i) => {
     if (!line.trim()) return;
@@ -529,6 +559,8 @@ export function describeRuleViolation(v: RuleViolation): string {
           ? "Pure black/white is not allowed in this design system"
           : v.kind === "gridMesh"
             ? "Graph-paper grids are not allowed in this design system — remove the ruled backdrop, keep the diagram"
-            : "That font family is not declared in this design system";
+            : v.kind === "attribution"
+              ? 'This asset requires attribution and the page carries no credit — add a visible "<name> by <creator> — CC BY" line to the footer, or use a free icon set instead'
+              : "That font family is not declared in this design system";
   return `\`${v.matched}\` — ${lead}. Rule: "${v.rule}"`;
 }

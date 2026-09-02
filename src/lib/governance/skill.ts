@@ -223,6 +223,26 @@ export function buildSkill(system: DesignSystem, markdown: string): string {
     layoutSection?.match(/separated by ~(\d+)px/)?.[1] ??
     (spacing.length ? String(spacing[spacing.length - 1].px) : null);
   out.push(
+    "## Icons",
+    "",
+    "Icons are pictograms beside text, not decoration — the decoration",
+    "contract below covers everything larger.",
+    "",
+    "- **Inline SVG only**, drawn on a 24px grid, rendered 16–24px, with",
+    "  `stroke=\"currentColor\"` or `fill=\"currentColor\"` so every icon",
+    "  inherits the text colour token beside it.",
+    "- **One family per page.** Mixed icon styles read as a page nobody",
+    "  designed. Free sets that need no credit: Lucide, Heroicons, Tabler,",
+    "  Feather, Iconsax. Inline the path data; never hotlink an icon file.",
+    "- **Attribution-required art carries its credit.** A CC BY asset — Noun",
+    "  Project's free tier, for instance — is allowed only with a visible",
+    "  \"<name> by <creator> — CC BY\" line in the page footer. `check_governance`",
+    "  rejects a page that ships such an asset without its credit. If you will",
+    "  not write the credit line, use a free set instead.",
+    "",
+  );
+
+  out.push(
     "## Composing a page",
     "",
     ...(layoutSection
