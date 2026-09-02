@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import {
   getDefaultDocFileName,
   getClientMeta,
-  listAllDocSources,
   loadDesignSystem,
   prepareDesignSystemDoc,
 } from "@/lib/clients/registry";
+import { listAccessibleDocSources } from "@/lib/cloud/doc-visibility";
 import { assertWikiDocAccess } from "@/lib/cloud/wiki-access";
 import { resolveDocParam } from "@/lib/wiki/doc-param";
 import { WikiShell } from "@/components/wiki/WikiShell";
@@ -88,7 +88,7 @@ export default async function WikiPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
-  const sources = await listAllDocSources();
+  const sources = await listAccessibleDocSources();
   const meta = getClientMeta(fileName);
 
   const ir = await ensureDesignIRWithFonts(fileName, system);
@@ -138,7 +138,7 @@ function renderRoute(
   system: ReturnType<typeof loadDesignSystem>,
   ir: DesignIR,
   meta: ReturnType<typeof getClientMeta>,
-  sources: Awaited<ReturnType<typeof listAllDocSources>>,
+  sources: Awaited<ReturnType<typeof listAccessibleDocSources>>,
   docFileName: string,
   lifecycle: ReturnType<typeof getDocLifecycle>,
 ) {

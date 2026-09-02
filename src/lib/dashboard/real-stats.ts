@@ -4,8 +4,12 @@
  * Anything with nothing to count returns null so the UI can say "none yet".
  */
 
-import { listAllDocSources, loadDesignSystem } from "@/lib/clients/registry";
-import { listUploads } from "@/lib/uploads/store";
+import { loadDesignSystem } from "@/lib/clients/registry";
+import {
+  listAccessibleDocSources,
+  listAccessibleUploads,
+} from "@/lib/cloud/doc-visibility";
+import type { listUploads } from "@/lib/uploads/store";
 
 export type RealStat = {
   label: string;
@@ -29,7 +33,7 @@ export type DashboardFacts = {
 export async function getDashboardFacts(): Promise<DashboardFacts> {
   let sources: { fileName: string; label: string }[] = [];
   try {
-    sources = await listAllDocSources();
+    sources = await listAccessibleDocSources();
   } catch {
     sources = [];
   }
@@ -50,7 +54,7 @@ export async function getDashboardFacts(): Promise<DashboardFacts> {
 
   let uploads: Awaited<ReturnType<typeof listUploads>> = [];
   try {
-    uploads = await listUploads();
+    uploads = await listAccessibleUploads();
   } catch {
     uploads = [];
   }

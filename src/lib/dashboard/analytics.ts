@@ -5,7 +5,8 @@
  * system, so it carries no signal.
  */
 
-import { listAllDocSources, loadDesignSystem } from "@/lib/clients/registry";
+import { loadDesignSystem } from "@/lib/clients/registry";
+import { listAccessibleDocSources } from "@/lib/cloud/doc-visibility";
 import { contrastRatio, isHex } from "@/lib/design-ir/color-utils";
 
 /** WCAG 2.1 thresholds for text against its background. */
@@ -52,7 +53,7 @@ function band(ratio: number): ContrastBand {
 export async function getAnalytics(): Promise<Analytics> {
   let sources: { fileName: string }[] = [];
   try {
-    sources = await listAllDocSources();
+    sources = await listAccessibleDocSources();
   } catch {
     sources = [];
   }
