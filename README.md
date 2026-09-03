@@ -292,13 +292,17 @@ npm run build
 Full pages agents built through BlockSmith, each governed by a different
 captured design system:
 
-1. [Landing page on a yellow fintech rulebook](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-ramp-62bf21c5.md&v=1)
-2. [Landing page with an SVG hero and two governed charts](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-cohere-5f71a053.md&v=3)
-3. [Treasury dashboard on a dark rulebook](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-mercury-fa9a3d29.md&v=0)
-4. [Landing page on the same dark rulebook](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-mercury-fa9a3d29.md&v=1)
-5. [Landing page on a business-intelligence rulebook](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-modern-business-intelligence-946482bb.md&v=0)
-6. [SaaS page with tabs](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-ai-sales-platform-18ea9025.md&v=0) (initial version of BlockSmith)
-7. [Finance SaaS dashboard with KPI cards and inline SVG analytics](https://blocksmithv1.vercel.app/api/webmcp/proposal/frame?doc=upload%3Acapture-ramp-a5a74b94.md&v=0)
+
+Full pages agents built through BlockSmith, each governed by a different
+captured design system:
+
+1. [Landing page on a yellow fintech rulebook](https://blocksmithv1.vercel.app/demos/yellow-fintech-landing.html)
+2. [Landing page with an SVG hero and two governed charts](https://blocksmithv1.vercel.app/demos/svg-hero-charts-landing.html)
+3. [Treasury dashboard on a dark rulebook](https://blocksmithv1.vercel.app/demos/dark-treasury-dashboard.html)
+4. [Landing page on the same dark rulebook](https://blocksmithv1.vercel.app/demos/dark-landing.html)
+5. [Landing page on a business-intelligence rulebook](https://blocksmithv1.vercel.app/demos/bi-landing.html)
+6. [SaaS page with tabs](https://blocksmithv1.vercel.app/demos/saas-tabs.html) (initial version of BlockSmith)
+7. [Finance SaaS dashboard with KPI cards and inline SVG analytics](https://blocksmithv1.vercel.app/demos/finance-saas-dashboard.html)
 
 
 ## License
